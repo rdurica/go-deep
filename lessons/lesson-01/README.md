@@ -145,12 +145,30 @@ vrať `"Hello, Go!"`, jinak `"Hello, <name>!"` s ořezanými bílými znaky.
 
 ### B — jádro (~25 min)
 
-Implementuj `SumAll(nums ...int) int` a `Describe(vals []int) string`.
-
-`Describe` vrací řetězec ve tvaru `"count=3 sum=6 max=3"`. Pro prázdný nebo `nil` slice
-vrať `"empty"`. Cílem je, aby ses potkal s variadickou funkcí, `range` cyklem a `fmt.Sprintf`
-a hlavně aby ses prokousal chybami kompilátoru — schválně si zkus nechat nepoužitou proměnnou
-a přečti si hlášku.
+Doplň dvě funkce v `exercise/exercise.go` (místo `panic("TODO: úkol B")`).
+#### `SumAll(nums ...int) int`
+Sečti libovolný počet celých čísel předaných jako argumenty.
+- `...int` znamená variadickou funkci: voláš ji jako `SumAll(1, 2, 3)`, ne jako slice.
+- Bez argumentů vrať `0`.
+- Záporná čísla sečti normálně (např. `SumAll(-4, 2)` → `-2`).
+Příklady:
+- `SumAll()` → `0`
+- `SumAll(5)` → `5`
+- `SumAll(1, 2, 3)` → `6`
+#### `Describe(vals []int) string`
+Vrať textový popis slice čísel.
+- Pokud je `vals` `nil` nebo prázdný (`len == 0`), vrať přesně `"empty"`.
+- Jinak vrať řetězec **přesně** ve tvaru:
+  `"count=<počet> sum=<součet> max=<maximum>"`
+  (mezery a pořadí polí musí sedět — testy porovnávají celý string).
+Příklady:
+- `Describe(nil)` → `"empty"`
+- `Describe([]int{})` → `"empty"`
+- `Describe([]int{1, 2, 3})` → `"count=3 sum=6 max=3"`
+- `Describe([]int{9, 2, 3})` → `"count=3 sum=14 max=9"`
+- `Describe([]int{-5, -2})` → `"count=2 sum=-7 max=-2"`
+Cíl části B: potkat se s variadickou funkcí, `range` cyklem a `fmt.Sprintf`.
+Schválně si zkus nechat nepoužitou proměnnou a přečti si hlášku kompilátoru.
 
 ### C — rozšíření (~25 min, ověřuje se checklistem)
 
