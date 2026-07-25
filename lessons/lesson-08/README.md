@@ -340,6 +340,8 @@ Až budeš hotový, porovnej se `solutions/` (spoiler).
 
 ## Ověření
 
+Po dokončení úkolů spusť v Cursoru **`/go-deep-review`** a zadej třeba jen `08`. AI tě postupně projde body níže, doptá se a ověří pochopení — nestačí jen zelené testy.
+
 - [ ] `make lesson L=08` prochází
 - [ ] Umíš vysvětlit, proč je čtení z `nil` mapy OK a zápis ne
 - [ ] Umíš z hlavy napsat deterministický výpis mapy

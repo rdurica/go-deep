@@ -268,6 +268,8 @@ cd projects/p01-csv-cli && go test ./...
 
 ## Ověření
 
+Po dokončení úkolů spusť v Cursoru **`/go-deep-review`** a zadej třeba jen `17`. AI tě postupně projde body níže, doptá se a ověří pochopení — nestačí jen zelené testy.
+
 - [ ] `make lesson L=17` prochází
 - [ ] `cd projects/p01-csv-cli && go test ./...` prochází
 - [ ] Umíš vysvětlit rozdíl mezi `package foo` a `package foo_test` a kdy který zvolit

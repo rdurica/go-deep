@@ -208,6 +208,8 @@ Bodovanou rubriku vyplň až po projektu P02. Za každý řádek 0–2 body
 
 ## Ověření
 
+Po dokončení úkolů spusť v Cursoru **`/go-deep-review`** a zadej třeba jen `31`. AI tě postupně projde body níže, doptá se a ověří pochopení — nestačí jen zelené testy.
+
 - [ ] `make lesson L=31` prochází
 - [ ] `go test -race ./projects/p02-http-api/...` prochází
 - [ ] Umíš vysvětlit, jak dostat 405 do JSONu bez vlastního routeru

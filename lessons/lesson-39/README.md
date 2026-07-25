@@ -298,6 +298,8 @@ než postavíš cokoli, co půjde na internet.
 
 ## Ověření
 
+Po dokončení úkolů spusť v Cursoru **`/go-deep-review`** a zadej třeba jen `39`. AI tě postupně projde body níže, doptá se a ověří pochopení — nestačí jen zelené testy.
+
 - [ ] `make lesson L=39` a `go test -race` prochází
 - [ ] Vyplnil jsi rubriku poctivě, bez nahlížení do řešení
 - [ ] Projekt P03 splňuje všechna kritéria v `ACCEPTANCE.md`

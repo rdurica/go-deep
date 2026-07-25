@@ -238,6 +238,8 @@ Až budeš hotový, porovnej se `solutions/` (spoiler).
 
 ## Ověření
 
+Po dokončení úkolů spusť v Cursoru **`/go-deep-review`** a zadej třeba jen `44`. AI tě postupně projde body níže, doptá se a ověří pochopení — nestačí jen zelené testy.
+
 - [ ] `make lesson L=44` prochází
 - [ ] `make race L=44` prochází a stejně tak `-count=20`
 - [ ] Umíš vyjmenovat tři podmínky datového závodu

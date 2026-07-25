@@ -368,6 +368,8 @@ Až budeš hotový, porovnej se `solutions/` (spoiler).
 
 ## Ověření
 
+Po dokončení úkolů spusť v Cursoru **`/go-deep-review`** a zadej třeba jen `10`. AI tě postupně projde body níže, doptá se a ověří pochopení — nestačí jen zelené testy.
+
 - [ ] `make lesson L=10` prochází
 - [ ] Umíš z hlavy říct, co vypíše `i := 0; defer fmt.Println(i); i = 42`
 - [ ] Umíš vysvětlit, proč je `defer` v cyklu problém a jak ho vyřešit

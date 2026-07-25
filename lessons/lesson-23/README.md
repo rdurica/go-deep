@@ -275,6 +275,8 @@ Až budeš hotový, porovnej se `solutions/` (spoiler).
 
 ## Ověření
 
+Po dokončení úkolů spusť v Cursoru **`/go-deep-review`** a zadej třeba jen `23`. AI tě postupně projde body níže, doptá se a ověří pochopení — nestačí jen zelené testy.
+
 - [ ] `make lesson L=23` prochází
 - [ ] `grep -c '\*Record' exercise/exercise.go` vrací 0
 - [ ] Umíš vyjmenovat aspoň sedm zápachů z katalogu a ke každému opravu

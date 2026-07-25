@@ -290,6 +290,8 @@ Až budeš hotový, porovnej se `solutions/` (spoiler).
 
 ## Ověření
 
+Po dokončení úkolů spusť v Cursoru **`/go-deep-review`** a zadej třeba jen `13`. AI tě postupně projde body níže, doptá se a ověří pochopení — nestačí jen zelené testy.
+
 - [ ] `make lesson L=13` prochází
 - [ ] Umíš vysvětlit, proč `Read` smí vrátit `n > 0` spolu s `io.EOF`
 - [ ] Umíš vysvětlit, proč funkce bere `io.Writer` a ne `*os.File`

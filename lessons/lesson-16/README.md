@@ -268,6 +268,8 @@ Až budeš hotový, porovnej se `solutions/` (spoiler).
 
 ## Ověření
 
+Po dokončení úkolů spusť v Cursoru **`/go-deep-review`** a zadej třeba jen `16`. AI tě postupně projde body níže, doptá se a ověří pochopení — nestačí jen zelené testy.
+
 - [ ] `make lesson L=16` prochází
 - [ ] Umíš vysvětlit, proč se neexportované pole neserializuje ani s tagem
 - [ ] Umíš vysvětlit, kdy `omitempty` zahodí data, o která jsi přijít nechtěl

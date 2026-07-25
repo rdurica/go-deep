@@ -266,6 +266,8 @@ Až budeš hotový, porovnej se `solutions/` (spoiler).
 
 ## Ověření
 
+Po dokončení úkolů spusť v Cursoru **`/go-deep-review`** a zadej třeba jen `48`. AI tě postupně projde body níže, doptá se a ověří pochopení — nestačí jen zelené testy.
+
 - [ ] `make lesson L=48` prochází
 - [ ] `make race L=48` prochází (žádné hlášení race detektoru)
 - [ ] Umíš vyjmenovat aspoň šest synchronizačních bodů

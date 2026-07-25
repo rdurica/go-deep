@@ -280,6 +280,8 @@ Až budeš hotový, porovnej se `solutions/` (spoiler).
 
 ## Ověření
 
+Po dokončení úkolů spusť v Cursoru **`/go-deep-review`** a zadej třeba jen `02`. AI tě postupně projde body níže, doptá se a ověří pochopení — nestačí jen zelené testy.
+
 - [ ] `make lesson L=02` prochází
 - [ ] Umíš vysvětlit, proč `Cheapest` vrací `(Item, bool)` a ne `*Item`
 - [ ] Umíš vysvětlit, co je v Go jednotka zapouzdření a jak se pozná exportovaný identifikátor

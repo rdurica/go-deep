@@ -274,6 +274,8 @@ Až budeš hotový, porovnej se `solutions/` (spoiler).
 
 ## Ověření
 
+Po dokončení úkolů spusť v Cursoru **`/go-deep-review`** a zadej třeba jen `27`. AI tě postupně projde body níže, doptá se a ověří pochopení — nestačí jen zelené testy.
+
 - [ ] `make lesson L=27` prochází
 - [ ] Umíš vysvětlit, co do kontextu patří a co ne, a máš na to jednovětý test
 - [ ] Umíš vysvětlit, proč klíč do `WithValue` nesmí být `string`

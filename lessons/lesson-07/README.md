@@ -334,6 +334,8 @@ Až budeš hotový, porovnej se `solutions/` (spoiler).
 
 ## Ověření
 
+Po dokončení úkolů spusť v Cursoru **`/go-deep-review`** a zadej třeba jen `07`. AI tě postupně projde body níže, doptá se a ověří pochopení — nestačí jen zelené testy.
+
 - [ ] `make lesson L=07` prochází
 - [ ] Umíš nakreslit slice header a vysvětlit rozdíl mezi `len` a `cap`
 - [ ] Umíš vysvětlit, proč `append` uvnitř funkce nezvětší slice volajícího

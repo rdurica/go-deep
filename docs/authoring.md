@@ -76,7 +76,9 @@ Aspoň dvě z nich musí vycházet z PHP reflexů.
 případů. Nepíšeš řešení, ale zadání musí být jednoznačné, aby ho testy nemohly překvapit.
 
 **Ověření** — checklist: `make lesson L=NN` plus 3–5 otázek k sebehodnocení
-(„umíš vysvětlit…").
+(„umíš vysvětlit…"). Hned pod nadpis `## Ověření` patří výzva spustit
+Cursor skill **`/go-deep-review`** s číslem lekce (viz šablona) — AI postupně
+projde body a ověří pochopení.
 
 **AI režim** — jeden ze štítků podle fáze (viz níže) a odkaz na `docs/ai-playbook.md`.
 

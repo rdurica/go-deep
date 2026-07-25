@@ -205,6 +205,8 @@ Až budeš hotový, porovnej se `solutions/` (spoiler).
 
 ## Ověření
 
+Po dokončení úkolů spusť v Cursoru **`/go-deep-review`** a zadej třeba jen `58`. AI tě postupně projde body níže, doptá se a ověří pochopení — nestačí jen zelené testy.
+
 - [ ] `make lesson L=58` prochází
 - [ ] Máš vlastní checklist, kde aspoň tři položky vychází z tvých doložených chyb
 - [ ] Umíš vysvětlit, proč je přechod `spec → impl` zakázaný

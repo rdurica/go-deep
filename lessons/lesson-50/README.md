@@ -254,6 +254,8 @@ Za každou položku si dej body podle skutečnosti, ne podle dojmu. Maximum je 3
 
 ## Ověření
 
+Po dokončení úkolů spusť v Cursoru **`/go-deep-review`** a zadej třeba jen `50`. AI tě postupně projde body níže, doptá se a ověří pochopení — nestačí jen zelené testy.
+
 - [ ] `make lesson L=50` prochází
 - [ ] `make race L=50` prochází (žádné hlášení race detektoru)
 - [ ] `make project P=04` prochází

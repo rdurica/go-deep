@@ -356,6 +356,8 @@ Až budeš hotový, porovnej se `solutions/` (spoiler).
 
 ## Ověření
 
+Po dokončení úkolů spusť v Cursoru **`/go-deep-review`** a zadej třeba jen `36`. AI tě postupně projde body níže, doptá se a ověří pochopení — nestačí jen zelené testy.
+
 - [ ] `make lesson L=36` prochází
 - [ ] Umíš vysvětlit rozdíl mezi validací vstupu a doménovým invariantem na vlastním příkladu
 - [ ] Umíš vysvětlit, proč `IsValid(s) bool` zahazuje informaci a `Parse` ne

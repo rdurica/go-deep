@@ -291,6 +291,8 @@ Až budeš hotový, porovnej se `solutions/` (spoiler).
 
 ## Ověření
 
+Po dokončení úkolů spusť v Cursoru **`/go-deep-review`** a zadej třeba jen `45`. AI tě postupně projde body níže, doptá se a ověří pochopení — nestačí jen zelené testy.
+
 - [ ] `make lesson L=45` prochází
 - [ ] `make race L=45` prochází
 - [ ] Umíš u každého kanálu v pipeline říct, kdo ho vytváří a kdo zavírá

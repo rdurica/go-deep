@@ -269,6 +269,8 @@ Až budeš hotový, porovnej se `solutions/` (spoiler).
 
 ## Ověření
 
+Po dokončení úkolů spusť v Cursoru **`/go-deep-review`** a zadej třeba jen `34`. AI tě postupně projde body níže, doptá se a ověří pochopení — nestačí jen zelené testy.
+
 - [ ] `make lesson L=34` prochází
 - [ ] Umíš na příkladu ukázat, kde `float64` u peněz selže, a odhadnout velikost chyby
 - [ ] Umíš vyjmenovat čtyři vlastnosti, které dělají typ value objektem v Go

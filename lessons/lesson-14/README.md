@@ -306,6 +306,8 @@ Až budeš hotový, porovnej se `solutions/` (spoiler).
 
 ## Ověření
 
+Po dokončení úkolů spusť v Cursoru **`/go-deep-review`** a zadej třeba jen `14`. AI tě postupně projde body níže, doptá se a ověří pochopení — nestačí jen zelené testy.
+
 - [ ] `make lesson L=14` prochází
 - [ ] Umíš vysvětlit rozdíl mezi `errors.Is` a `errors.As` a kdy použít který
 - [ ] Umíš vysvětlit, co přesně rozbije `%v` místo `%w`

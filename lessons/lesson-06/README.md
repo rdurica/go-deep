@@ -254,6 +254,8 @@ Až budeš hotový, porovnej se `solutions/` (spoiler).
 
 ## Ověření
 
+Po dokončení úkolů spusť v Cursoru **`/go-deep-review`** a zadej třeba jen `06`. AI tě postupně projde body níže, doptá se a ověří pochopení — nestačí jen zelené testy.
+
 - [ ] `make lesson L=06` prochází
 - [ ] Umíš vysvětlit, proč `func f(c *Config) { c = &Config{} }` nic neudělá
 - [ ] Umíš vysvětlit, proč `IncrementAll` mění data i bez pointeru, ale `append` uvnitř funkce ne

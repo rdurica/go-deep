@@ -286,6 +286,8 @@ Až budeš hotový, porovnej se `solutions/` (spoiler).
 
 ## Ověření
 
+Po dokončení úkolů spusť v Cursoru **`/go-deep-review`** a zadej třeba jen `30`. AI tě postupně projde body níže, doptá se a ověří pochopení — nestačí jen zelené testy.
+
 - [ ] `make lesson L=30` prochází
 - [ ] Umíš vysvětlit, co všechno pokrývá `http.Client.Timeout`
 - [ ] Umíš vysvětlit, proč se tělo odpovědi musí dočíst, ne jen zavřít

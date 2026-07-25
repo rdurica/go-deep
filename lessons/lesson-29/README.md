@@ -254,6 +254,8 @@ Až budeš hotový, porovnej se `solutions/` (spoiler).
 
 ## Ověření
 
+Po dokončení úkolů spusť v Cursoru **`/go-deep-review`** a zadej třeba jen `29`. AI tě postupně projde body níže, doptá se a ověří pochopení — nestačí jen zelené testy.
+
 - [ ] `make lesson L=29` prochází
 - [ ] Umíš vysvětlit, proč `msg` nemá obsahovat proměnné hodnoty
 - [ ] Umíš vysvětlit rozdíl mezi `logger.Info(...)` a `logger.LogAttrs(...)`

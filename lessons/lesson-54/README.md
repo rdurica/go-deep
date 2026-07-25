@@ -224,6 +224,8 @@ Až budeš hotový, porovnej se `solutions/` (spoiler).
 
 ## Ověření
 
+Po dokončení úkolů spusť v Cursoru **`/go-deep-review`** a zadej třeba jen `54`. AI tě postupně projde body níže, doptá se a ověří pochopení — nestačí jen zelené testy.
+
 - [ ] `make lesson L=54` prochází i `go test -tags fancy` v `exercise/`
 - [ ] Umíš vysvětlit, proč metoda nesmí mít vlastní typový parametr
 - [ ] Umíš uvést jeden případ, kdy je generika lepší než rozhraní, a jeden opačný

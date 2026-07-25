@@ -229,6 +229,8 @@ vrstva, konfigurace a provoz.
 
 ## Ověření
 
+Po dokončení úkolů spusť v Cursoru **`/go-deep-review`** a zadej třeba jen `59`. AI tě postupně projde body níže, doptá se a ověří pochopení — nestačí jen zelené testy.
+
 - [ ] `make lesson L=59` prochází, včetně `make race L=59`
 - [ ] Umíš vysvětlit, proč `Validate` nemá měnit data
 - [ ] Umíš ukázat, kde by bez hluboké kopie vzniklo sdílení dat se store

@@ -298,6 +298,8 @@ Až budeš hotový, porovnej se `solutions/` (spoiler).
 
 ## Ověření
 
+Po dokončení úkolů spusť v Cursoru **`/go-deep-review`** a zadej třeba jen `46`. AI tě postupně projde body níže, doptá se a ověří pochopení — nestačí jen zelené testy.
+
 - [ ] `make lesson L=46` prochází
 - [ ] `make race L=46` prochází (žádné hlášení race detektoru)
 - [ ] Umíš vysvětlit, proč `for range jobs` nepotřebuje `stop` kanál

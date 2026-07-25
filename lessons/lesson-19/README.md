@@ -332,6 +332,8 @@ Až budeš hotový, porovnej se `solutions/` (spoiler).
 
 ## Ověření
 
+Po dokončení úkolů spusť v Cursoru **`/go-deep-review`** a zadej třeba jen `19`. AI tě postupně projde body níže, doptá se a ověří pochopení — nestačí jen zelené testy.
+
 - [ ] `make lesson L=19` prochází
 - [ ] Žádná funkce, kterou jsi napsal, nemá víc než 20 řádků těla
 - [ ] `ParseUserID` nemá jediný `else` a maximální hloubku zanoření 1

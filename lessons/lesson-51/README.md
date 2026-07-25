@@ -247,6 +247,8 @@ Až budeš hotový, porovnej se `solutions/` (spoiler). Pak si na tomhle repozit
 
 ## Ověření
 
+Po dokončení úkolů spusť v Cursoru **`/go-deep-review`** a zadej třeba jen `51`. AI tě postupně projde body níže, doptá se a ověří pochopení — nestačí jen zelené testy.
+
 - [ ] `make lesson L=51` prochází
 - [ ] Umíš vysvětlit, proč Go nepotřebuje lock soubor pro determinismus verzí
 - [ ] Umíš na papíře spočítat výsledek minimal version selection pro tři moduly

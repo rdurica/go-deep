@@ -312,6 +312,8 @@ za hotový.
 
 ## Ověření
 
+Po dokončení úkolů spusť v Cursoru **`/go-deep-review`** a zadej třeba jen `38`. AI tě postupně projde body níže, doptá se a ověří pochopení — nestačí jen zelené testy.
+
 - [ ] `make lesson L=38` prochází a `go test -race ./...` v `exercise/` je zelené
 - [ ] `go test -race ./...` v `projects/p03-hex-service` je zelené
 - [ ] Umíš vysvětlit, proč port patří k `Service` a ne k adaptéru

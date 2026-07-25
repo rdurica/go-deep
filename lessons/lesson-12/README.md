@@ -289,6 +289,8 @@ Až budeš hotový, porovnej se `solutions/` (spoiler).
 
 ## Ověření
 
+Po dokončení úkolů spusť v Cursoru **`/go-deep-review`** a zadej třeba jen `12`. AI tě postupně projde body níže, doptá se a ověří pochopení — nestačí jen zelené testy.
+
 - [ ] `make lesson L=12` prochází
 - [ ] Umíš vysvětlit, proč `ReturnsNilPointer() != nil`
 - [ ] Umíš vysvětlit, proč se interface deklaruje u konzumenta

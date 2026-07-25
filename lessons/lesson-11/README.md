@@ -297,6 +297,8 @@ Až budeš hotový, porovnej se `solutions/` (spoiler).
 
 ## Ověření
 
+Po dokončení úkolů spusť v Cursoru **`/go-deep-review`** a zadej třeba jen `11`. AI tě postupně projde body níže, doptá se a ověří pochopení — nestačí jen zelené testy.
+
 - [ ] `make lesson L=11` prochází
 - [ ] Umíš vysvětlit, proč `SumCents` smí na `a.cents` a `TotalOf` ne
 - [ ] Umíš vysvětlit, co přesně `internal/` zakazuje a komu

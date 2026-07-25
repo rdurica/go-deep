@@ -341,6 +341,8 @@ Až budeš hotový, porovnej se `solutions/` (spoiler).
 
 ## Ověření
 
+Po dokončení úkolů spusť v Cursoru **`/go-deep-review`** a zadej třeba jen `37`. AI tě postupně projde body níže, doptá se a ověří pochopení — nestačí jen zelené testy.
+
 - [ ] `make lesson L=37` a `make race L=37` prochází
 - [ ] Umíš vysvětlit, proč `==` na tajemství je zranitelnost, a spočítat, o kolik útok zjednoduší
 - [ ] Umíš vysvětlit, proč je SHA-256 na hesla špatná volba a co se používá místo ní

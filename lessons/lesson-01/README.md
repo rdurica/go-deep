@@ -167,6 +167,16 @@ Pravidlo se týká jen lokálních proměnných a importů.
 stáhlo — obdoba `composer.lock`, ale nezaznamenává jen verze, nýbrž otisky obsahu.
 Oba soubory patří do gitu. Modul bez závislostí (jako tenhle kurz) `go.sum` mít nemusí.
 
+### Entry point: `package main` a `cmd/`
+
+Spustitelný program v Go je balíček `package main` s **povinnou** funkcí `func main()`.
+Bez ní není co spustit — `go run` i `go build` hledají právě tenhle vstupní bod.
+V PHP spustíš soubor přímo; tady je entry point kompilovaný a pojmenovaný pevně.
+
+Ve větších projektech je zvyk dávat binárky pod `cmd/<jméno>/` (např. `cmd/api/main.go`)
+a knihovní kód držet mimo `cmd/`. Pro hello-world v úkolu C stačí `main.go` v kořeni
+modulu — `cmd/` je konvence pro přehlednost, ne povinnost u jednoho souboru.
+
 ## Časté chyby
 
 | Chyba | Proč vzniká | Jak to udělat správně |
@@ -226,7 +236,8 @@ mkdir -p ~/scratch/hello && cd ~/scratch/hello
 go mod init example.com/hello
 ```
 
-2. Vytvoř `main.go` s `package main` a funkcí `main`, která něco vypíše. Spusť `go run .`.
+2. Vytvoř `main.go` s `package main` a funkcí `main`, která něco vypíše (viz sekce o entry
+   pointu výše). Spusť `go run .`.
 3. Přidej podadresář `greet/` s `package greet` a exportovanou funkcí. Zavolej ji z `main.go`
    plným importem `example.com/hello/greet`. Všimni si, že cesta začíná názvem modulu.
 4. Zkus záměrně: přejmenovat funkci na malé písmeno a importovat ji. Přečti si chybu.
@@ -240,6 +251,8 @@ make lesson L=01
 Až budeš hotový, porovnej se `solutions/` (spoiler).
 
 ## Ověření
+
+Po dokončení úkolů spusť v Cursoru **`/go-deep-review`** a zadej třeba jen `01`. AI tě postupně projde body níže, doptá se a ověří pochopení — nestačí jen zelené testy.
 
 - [ ] `make lesson L=01` prochází
 - [ ] Umíš vysvětlit rozdíl mezi modulem, balíčkem a souborem

@@ -307,6 +307,8 @@ Až budeš hotový, porovnej se `solutions/` (spoiler).
 
 ## Ověření
 
+Po dokončení úkolů spusť v Cursoru **`/go-deep-review`** a zadej třeba jen `24`. AI tě postupně projde body níže, doptá se a ověří pochopení — nestačí jen zelené testy.
+
 - [ ] `make lesson L=24` prochází
 - [ ] Umíš vysvětlit, proč v Go neexistuje `Response` objekt a co to dělá s error handlingem
 - [ ] Umíš vysvětlit, co se stane při `Header().Set` po `WriteHeader`

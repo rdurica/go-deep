@@ -298,6 +298,8 @@ Až budeš hotový, porovnej se `solutions/` (spoiler).
 
 ## Ověření
 
+Po dokončení úkolů spusť v Cursoru **`/go-deep-review`** a zadej třeba jen `52`. AI tě postupně projde body níže, doptá se a ověří pochopení — nestačí jen zelené testy.
+
 - [ ] `make lesson L=52` prochází
 - [ ] Umíš vysvětlit, kdy stačí `b.Loop()` a kdy u starého `b.N` potřebuješ package-level sink
 - [ ] Umíš vysvětlit rozdíl mezi `b.Loop()`, `b.N`, `-benchtime=1s` a `-benchtime=100x`

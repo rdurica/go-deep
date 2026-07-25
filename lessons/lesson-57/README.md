@@ -245,6 +245,8 @@ Až budeš hotový, porovnej se `solutions/` (spoiler).
 
 ## Ověření
 
+Po dokončení úkolů spusť v Cursoru **`/go-deep-review`** a zadej třeba jen `57`. AI tě postupně projde body níže, doptá se a ověří pochopení — nestačí jen zelené testy.
+
 - [ ] `make lesson L=57` prochází
 - [ ] Umíš vysvětlit tři rozdíly mezi review kolegy a review agenta
 - [ ] Umíš popsat pořadí, ve kterém čteš velký diff, a proč zrovna takhle

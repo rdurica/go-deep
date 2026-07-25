@@ -178,6 +178,8 @@ Až budeš hotový, porovnej se `solutions/` (spoiler).
 
 ## Ověření
 
+Po dokončení úkolů spusť v Cursoru **`/go-deep-review`** a zadej třeba jen `18`. AI tě postupně projde body níže, doptá se a ověří pochopení — nestačí jen zelené testy.
+
 - [ ] `make lesson L=18` prochází
 - [ ] Umíš vysvětlit, proč `Money` drží centy a ne `float64`
 - [ ] Umíš vysvětlit, proč `ParseTransactions` bere `io.Reader` a ne `string`

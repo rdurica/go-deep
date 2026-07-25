@@ -257,6 +257,8 @@ Až budeš hotový, porovnej se `solutions/` (spoiler).
 
 ## Ověření
 
+Po dokončení úkolů spusť v Cursoru **`/go-deep-review`** a zadej třeba jen `25`. AI tě postupně projde body níže, doptá se a ověří pochopení — nestačí jen zelené testy.
+
 - [ ] `make lesson L=25` prochází
 - [ ] Umíš vysvětlit rozdíl mezi `{id}`, `{path...}` a `{$}`
 - [ ] Umíš vysvětlit, proč pořadí registrace vzorů nehraje roli a kdy mux panikuje

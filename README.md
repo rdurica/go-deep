@@ -4,6 +4,13 @@ Kurz Go (česky) pro vývojáře se silným PHP/Symfony zázemím. Cíl není �
 ale mít pevný mentální model: paměť, hranice balíčků, chyby, souběžnost, architektura —
 a umět řídit AI místo slepého přijímání jejího kódu.
 
+Očekává se solidní zkušenost s programováním — není to intro do kódování. Detaily
+(API stdlib, přesná syntaxe) si dohledáš (`go doc`, [go.dev](https://go.dev)); lekce učí
+mentální model, ne kompletní referenci. Při učení můžeš použít AI se skilly v repu
+([`go-deep-mentor`](.cursor/skills/go-deep-mentor/) během lekce,
+[`go-deep-review`](.cursor/skills/go-deep-review/) po ní) — viz [Cursor skilly](#cursor-skilly).
+AI pomáhá s pochopením; v režimu `ZAKÁZÁNO` ale nepíše cvičení za tebe.
+
 Repozitář a Go modul: [`github.com/rdurica/go-deep`](https://github.com/rdurica/go-deep)
 (anglický slug, český obsah).
 
@@ -34,14 +41,22 @@ jen do tvé kopie — nespouštěj u sebe `python3 scripts/generate_index.py`, j
 si progress přepíšeš. Updaty kurzu: přidej remote `upstream` a občas
 `git fetch upstream` + merge/rebase, nebo si založ novou kopii z template.
 
-## Cursor mentor
+## Cursor skilly
 
-Součástí repa je Cursor skill [`.cursor/skills/go-deep-mentor/`](.cursor/skills/go-deep-mentor/).
-V Cursor Agent chatu se s ním můžeš bavit o konkrétní lekci — vysvětlení konceptů,
-Sokratovské nápovědy, review tvého pokusu v `exercise/`. Skill respektuje AI režimy
-kurzu: v `ZAKÁZÁNO` nepiše řešení cvičení. Příklad promptu:
+Součástí repa jsou dva Cursor skilly:
+
+| Skill | Kdy | Co dělá |
+|-------|-----|---------|
+| [`go-deep-mentor`](.cursor/skills/go-deep-mentor/) | během lekce / při zaseknutí | vysvětlení konceptů, Sokratovské nápovědy, review tvého pokusu v `exercise/` |
+| [`go-deep-review`](.cursor/skills/go-deep-review/) | po dokončení lekce | postupný průchod sekcí **Ověření**, doptávání, validace pochopení |
+
+Oba respektují AI režimy kurzu: v `ZAKÁZÁNO` nepíšou řešení cvičení.
+
+Příklady:
 
 > Zasekl jsem se na lekci 7 u append — vysvětli backing array, nepiš kód.
+
+> `/go-deep-review 01`
 
 ## Struktura lekce
 

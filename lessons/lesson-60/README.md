@@ -189,6 +189,8 @@ Až budeš hotový, porovnej se `solutions/` (spoiler). Pak zapoj `Harden` do
 
 ## Ověření
 
+Po dokončení úkolů spusť v Cursoru **`/go-deep-review`** a zadej třeba jen `60`. AI tě postupně projde body níže, doptá se a ověří pochopení — nestačí jen zelené testy.
+
 - [ ] `make lesson L=60` i `make race L=60` prochází
 - [ ] `go test -race ./projects/p05-capstone/...` prochází
 - [ ] `ACCEPTANCE.md` projektu P05 je odškrtaný celý

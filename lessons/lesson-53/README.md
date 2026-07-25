@@ -235,6 +235,8 @@ Až budeš hotový, porovnej se `solutions/` (spoiler).
 
 ## Ověření
 
+Po dokončení úkolů spusť v Cursoru **`/go-deep-review`** a zadej třeba jen `53`. AI tě postupně projde body níže, doptá se a ověří pochopení — nestačí jen zelené testy.
+
 - [ ] `make lesson L=53` prochází
 - [ ] Umíš vysvětlit rozdíl mezi flat a cum ve výstupu `top`
 - [ ] Umíš říct, kdy sáhnout po heap a kdy po allocs profilu

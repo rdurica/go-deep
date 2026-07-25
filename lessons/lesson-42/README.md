@@ -289,6 +289,8 @@ Až budeš hotový, porovnej se `solutions/` (spoiler).
 
 ## Ověření
 
+Po dokončení úkolů spusť v Cursoru **`/go-deep-review`** a zadej třeba jen `42`. AI tě postupně projde body níže, doptá se a ověří pochopení — nestačí jen zelené testy.
+
 - [ ] `make lesson L=42` prochází
 - [ ] `make race L=42` prochází
 - [ ] Umíš vysvětlit, proč `select` vybírá mezi připravenými větvemi náhodně

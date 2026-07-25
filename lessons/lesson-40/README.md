@@ -314,6 +314,8 @@ Až budeš hotový, porovnej se `solutions/` (spoiler).
 
 ## Ověření
 
+Po dokončení úkolů spusť v Cursoru **`/go-deep-review`** a zadej třeba jen `40`. AI tě postupně projde body níže, doptá se a ověří pochopení — nestačí jen zelené testy.
+
 - [ ] `make lesson L=40` prochází
 - [ ] `make race L=40` prochází (žádné hlášení race detektoru)
 - [ ] Umíš vysvětlit, proč je `wg.Add(1)` uvnitř goroutiny chyba

@@ -252,6 +252,8 @@ Až budeš hotový, porovnej se `solutions/` (spoiler).
 
 ## Ověření
 
+Po dokončení úkolů spusť v Cursoru **`/go-deep-review`** a zadej třeba jen `03`. AI tě postupně projde body níže, doptá se a ověří pochopení — nestačí jen zelené testy.
+
 - [ ] `make lesson L=03` prochází
 - [ ] Umíš zpaměti zero value pro slice, mapu, pointer a struct
 - [ ] Umíš vysvětlit, proč `float64(1999/100)` není `19.99`

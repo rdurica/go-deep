@@ -279,6 +279,8 @@ Až budeš hotový, porovnej se `solutions/` (spoiler).
 
 ## Ověření
 
+Po dokončení úkolů spusť v Cursoru **`/go-deep-review`** a zadej třeba jen `55`. AI tě postupně projde body níže, doptá se a ověří pochopení — nestačí jen zelené testy.
+
 - [ ] `make lesson L=55` i `make race L=55` prochází
 - [ ] Umíš vysvětlit, proč se databáze nekontroluje v liveness sondě
 - [ ] Umíš vysvětlit, co udělá shell forma `ENTRYPOINT` se signály

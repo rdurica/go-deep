@@ -305,6 +305,8 @@ Až budeš hotový, porovnej se `solutions/` (spoiler).
 
 ## Ověření
 
+Po dokončení úkolů spusť v Cursoru **`/go-deep-review`** a zadej třeba jen `15`. AI tě postupně projde body níže, doptá se a ověří pochopení — nestačí jen zelené testy.
+
 - [ ] `make lesson L=15` prochází
 - [ ] Umíš vysvětlit rozdíl mezi `int` a `~int` v constraintu
 - [ ] Umíš vysvětlit, proč metoda nemůže mít vlastní type parametry

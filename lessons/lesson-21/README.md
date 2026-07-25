@@ -267,6 +267,8 @@ Až budeš hotový, porovnej se `solutions/` (spoiler).
 
 ## Ověření
 
+Po dokončení úkolů spusť v Cursoru **`/go-deep-review`** a zadej třeba jen `21`. AI tě postupně projde body níže, doptá se a ověří pochopení — nestačí jen zelené testy.
+
 - [ ] `make lesson L=21` prochází
 - [ ] V žádné své chybě nemáš velké počáteční písmeno, tečku ani „failed to"
 - [ ] Nikde v tvém řešení není `_ = err`
