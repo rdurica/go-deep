@@ -21,13 +21,15 @@ type Gen struct {
 
 // New vytvoří generátor s daným prefixem. Prázdný prefix se nahradí "id".
 func New(prefix string) *Gen {
-	panic("TODO: úkol C")
+	// TODO: úkol C
+	return nil
 }
 
 // NewID vrací další identifikátor ve tvaru "<prefix>-000001".
 // Je bezpečné volat ho z více goroutin současně.
 func (g *Gen) NewID() string {
-	panic("TODO: úkol C")
+	// TODO: úkol C
+	return ""
 }
 
 // format sestaví identifikátor z prefixu a pořadového čísla.
