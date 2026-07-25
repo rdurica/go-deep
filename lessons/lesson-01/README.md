@@ -65,6 +65,49 @@ go 1.26
 Každý adresář `lessons/lesson-NN/exercise` je samostatný balíček uvnitř toho modulu.
 Proto se v testech importuje `github.com/rdurica/go-deep/lessons/lesson-01/exercise`.
 
+### Jak se importují balíčky
+
+V PHP napíšeš `use App\Service\Foo;` a autoloader soubor najde. V Go **importuješ cestu**
+a kompilátor podle ní najde adresář. Standardní knihovna má krátké cesty — jen název
+balíčku. Cizí kód a tvoje balíčky v modulu mají cestu začínající názvem modulu.
+
+```go
+package exercise
+
+import (
+	"fmt"     // standardní knihovna
+	"strings" // taky stdlib
+)
+
+func demo() string {
+	return fmt.Sprintf("ahoj, %s", strings.TrimSpace("  Go  "))
+}
+```
+
+Pravidla, která tě budou štípat hned:
+
+- Import patří **nad** funkce, typicky hned po `package …`. Jeden import můžeš napsat
+  jako `import "fmt"`, víc jich dej do závorek — `gofmt` je stejně seřadí.
+- Používáš je jako `balíček.Symbol`: `fmt.Sprintf`, `strings.TrimSpace`. Ne `use` alias
+  ani globální import všech jmen (to v Go skoro nikdo nedělá).
+- Nepoužitý import je **chyba kompilace**, ne varování. Přidáš `fmt`, nepoužiješ ho →
+  program se nezkompiluje. Odebereš volání a import necháš → stejný osud.
+
+Dva balíčky, které v téhle lekci skoro jistě otevřeš:
+
+| Balíček | K čemu je | Typické volání |
+|---------|-----------|----------------|
+| `strings` | práce s textem (ořez, hledání, dělení…) | `strings.TrimSpace(s)` |
+| `fmt` | formátovaný výstup a skládání řetězců | `fmt.Sprintf("x=%d", n)` |
+
+`fmt` je zkratka z *format*. Umí tisknout (`Println`, `Printf`) i **vracet** hotový
+string (`Sprintf`) — něco jako `sprintf` v C nebo skládání přes placeholdery místo
+konkatenace `"a" + $x + "b"`. Placeholdery poznáš podle `%`: `%s` string, `%d` celé
+číslo, `%v` „nějak rozumně vypiš hodnotu". Detailněji až později; pro úkol A a B ti
+stačí `Sprintf` a tyhle tři.
+
+Když nevíš, co funkce dělá: `go doc strings.TrimSpace` nebo `go doc fmt.Sprintf`.
+
 ### Příkazy, které budeš psát každý den
 
 ```bash
@@ -142,6 +185,7 @@ Pracuj v `exercise/`. Postupuj A → B → C, po každé části spusť test.
 
 Implementuj `Greet(name string) string`. Pro prázdné jméno (i po odstranění bílých znaků)
 vrať `"Hello, Go!"`, jinak `"Hello, <name>!"` s ořezanými bílými znaky.
+Hodí se `strings` (ořez) a `fmt` (složení výsledku) — viz sekce o importech výše.
 
 ### B — jádro (~25 min)
 
@@ -167,7 +211,8 @@ Příklady:
 - `Describe([]int{1, 2, 3})` → `"count=3 sum=6 max=3"`
 - `Describe([]int{9, 2, 3})` → `"count=3 sum=14 max=9"`
 - `Describe([]int{-5, -2})` → `"count=2 sum=-7 max=-2"`
-Cíl části B: potkat se s variadickou funkcí, `range` cyklem a `fmt.Sprintf`.
+Cíl části B: potkat se s variadickou funkcí, `range` cyklem a `fmt.Sprintf`
+(import `"fmt"` — stejný blok jako u úkolu A).
 Schválně si zkus nechat nepoužitou proměnnou a přečti si hlášku kompilátoru.
 
 ### C — rozšíření (~25 min, ověřuje se checklistem)
@@ -199,6 +244,7 @@ Až budeš hotový, porovnej se `solutions/` (spoiler).
 - [ ] `make lesson L=01` prochází
 - [ ] Umíš vysvětlit rozdíl mezi modulem, balíčkem a souborem
 - [ ] Umíš vysvětlit, proč se importuje cestou a ne názvem balíčku
+- [ ] Umíš napsat `import` blok a zavolat `fmt.Sprintf` / `strings.TrimSpace`
 - [ ] Víš, co udělá `go vet` navíc oproti kompilátoru
 - [ ] Máš v editoru zapnutý `gofmt` on save
 - [ ] Založil jsi vlastní modul mimo tento repozitář a spustil ho
