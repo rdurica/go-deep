@@ -1,0 +1,245 @@
+package solutions_test
+
+import (
+	"errors"
+	"strings"
+	"testing"
+
+	exercise "github.com/rdurica/go-deep/lessons/lesson-22/solutions"
+)
+
+func TestHandlerFuncSplnujeHandler(t *testing.T) {
+	// Přesně jako u http.HandlerFunc: obyčejná funkce se stane Handlerem.
+	var h exercise.Handler = exercise.HandlerFunc(func(path string) string {
+		return "ahoj " + path
+	})
+
+	if got, want := h.Handle("/svete"), "ahoj /svete"; got != want {
+		t.Errorf("Handle(%q) = %q, chci %q", "/svete", got, want)
+	}
+}
+
+func TestHandlerFuncPredavaCestu(t *testing.T) {
+	var seen []string
+	h := exercise.HandlerFunc(func(path string) string {
+		seen = append(seen, path)
+		return path
+	})
+
+	h.Handle("/a")
+	h.Handle("/b")
+
+	if len(seen) != 2 || seen[0] != "/a" || seen[1] != "/b" {
+		t.Errorf("handler dostal %v, chci [/a /b]", seen)
+	}
+}
+
+// echo vrací handler, který odpoví pevným jménem a cestou.
+func echo(name string) exercise.Handler {
+	return exercise.HandlerFunc(func(path string) string {
+		return name + ":" + path
+	})
+}
+
+func TestMuxZeroValue(t *testing.T) {
+	var mux exercise.Mux // žádný konstruktor, jako http.ServeMux
+
+	if got, want := mux.Handle("/cokoli"), "404 not found: /cokoli"; got != want {
+		t.Errorf("Handle(%q) = %q, chci %q", "/cokoli", got, want)
+	}
+
+	mux.Register("/ping", echo("ping"))
+	if got, want := mux.Handle("/ping"), "ping:/ping"; got != want {
+		t.Errorf("Handle(%q) = %q, chci %q", "/ping", got, want)
+	}
+}
+
+func TestMuxVyberVzoru(t *testing.T) {
+	var mux exercise.Mux
+	mux.Register("/", echo("root"))
+	mux.Register("/api/", echo("api"))
+	mux.Register("/api/users", echo("users"))
+
+	tests := map[string]string{
+		"/":             "root:/",
+		"/index.html":   "root:/index.html",
+		"/api":          "root:/api",
+		"/api/":         "api:/api/",
+		"/api/orders":   "api:/api/orders",
+		"/api/users":    "users:/api/users",
+		"/api/users/42": "api:/api/users/42",
+	}
+	for path, want := range tests {
+		if got := mux.Handle(path); got != want {
+			t.Errorf("Handle(%q) = %q, chci %q", path, got, want)
+		}
+	}
+}
+
+func TestMuxBezVzoruAPrazdnaCesta(t *testing.T) {
+	var mux exercise.Mux
+	mux.Register("/api/", echo("api"))
+
+	if got, want := mux.Handle(""), "404 not found: "; got != want {
+		t.Errorf("Handle(\"\") = %q, chci %q", got, want)
+	}
+	if got, want := mux.Handle("/jinam"), "404 not found: /jinam"; got != want {
+		t.Errorf("Handle(%q) = %q, chci %q", "/jinam", got, want)
+	}
+}
+
+func TestMuxSetNotFound(t *testing.T) {
+	var mux exercise.Mux
+	mux.Register("/ok", echo("ok"))
+	mux.SetNotFound(exercise.HandlerFunc(func(path string) string {
+		return "nemám " + path
+	}))
+
+	if got, want := mux.Handle("/nikde"), "nemám /nikde"; got != want {
+		t.Errorf("Handle(%q) = %q, chci %q", "/nikde", got, want)
+	}
+	if got, want := mux.Handle("/ok"), "ok:/ok"; got != want {
+		t.Errorf("Handle(%q) = %q, chci %q", "/ok", got, want)
+	}
+}
+
+func TestMuxPaniky(t *testing.T) {
+	tests := map[string]func(){
+		"prázdný vzor": func() {
+			var mux exercise.Mux
+			mux.Register("", echo("x"))
+		},
+		"nil handler": func() {
+			var mux exercise.Mux
+			mux.Register("/x", nil)
+		},
+		"duplicitní registrace": func() {
+			var mux exercise.Mux
+			mux.Register("/x", echo("a"))
+			mux.Register("/x", echo("b"))
+		},
+		"nil notFound": func() {
+			var mux exercise.Mux
+			mux.SetNotFound(nil)
+		},
+	}
+
+	for name, fn := range tests {
+		t.Run(name, func(t *testing.T) {
+			defer func() {
+				if recover() == nil {
+					t.Error("chci paniku, žádná nepřišla")
+				}
+			}()
+			fn()
+		})
+	}
+}
+
+func TestMuxJeHandler(t *testing.T) {
+	// *Mux má metodu Handle(string) string, takže sám splňuje Handler
+	// a jde vnořit do jiného Muxu — přesně jako http.ServeMux.
+	inner := &exercise.Mux{}
+	inner.Register("/admin/stats", echo("stats"))
+
+	var outer exercise.Mux
+	outer.Register("/admin/", inner)
+	outer.Register("/", echo("root"))
+
+	var _ exercise.Handler = inner
+
+	if got, want := outer.Handle("/admin/stats"), "stats:/admin/stats"; got != want {
+		t.Errorf("Handle(%q) = %q, chci %q", "/admin/stats", got, want)
+	}
+	if got, want := outer.Handle("/admin/nic"), "404 not found: /admin/nic"; got != want {
+		t.Errorf("Handle(%q) = %q, chci %q", "/admin/nic", got, want)
+	}
+	if got, want := outer.Handle("/"), "root:/"; got != want {
+		t.Errorf("Handle(%q) = %q, chci %q", "/", got, want)
+	}
+}
+
+func TestMarshalPodporovaneTypy(t *testing.T) {
+	var nilSlice []string
+	var nilMap map[string]string
+
+	tests := []struct {
+		name string
+		in   any
+		want string
+	}{
+		{"nil", nil, "null"},
+		{"prázdný string", "", `""`},
+		{"string", "ahoj", `"ahoj"`},
+		{"string s uvozovkami", `he said "hi"`, `"he said \"hi\""`},
+		{"string se zpětným lomítkem", `a\b`, `"a\\b"`},
+		{"string s novým řádkem", "line1\nline2", `"line1\nline2"`},
+		{"string s tabulátorem", "a\tb", `"a\tb"`},
+		{"nula", 0, "0"},
+		{"kladné číslo", 42, "42"},
+		{"záporné číslo", -42, "-42"},
+		{"slice", []string{"a", "b"}, `["a","b"]`},
+		{"slice s escapem", []string{`"`}, `["\""]`},
+		{"prázdný slice", []string{}, "[]"},
+		{"nil slice", nilSlice, "null"},
+		{"mapa se seřazenými klíči", map[string]string{"b": "2", "a": "1", "c": "3"}, `{"a":"1","b":"2","c":"3"}`},
+		{"prázdná mapa", map[string]string{}, "{}"},
+		{"nil mapa", nilMap, "null"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := exercise.Marshal(tt.in)
+			if err != nil {
+				t.Fatalf("Marshal(%#v) vrátil chybu %v, chci nil", tt.in, err)
+			}
+			if got != tt.want {
+				t.Errorf("Marshal(%#v) = %s, chci %s", tt.in, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestMarshalNepodporovaneTypy(t *testing.T) {
+	tests := []struct {
+		in      any
+		wantSub string
+	}{
+		{3.14, "float64"},
+		{[]int{1, 2}, "[]int"},
+		{true, "bool"},
+		{map[string]int{"a": 1}, "map[string]int"},
+		{struct{ A int }{1}, "struct"},
+	}
+
+	for _, tt := range tests {
+		got, err := exercise.Marshal(tt.in)
+		if !errors.Is(err, exercise.ErrUnsupportedType) {
+			t.Fatalf("Marshal(%#v) chyba = %v, chci obalenou ErrUnsupportedType", tt.in, err)
+		}
+		if !strings.Contains(err.Error(), tt.wantSub) {
+			t.Errorf("chyba %q neobsahuje název typu %q", err.Error(), tt.wantSub)
+		}
+		if got != "" {
+			t.Errorf("při chybě chci prázdný výstup, mám %q", got)
+		}
+	}
+}
+
+func TestMarshalVelkaMapaJeDeterministicka(t *testing.T) {
+	m := map[string]string{}
+	for _, k := range []string{"zeta", "alfa", "omega", "beta", "gama", "delta"} {
+		m[k] = strings.ToUpper(k)
+	}
+	want := `{"alfa":"ALFA","beta":"BETA","delta":"DELTA","gama":"GAMA","omega":"OMEGA","zeta":"ZETA"}`
+
+	for i := 0; i < 20; i++ {
+		got, err := exercise.Marshal(m)
+		if err != nil {
+			t.Fatalf("Marshal vrátil chybu %v", err)
+		}
+		if got != want {
+			t.Fatalf("Marshal = %s, chci %s (klíče musí být seřazené)", got, want)
+		}
+	}
+}

@@ -1,0 +1,77 @@
+// Package exercise obsahuje cvičení lekce 29.
+package exercise
+
+import (
+	"context"
+	"errors"
+	"io"
+	"log/slog"
+	"net/http"
+	"time"
+)
+
+// ErrEmptyID je chyba pro prázdné ID předané službě.
+var ErrEmptyID = errors.New("empty id")
+
+// Redacted je náhrada, kterou RedactingHandler dosadí místo tajemství.
+const Redacted = "[REDACTED]"
+
+// NewLogger vrátí logger s JSON handlerem, který píše do w a filtruje podle level.
+func NewLogger(w io.Writer, level slog.Level) *slog.Logger {
+	panic("TODO: úkol A")
+}
+
+// LogRequest zaloguje jeden HTTP požadavek na úrovni Info.
+func LogRequest(logger *slog.Logger, method, path string, status int, dur time.Duration) {
+	panic("TODO: úkol A")
+}
+
+// Service je ukázková služba, která dostává logger konstruktorem.
+type Service struct {
+	log *slog.Logger
+}
+
+// NewService vytvoří službu s odvozeným loggerem.
+func NewService(logger *slog.Logger) *Service {
+	panic("TODO: úkol B")
+}
+
+// Process zpracuje záznam s daným id. Prázdné id je chyba.
+func (s *Service) Process(id string) error {
+	panic("TODO: úkol B")
+}
+
+// RedactingHandler obaluje jiný slog.Handler a maskuje citlivé atributy.
+type RedactingHandler struct {
+	next slog.Handler
+}
+
+// NewRedactingHandler vytvoří handler maskující atributy s citlivými klíči.
+func NewRedactingHandler(next slog.Handler) *RedactingHandler {
+	panic("TODO: úkol B")
+}
+
+// Enabled implementuje slog.Handler.
+func (h *RedactingHandler) Enabled(ctx context.Context, level slog.Level) bool {
+	panic("TODO: úkol B")
+}
+
+// Handle implementuje slog.Handler.
+func (h *RedactingHandler) Handle(ctx context.Context, r slog.Record) error {
+	panic("TODO: úkol B")
+}
+
+// WithAttrs implementuje slog.Handler.
+func (h *RedactingHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
+	panic("TODO: úkol B")
+}
+
+// WithGroup implementuje slog.Handler.
+func (h *RedactingHandler) WithGroup(name string) slog.Handler {
+	panic("TODO: úkol B")
+}
+
+// LoggingMiddleware vrací middleware, který strukturovaně loguje každý požadavek.
+func LoggingMiddleware(logger *slog.Logger) func(http.Handler) http.Handler {
+	panic("TODO: úkol C")
+}

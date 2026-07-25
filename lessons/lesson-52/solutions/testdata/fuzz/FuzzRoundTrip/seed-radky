@@ -1,0 +1,4 @@
+go test fuzz v1
+string("radek\nzlom")
+string("navrat\rvozu")
+int(2147483648)

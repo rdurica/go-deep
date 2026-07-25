@@ -1,0 +1,46 @@
+# Konfigurace pro golangci-lint. Volitelná — kurz běží i bez ní, ale lekce 21
+# (error handling v review) a lekce 23 (AI garbage) se na ni odkazují.
+#
+# Instalace: https://golangci-lint.run/welcome/install/
+# Spuštění:  make lint
+
+run:
+  timeout: 3m
+  tests: true
+
+linters:
+  enable:
+    - errcheck      # ignorované chyby — hlavní téma lekce 21
+    - govet
+    - ineffassign
+    - staticcheck
+    - unused
+    - gosimple
+    - bodyclose     # nezavřené resp.Body — lekce 30
+    - contextcheck  # špatně předávaný context — lekce 27
+    - errorlint     # porovnávání chyb bez errors.Is — lekce 14
+    - misspell
+    - unconvert
+    - wastedassign
+
+linters-settings:
+  errcheck:
+    check-type-assertions: true
+    check-blank: true
+  misspell:
+    locale: US
+
+issues:
+  max-issues-per-linter: 0
+  max-same-issues: 0
+  exclude-rules:
+    # Stuby cvičení záměrně panikují a nic nedělají.
+    - path: lessons/lesson-\d+/exercise/exercise\.go
+      linters:
+        - unused
+        - errcheck
+    # Lekce 44 (race lab) obsahuje záměrně vadný kód.
+    - path: lessons/lesson-44/
+      linters:
+        - errcheck
+        - unused

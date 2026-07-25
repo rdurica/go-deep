@@ -1,0 +1,24 @@
+diff --git a/internal/worker/pool.go b/internal/worker/pool.go
+index 111aaaa..222bbbb 100644
+--- a/internal/worker/pool.go
++++ b/internal/worker/pool.go
+@@ -10,7 +10,7 @@ type Pool struct {
+ 	jobs chan Job
+-	ctx  context.Context
++	wg   sync.WaitGroup
+ }
+@@ -30,6 +30,10 @@ func (p *Pool) Start(n int) {
+ 	for i := 0; i < n; i++ {
+-		go p.worker()
++		p.wg.Add(1)
++		go func() {
++			defer p.wg.Done()
++			p.worker()
++		}()
+ 	}
+ }
+@@ -60,3 +64,7 @@ var defaultSize = 4
+ 
++func newPool(size int) *Pool {
++	return &Pool{jobs: make(chan Job, size)}
++}

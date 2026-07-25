@@ -1,0 +1,31 @@
+diff --git a/internal/httpapi/server.go b/internal/httpapi/server.go
+index 1a2b3c4..5d6e7f8 100644
+--- a/internal/httpapi/server.go
++++ b/internal/httpapi/server.go
+@@ -1,6 +1,7 @@ package httpapi
+ import (
+ 	"encoding/json"
++	"errors"
+ 	"net/http"
+ )
+ 
+@@ -24,9 +25,12 @@ func (s *Server) createBookmark(w http.ResponseWriter, r *http.Request) {
+ 	var req createRequest
+-	json.NewDecoder(r.Body).Decode(&req)
++	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
++		s.writeProblem(w, http.StatusBadRequest, "invalid-json", err)
++		return
++	}
+ 
+ 	b, err := s.svc.Create(r.Context(), req.URL, req.Title)
+ 	if err != nil {
+ 		s.writeProblem(w, http.StatusInternalServerError, "internal", err)
+diff --git a/README.md b/README.md
+index aaaaaaa..bbbbbbb 100644
+--- a/README.md
++++ b/README.md
+@@ -3,3 +3,5 @@ Služba na záložky.
+ 
+ ## Spuštění
++
++    go run ./cmd/bookmarks

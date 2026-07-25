@@ -1,0 +1,29 @@
+# Binárky
+*.exe
+*.test
+*.out
+/bin/
+/dist/
+
+# Go workspace (lokální)
+go.work
+go.work.sum
+
+# IDE / OS
+.idea/
+.vscode/
+*.swp
+.DS_Store
+
+# Pokrytí a profilování
+*.cover
+coverage.html
+*.prof
+cpu.prof
+mem.prof
+
+# Fuzz cache (seed korpus v testdata/ se naopak commituje)
+**/testdata/fuzz/**/[0-9a-f]*
+
+# Python cache generátorů
+__pycache__/
