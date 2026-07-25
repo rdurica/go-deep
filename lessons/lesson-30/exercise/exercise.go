@@ -55,20 +55,24 @@ func Permanent(err error) error {
 
 // NewHTTPClient vrátí klienta s timeoutem a vlastním transportem.
 func NewHTTPClient(timeout time.Duration) *http.Client {
-	panic("TODO: úkol A")
+	// TODO: úkol A
+	return nil
 }
 
 // FetchJSON stáhne URL a rozparsuje odpověď do T.
 func FetchJSON[T any](ctx context.Context, c *http.Client, url string) (T, error) {
-	panic("TODO: úkol A")
+	// TODO: úkol A
+	return *new(T), nil
 }
 
 // Retry volá fn dokud neuspěje, nejvýš attempts krát, s exponenciálním backoffem.
 func Retry(ctx context.Context, attempts int, base time.Duration, fn func(ctx context.Context) error) error {
-	panic("TODO: úkol B")
+	// TODO: úkol B
+	return nil
 }
 
 // RunServer obsluhuje ln, dokud se nezruší ctx, pak server elegantně ukončí.
 func RunServer(ctx context.Context, srv *http.Server, ln net.Listener) error {
-	panic("TODO: úkol C")
+	// TODO: úkol C
+	return nil
 }

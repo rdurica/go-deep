@@ -39,74 +39,87 @@ type Money struct {
 
 // NewMoney vytvoří částku. Měna musí mít tvar přesně tří velkých písmen A–Z.
 func NewMoney(cents int64, c Currency) (Money, error) {
-	panic("TODO: úkol A")
+	// TODO: úkol A
+	return *new(Money), nil
 }
 
 // Cents vrací částku v minoritních jednotkách.
 func (m Money) Cents() int64 {
-	panic("TODO: úkol A")
+	// TODO: úkol A
+	return 0
 }
 
 // Currency vrací měnu částky.
 func (m Money) Currency() Currency {
-	panic("TODO: úkol A")
+	// TODO: úkol A
+	return *new(Currency)
 }
 
 // String implementuje fmt.Stringer, například "19.99 EUR" nebo "-0.05 EUR".
 // Nulová hodnota Money nemá měnu a vypíše se jako "0.00".
 func (m Money) String() string {
-	panic("TODO: úkol A")
+	// TODO: úkol A
+	return ""
 }
 
 // Add vrací novou částku m+o. Různé měny jsou ErrCurrencyMismatch.
 func (m Money) Add(o Money) (Money, error) {
-	panic("TODO: úkol B")
+	// TODO: úkol B
+	return *new(Money), nil
 }
 
 // Sub vrací novou částku m-o. Různé měny jsou ErrCurrencyMismatch.
 func (m Money) Sub(o Money) (Money, error) {
-	panic("TODO: úkol B")
+	// TODO: úkol B
+	return *new(Money), nil
 }
 
 // Mul vrací novou částku vynásobenou celým číslem. Měna se nemění,
 // takže tahle operace nemůže selhat.
 func (m Money) Mul(n int64) Money {
-	panic("TODO: úkol B")
+	// TODO: úkol B
+	return *new(Money)
 }
 
 // IsZero hlásí, jestli je částka nulová. Měna se neposuzuje.
 func (m Money) IsZero() bool {
-	panic("TODO: úkol B")
+	// TODO: úkol B
+	return false
 }
 
 // Neg vrací částku s opačným znaménkem.
 func (m Money) Neg() Money {
-	panic("TODO: úkol B")
+	// TODO: úkol B
+	return *new(Money)
 }
 
 // Compare vrací -1, 0 nebo 1 podle toho, jestli je m menší, stejná nebo větší
 // než o. Různé měny jsou ErrCurrencyMismatch.
 func (m Money) Compare(o Money) (int, error) {
-	panic("TODO: úkol B")
+	// TODO: úkol B
+	return 0, nil
 }
 
 // Allocate rozdělí částku na n dílů tak, že jejich součet je přesně m.
 // Zbylé minoritní jednotky rozdá po jedné od začátku: 100 centů na tři díly
 // dá 34, 33, 33.
 func (m Money) Allocate(n int) ([]Money, error) {
-	panic("TODO: úkol C")
+	// TODO: úkol C
+	return nil, nil
 }
 
 // AllocateRatio rozdělí částku v zadaných poměrech. Součet dílů je přesně m.
 // Poměry musí být nezáporné a jejich součet kladný.
 func (m Money) AllocateRatio(ratios []int) ([]Money, error) {
-	panic("TODO: úkol C")
+	// TODO: úkol C
+	return nil, nil
 }
 
 // ParseMoney přečte částku ve tvaru "19.99 EUR" — přesně dvě desetinná místa
 // a mezera před kódem měny.
 func ParseMoney(s string) (Money, error) {
-	panic("TODO: úkol C")
+	// TODO: úkol C
+	return *new(Money), nil
 }
 
 // moneyRe popisuje část s částkou: volitelné mínus, celá část, tečka

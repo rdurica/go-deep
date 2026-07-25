@@ -63,27 +63,32 @@ type MemoryRepo struct {
 
 // NewMemoryRepo vytvoří prázdný in-memory repozitář.
 func NewMemoryRepo() *MemoryRepo {
-	panic("TODO: úkol A")
+	// TODO: úkol A
+	return nil
 }
 
 // Get vrátí uživatele podle ID. Neznámé ID je chyba obalující ErrNotFound.
 func (r *MemoryRepo) Get(ctx context.Context, id string) (User, error) {
-	panic("TODO: úkol A")
+	// TODO: úkol A
+	return *new(User), nil
 }
 
 // Save uloží uživatele (upsert). Prázdné ID nebo prázdný e-mail je ErrInvalidUser.
 func (r *MemoryRepo) Save(ctx context.Context, u User) error {
-	panic("TODO: úkol A")
+	// TODO: úkol A
+	return nil
 }
 
 // Delete smaže uživatele. Neznámé ID je chyba obalující ErrNotFound.
 func (r *MemoryRepo) Delete(ctx context.Context, id string) error {
-	panic("TODO: úkol A")
+	// TODO: úkol A
+	return nil
 }
 
 // List vrátí všechny uživatele seřazené vzestupně podle ID.
 func (r *MemoryRepo) List(ctx context.Context) ([]User, error) {
-	panic("TODO: úkol A")
+	// TODO: úkol A
+	return nil, nil
 }
 
 // schema je whitelist tabulek a jejich sloupců. Jméno tabulky ani sloupce
@@ -103,7 +108,8 @@ var schema = map[string][]string{
 //	BuildSelect("users", []string{"id", "email"}, map[string]any{"active": true})
 //	-> "SELECT id, email FROM users WHERE active = $1", []any{true}, nil
 func BuildSelect(table string, cols []string, filters map[string]any) (query string, args []any, err error) {
-	panic("TODO: úkol B")
+	// TODO: úkol B
+	return
 }
 
 // Migration je jedna dopředná migrace schématu. Verze je pořadí, Up je SQL.
@@ -119,7 +125,8 @@ type Migration struct {
 // ErrDuplicateVersion, aplikovaná verze chybějící v seznamu je ErrDrift
 // (někdo smazal migraci, která už na produkci proběhla).
 func Plan(applied []int, all []Migration) ([]Migration, error) {
-	panic("TODO: úkol C")
+	// TODO: úkol C
+	return nil, nil
 }
 
 // allowedColumn hlásí, jestli je sloupec ve whitelistu dané tabulky.

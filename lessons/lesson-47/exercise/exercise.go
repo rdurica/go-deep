@@ -25,26 +25,28 @@ type Group struct {
 // WithContext vrátí skupinu a odvozený kontext, který se zruší, jakmile
 // první úloha vrátí chybu — nebo až Wait skončí, podle toho, co nastane dřív.
 func WithContext(ctx context.Context) (*Group, context.Context) {
-	panic("TODO: úkol B")
+	// TODO: úkol B
+	return nil, *new(context.Context)
 }
 
 // SetLimit omezí počet souběžně běžících úloh. Pro n <= 0 se limit zruší.
 // Volání po prvním Go panikuje — limit se za běhu měnit nedá.
 func (g *Group) SetLimit(n int) {
-	panic("TODO: úkol B")
+	// TODO: úkol B
 }
 
 // Go spustí f v nové goroutině. Při nastaveném limitu blokuje, dokud se
 // neuvolní místo. Chybu si skupina zapamatuje jen z prvního neúspěchu.
 // Nil funkce se tiše přeskočí.
 func (g *Group) Go(f func() error) {
-	panic("TODO: úkol A")
+	// TODO: úkol A
 }
 
 // Wait počká na všechny úlohy a vrátí chybu té, která selhala jako první.
 // Pokud skupina vznikla přes WithContext, Wait odvozený kontext zruší.
 func (g *Group) Wait() error {
-	panic("TODO: úkol A")
+	// TODO: úkol A
+	return nil
 }
 
 // Task je jedna pojmenovaná úloha pro RunAll.
@@ -64,11 +66,13 @@ type Task struct {
 // zrušení (context.WithoutCancel), takže doběhnou i po zrušení rodiče.
 // Chyba úlohy se obalí jménem úlohy; vrací se první z nich.
 func RunAll(ctx context.Context, tasks []Task) error {
-	panic("TODO: úkol C")
+	// TODO: úkol C
+	return nil
 }
 
 // Cause rozbalí řetězec chyb až na tu nejhlubší a vrátí ji.
 // Pro nil vrací nil, pro chybu bez Unwrap vrací ji samotnou.
 func Cause(err error) error {
-	panic("TODO: úkol C")
+	// TODO: úkol C
+	return nil
 }

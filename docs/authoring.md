@@ -24,7 +24,7 @@ zažité, a kde ho jeho reflexy zradí.
 lessons/lesson-NN/
   README.md
   exercise/
-    exercise.go          # package exercise, stuby s panic("TODO: úkol X")
+    exercise.go          # package exercise, stuby s // TODO: úkol X + zero return
     exercise_test.go     # package exercise_test, JEDINÝ zdroj testů
   solutions/
     exercise.go          # package solutions, kompletní řešení
@@ -134,8 +134,10 @@ Správně vypadá cvičení tak, že student musí použít přesně tu konstruk
 - Cílová verze Go 1.26.
 - Všechno projde `gofmt -l` (nic nevypíše) a `go vet ./...`.
 - Exportované identifikátory mají doc comment začínající jménem identifikátoru.
-- Stuby v `exercise/` panikují: `panic("TODO: úkol B")`. Typy, konstanty a signatury
-  jsou předvyplněné, aby se balíček zkompiloval.
+- Stuby v `exercise/` nepanikují — mají `// TODO: úkol B` a vrací zero value
+  (`""`, `0`, `nil`, `*new(T)` u pojmenovaných typů). Void funkce mají jen komentář;
+  funkce s `t *testing.T` volají `t.Fatal("TODO: …")`. Typy, konstanty a signatury
+  jsou předvyplněné, aby se balíček zkompiloval a `go test` padal přes `t.Error`/`t.Fatal`.
 - Řešení v `solutions/` musí být idiomatické — je to zároveň ukázka stylu.
 
 ## Testy
@@ -165,6 +167,6 @@ Lekce 18, 23, 31, 39, 50, 55 a 60 jsou checkpointy. Liší se takto:
 gofmt -l lessons/lesson-NN
 ./scripts/mirror_tests.sh NN
 (cd lessons/lesson-NN/solutions && go test -count=1 .)   # musí projít
-(cd lessons/lesson-NN/exercise  && go test -count=1 .)   # musí spadnout na TODO
+(cd lessons/lesson-NN/exercise  && go test -count=1 .)   # musí spadnout (neúplné stuby)
 go vet ./lessons/lesson-NN/...
 ```

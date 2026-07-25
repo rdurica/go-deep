@@ -30,30 +30,36 @@ type Service struct {
 
 // NewService složí službu z portů.
 func NewService(repo Repository, ids IDGen) *Service {
-	panic("TODO: úkol B")
+	// TODO: úkol B
+	return nil
 }
 
 // Place založí novou objednávku a uloží ji.
 func (s *Service) Place(ctx context.Context, lines []order.Line) (order.Order, error) {
-	panic("TODO: úkol B")
+	// TODO: úkol B
+	return *new(order.Order), nil
 }
 
 // Get vrátí objednávku podle ID.
 func (s *Service) Get(ctx context.Context, id string) (order.Order, error) {
-	panic("TODO: úkol B")
+	// TODO: úkol B
+	return *new(order.Order), nil
 }
 
 // Pay zaplatí objednávku.
 func (s *Service) Pay(ctx context.Context, id string) (order.Order, error) {
-	panic("TODO: úkol B")
+	// TODO: úkol B
+	return *new(order.Order), nil
 }
 
 // Ship odešle objednávku.
 func (s *Service) Ship(ctx context.Context, id string) (order.Order, error) {
-	panic("TODO: úkol B")
+	// TODO: úkol B
+	return *new(order.Order), nil
 }
 
 // Cancel zruší objednávku.
 func (s *Service) Cancel(ctx context.Context, id string) (order.Order, error) {
-	panic("TODO: úkol B")
+	// TODO: úkol B
+	return *new(order.Order), nil
 }

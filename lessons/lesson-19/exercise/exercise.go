@@ -57,35 +57,42 @@ type Invoice struct {
 
 // ParseUserID převede textové ID na kladné celé číslo.
 func ParseUserID(raw string) (int, error) {
-	panic("TODO: úkol A")
+	// TODO: úkol A
+	return 0, nil
 }
 
 // ParseUserIDs převede čárkami oddělený seznam ID na slice čísel.
 func ParseUserIDs(raw string) ([]int, error) {
-	panic("TODO: úkol A")
+	// TODO: úkol A
+	return nil, nil
 }
 
 // ProcessOrders agreguje objednávky do souhrnu.
 func ProcessOrders(orders []Order) (Summary, error) {
-	panic("TODO: úkol B")
+	// TODO: úkol B
+	return *new(Summary), nil
 }
 
 // RenderInvoice vykreslí fakturu do textové podoby.
 func RenderInvoice(inv Invoice) string {
-	panic("TODO: úkol C")
+	// TODO: úkol C
+	return ""
 }
 
 // renderHeader vykreslí hlavičku faktury včetně oddělovače.
 func renderHeader(inv Invoice) string {
-	panic("TODO: úkol C")
+	// TODO: úkol C
+	return ""
 }
 
 // renderLines vykreslí položky faktury.
 func renderLines(lines []InvoiceLine) string {
-	panic("TODO: úkol C")
+	// TODO: úkol C
+	return ""
 }
 
 // renderTotal vykreslí oddělovač a celkovou částku.
 func renderTotal(totalCents int) string {
-	panic("TODO: úkol C")
+	// TODO: úkol C
+	return ""
 }

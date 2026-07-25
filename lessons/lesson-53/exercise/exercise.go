@@ -44,30 +44,36 @@ func IsWordRune(r rune) bool {
 
 // SumDigits sečte desítkové číslice v řetězci bez jediné alokace.
 func SumDigits(s string) int {
-	panic("TODO: úkol A")
+	// TODO: úkol A
+	return 0
 }
 
 // CountWords spočítá výskyty slov (case-insensitive) s minimem alokací.
 func CountWords(text string) map[string]int {
-	panic("TODO: úkol B")
+	// TODO: úkol B
+	return nil
 }
 
 // JoinIDs spojí čísla čárkou do jednoho řetězce.
 func JoinIDs(ids []int) string {
-	panic("TODO: úkol B")
+	// TODO: úkol B
+	return ""
 }
 
 // CaptureCPUProfile spustí f a zapíše CPU profil jejího běhu do w.
 func CaptureCPUProfile(w io.Writer, f func()) error {
-	panic("TODO: úkol C")
+	// TODO: úkol C
+	return nil
 }
 
 // CaptureHeapProfile zapíše aktuální heap profil do w.
 func CaptureHeapProfile(w io.Writer) error {
-	panic("TODO: úkol C")
+	// TODO: úkol C
+	return nil
 }
 
 // PprofHandler vrátí handler s pprof endpointy na vlastním muxu.
 func PprofHandler() http.Handler {
-	panic("TODO: úkol C")
+	// TODO: úkol C
+	return *new(http.Handler)
 }

@@ -28,22 +28,26 @@ const (
 
 // String implementuje fmt.Stringer.
 func (s Status) String() string {
-	panic("TODO: úkol A")
+	// TODO: úkol A
+	return ""
 }
 
 // ParseStatus převede jméno stavu (case-insensitive) na Status.
 func ParseStatus(s string) (Status, error) {
-	panic("TODO: úkol A")
+	// TODO: úkol A
+	return *new(Status), nil
 }
 
 // Fold převede text na malá písmena bez diakritiky.
 func Fold(s string) string {
-	panic("TODO: úkol A")
+	// TODO: úkol A
+	return ""
 }
 
 // Slug převede titulek na URL-bezpečný tvar bez diakritiky.
 func Slug(title string) string {
-	panic("TODO: úkol A")
+	// TODO: úkol A
+	return ""
 }
 
 // ADR je záznam architektonického rozhodnutí.
@@ -59,22 +63,26 @@ type ADR struct {
 
 // Filename vrací jméno souboru ADR, například "0007-use-stdlib-router.md".
 func (a ADR) Filename() string {
-	panic("TODO: úkol A")
+	// TODO: úkol A
+	return ""
 }
 
 // Render vykreslí ADR jako markdown dokument.
 func (a ADR) Render() string {
-	panic("TODO: úkol B")
+	// TODO: úkol B
+	return ""
 }
 
 // ParseADR rozebere markdown vyrobený metodou Render zpět na ADR.
 func ParseADR(s string) (ADR, error) {
-	panic("TODO: úkol B")
+	// TODO: úkol B
+	return *new(ADR), nil
 }
 
 // Index vygeneruje markdown tabulku všech ADR seřazenou podle čísla.
 func Index(adrs []ADR) string {
-	panic("TODO: úkol B")
+	// TODO: úkol B
+	return ""
 }
 
 // Severity je závažnost nálezu v kontrole specifikace.
@@ -89,7 +97,8 @@ const (
 
 // String implementuje fmt.Stringer.
 func (s Severity) String() string {
-	panic("TODO: úkol C")
+	// TODO: úkol C
+	return ""
 }
 
 // Rule je jedno pravidlo kontroly specifikace.
@@ -114,15 +123,18 @@ type SpecCheck struct {
 
 // DefaultSpecCheck vrací výchozí sadu pravidel pro spec-first zadání.
 func DefaultSpecCheck() SpecCheck {
-	panic("TODO: úkol C")
+	// TODO: úkol C
+	return *new(SpecCheck)
 }
 
 // Check projde specifikaci a vrátí nálezy v pořadí pravidel.
 func (c SpecCheck) Check(spec string) []Finding {
-	panic("TODO: úkol C")
+	// TODO: úkol C
+	return nil
 }
 
 // CheckSpec zkontroluje specifikaci výchozí sadou pravidel.
 func CheckSpec(spec string) []Finding {
-	panic("TODO: úkol C")
+	// TODO: úkol C
+	return nil
 }

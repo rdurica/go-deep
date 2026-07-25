@@ -13,17 +13,20 @@ type Amount struct {
 
 // New vytvoří částku z celých centů.
 func New(cents int64) Amount {
-	panic("TODO: úkol A")
+	// TODO: úkol A
+	return *new(Amount)
 }
 
 // Cents vrací částku v celých centech.
 func (a Amount) Cents() int64 {
-	panic("TODO: úkol A")
+	// TODO: úkol A
+	return 0
 }
 
 // String vrací částku ve tvaru s dvěma desetinnými místy, například "-2.50".
 func (a Amount) String() string {
-	panic("TODO: úkol A")
+	// TODO: úkol A
+	return ""
 }
 
 // SumCents sečte částky a vrátí výsledek v centech.
@@ -31,12 +34,14 @@ func (a Amount) String() string {
 // Funkce je uvnitř balíčku money, takže smí sáhnout přímo na pole cents
 // cizích instancí bez volání metody Cents.
 func SumCents(amounts []Amount) int64 {
-	panic("TODO: úkol C")
+	// TODO: úkol C
+	return 0
 }
 
 // Split rozdělí částku na n dílů tak, aby se žádný cent neztratil.
 // Zbytek po dělení se rozdá po jednom centu od prvního dílu.
 // Pro n <= 0 vrací (nil, false).
 func Split(a Amount, n int) ([]Amount, bool) {
-	panic("TODO: úkol C")
+	// TODO: úkol C
+	return nil, false
 }

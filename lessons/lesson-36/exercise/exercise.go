@@ -38,17 +38,20 @@ type Email struct {
 
 // ParseEmail normalizuje a ověří e-mailovou adresu.
 func ParseEmail(s string) (Email, error) {
-	panic("TODO: úkol A")
+	// TODO: úkol A
+	return *new(Email), nil
 }
 
 // String vrací normalizovanou podobu adresy.
 func (e Email) String() string {
-	panic("TODO: úkol A")
+	// TODO: úkol A
+	return ""
 }
 
 // IsZero vrací true pro nulovou hodnotu, tedy pro Email vyrobený bez ParseEmail.
 func (e Email) IsZero() bool {
-	panic("TODO: úkol A")
+	// TODO: úkol A
+	return false
 }
 
 // Username je ověřené uživatelské jméno.
@@ -58,12 +61,14 @@ type Username struct {
 
 // ParseUsername ořízne bílé znaky a ověří tvar uživatelského jména.
 func ParseUsername(s string) (Username, error) {
-	panic("TODO: úkol A")
+	// TODO: úkol A
+	return *new(Username), nil
 }
 
 // String vrací uživatelské jméno.
 func (u Username) String() string {
-	panic("TODO: úkol A")
+	// TODO: úkol A
+	return ""
 }
 
 // ValidationErrors je mapa pole → důvod zamítnutí. Implementuje error.
@@ -71,7 +76,8 @@ type ValidationErrors map[string]string
 
 // Error implementuje error. Výpis je deterministický, pole jsou seřazená.
 func (v ValidationErrors) Error() string {
-	panic("TODO: úkol B")
+	// TODO: úkol B
+	return ""
 }
 
 // Validator umí ověřit sám sebe. Splňují ho DTO na hranici systému.
@@ -89,12 +95,14 @@ type CreateUserRequest struct {
 // Validate ověří všechna pole najednou a vrátí ValidationErrors,
 // nebo nil, pokud je požadavek v pořádku.
 func (r CreateUserRequest) Validate() error {
-	panic("TODO: úkol B")
+	// TODO: úkol B
+	return nil
 }
 
 // DecodeAndValidate dekóduje JSON tělo požadavku do T a zavolá jeho Validate.
 func DecodeAndValidate[T Validator](r *http.Request) (T, error) {
-	panic("TODO: úkol B")
+	// TODO: úkol B
+	return *new(T), nil
 }
 
 // ProblemContentType je hodnota hlavičky Content-Type podle RFC 7807.
@@ -111,15 +119,16 @@ type ProblemDetails struct {
 
 // WriteProblem zapíše odpověď ve tvaru problem+json.
 func WriteProblem(w http.ResponseWriter, status int, title, detail string, fields map[string]string) {
-	panic("TODO: úkol C")
+	// TODO: úkol C
 }
 
 // ErrorHandler přeloží chybu na HTTP status a tělo odpovědi.
 func ErrorHandler(err error) (int, ProblemDetails) {
-	panic("TODO: úkol C")
+	// TODO: úkol C
+	return 0, *new(ProblemDetails)
 }
 
 // WriteError přeloží chybu přes ErrorHandler a zapíše ji přes WriteProblem.
 func WriteError(w http.ResponseWriter, err error) {
-	panic("TODO: úkol C")
+	// TODO: úkol C
 }

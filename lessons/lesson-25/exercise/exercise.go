@@ -112,25 +112,30 @@ func WriteJSON(w http.ResponseWriter, status int, v any) error {
 
 // ItemsRouter vrací router nad úložištěm položek.
 func ItemsRouter(store *Store) http.Handler {
-	panic("TODO: úkol A")
+	// TODO: úkol A
+	return *new(http.Handler)
 }
 
 // ParseListQuery přečte a zvaliduje query parametry limit a q.
 func ParseListQuery(values url.Values) (limit int, q string, err error) {
-	panic("TODO: úkol B")
+	// TODO: úkol B
+	return
 }
 
 // SafeJoin složí cestu k souboru pod kořenem root a odmítne pokus o únik z něj.
 func SafeJoin(root, rel string) (string, error) {
-	panic("TODO: úkol C")
+	// TODO: úkol C
+	return "", nil
 }
 
 // FilesHandler servíruje soubory pod adresářem root podle wildcardu {path...}.
 func FilesHandler(root string) http.Handler {
-	panic("TODO: úkol C")
+	// TODO: úkol C
+	return *new(http.Handler)
 }
 
 // FilesRouter registruje FilesHandler na vzor "GET /files/{path...}".
 func FilesRouter(root string) http.Handler {
-	panic("TODO: úkol C")
+	// TODO: úkol C
+	return *new(http.Handler)
 }

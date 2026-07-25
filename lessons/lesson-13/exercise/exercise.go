@@ -15,41 +15,49 @@ type CountingWriter struct {
 
 // WriteReport zapíše číslovaný seznam řádků a souhrn na konci.
 func WriteReport(w io.Writer, lines []string) error {
-	panic("TODO: úkol A")
+	// TODO: úkol A
+	return nil
 }
 
 // CountLines spočítá řádky přečtené z r.
 func CountLines(r io.Reader) (int, error) {
-	panic("TODO: úkol B")
+	// TODO: úkol B
+	return 0, nil
 }
 
 // NewUpperReader vrací Reader, který za běhu převádí ASCII písmena na velká.
 func NewUpperReader(r io.Reader) io.Reader {
-	panic("TODO: úkol B")
+	// TODO: úkol B
+	return *new(io.Reader)
 }
 
 // Tail vrací posledních n řádků ze vstupu.
 func Tail(r io.Reader, n int) ([]string, error) {
-	panic("TODO: úkol B")
+	// TODO: úkol B
+	return nil, nil
 }
 
 // Write implementuje io.Writer.
 func (cw *CountingWriter) Write(p []byte) (int, error) {
-	panic("TODO: úkol C")
+	// TODO: úkol C
+	return 0, nil
 }
 
 // Bytes vrací počet úspěšně zapsaných bajtů.
 func (cw *CountingWriter) Bytes() int64 {
-	panic("TODO: úkol C")
+	// TODO: úkol C
+	return 0
 }
 
 // Lines vrací počet zapsaných znaků nového řádku.
 func (cw *CountingWriter) Lines() int {
-	panic("TODO: úkol C")
+	// TODO: úkol C
+	return 0
 }
 
 // Pipeline přečte src po řádcích, na každý řádek zavolá transform
 // a výsledek zapíše do dst. Vrací počet zpracovaných řádků.
 func Pipeline(src io.Reader, dst io.Writer, transform func(string) string) (int, error) {
-	panic("TODO: úkol C")
+	// TODO: úkol C
+	return 0, nil
 }

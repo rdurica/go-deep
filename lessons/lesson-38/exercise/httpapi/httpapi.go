@@ -12,5 +12,6 @@ const ProblemContentType = "application/problem+json"
 
 // NewHandler složí router služby nad aplikační vrstvou.
 func NewHandler(svc *app.Service) http.Handler {
-	panic("TODO: úkol C")
+	// TODO: úkol C
+	return *new(http.Handler)
 }

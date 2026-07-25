@@ -57,7 +57,8 @@ type RoomID string
 // ParseRoomID normalizuje a ověří číslo pokoje.
 // Tvar je jedno písmeno, pomlčka a tři číslice; "A-000" neexistuje.
 func ParseRoomID(s string) (RoomID, error) {
-	panic("TODO: úkol A")
+	// TODO: úkol A
+	return *new(RoomID), nil
 }
 
 // DateRange je polootevřený interval pobytu <From, To).
@@ -68,7 +69,8 @@ type DateRange struct {
 
 // NewDateRange ověří termín a zarovná ho na celé dny v UTC.
 func NewDateRange(from, to time.Time) (DateRange, error) {
-	panic("TODO: úkol A")
+	// TODO: úkol A
+	return *new(DateRange), nil
 }
 
 // From vrací první noc pobytu.
@@ -79,13 +81,15 @@ func (d DateRange) To() time.Time { return d.to }
 
 // Nights vrací počet nocí.
 func (d DateRange) Nights() int {
-	panic("TODO: úkol A")
+	// TODO: úkol A
+	return 0
 }
 
 // Overlaps vrací true, pokud se termíny překrývají.
 // Interval je polootevřený, takže odjezd v den příjezdu dalšího hosta je v pořádku.
 func (d DateRange) Overlaps(other DateRange) bool {
-	panic("TODO: úkol A")
+	// TODO: úkol A
+	return false
 }
 
 // String vrací termín ve tvaru "2024-05-17..2024-05-20".
@@ -114,12 +118,14 @@ type ValidationErrors []FieldError
 
 // Error implementuje error.
 func (v ValidationErrors) Error() string {
-	panic("TODO: úkol C")
+	// TODO: úkol C
+	return ""
 }
 
 // Get vrátí chybu pro dané pole, pokud tam je.
 func (v ValidationErrors) Get(field string) (FieldError, bool) {
-	panic("TODO: úkol C")
+	// TODO: úkol C
+	return *new(FieldError), false
 }
 
 // CreateBookingRequest je DTO na hranici systému.
@@ -135,7 +141,8 @@ type CreateBookingRequest struct {
 // Validate ověří všechna pole najednou a vrátí ValidationErrors,
 // nebo nil, pokud je požadavek v pořádku.
 func (r CreateBookingRequest) Validate() error {
-	panic("TODO: úkol C")
+	// TODO: úkol C
+	return nil
 }
 
 // Repository je port persistence, definovaný u svého konzumenta.
@@ -152,17 +159,20 @@ type MemoryRepo struct {
 
 // NewMemoryRepo vytvoří prázdné úložiště.
 func NewMemoryRepo() *MemoryRepo {
-	panic("TODO: úkol B")
+	// TODO: úkol B
+	return nil
 }
 
 // Save uloží rezervaci. Duplicitní reference vrací ErrDuplicateRef.
 func (r *MemoryRepo) Save(ctx context.Context, b Booking) error {
-	panic("TODO: úkol B")
+	// TODO: úkol B
+	return nil
 }
 
 // ByRoom vrátí rezervace pokoje seřazené podle začátku pobytu.
 func (r *MemoryRepo) ByRoom(ctx context.Context, room RoomID) ([]Booking, error) {
-	panic("TODO: úkol B")
+	// TODO: úkol B
+	return nil, nil
 }
 
 // Metrics je minimální registr čítačů. Nulová hodnota je použitelná.
@@ -173,12 +183,13 @@ type Metrics struct {
 
 // Inc zvýší čítač o jedna.
 func (m *Metrics) Inc(name string) {
-	panic("TODO: úkol B")
+	// TODO: úkol B
 }
 
 // Snapshot vrátí kopii čítačů.
 func (m *Metrics) Snapshot() map[string]int64 {
-	panic("TODO: úkol B")
+	// TODO: úkol B
+	return nil
 }
 
 // Service je aplikační služba rezervací.
@@ -200,7 +211,8 @@ func (s *Service) Metrics() *Metrics { return s.metrics }
 
 // Book ověří požadavek, zkontroluje obsazenost a rezervaci uloží.
 func (s *Service) Book(ctx context.Context, req CreateBookingRequest) (Booking, error) {
-	panic("TODO: úkol B")
+	// TODO: úkol B
+	return *new(Booking), nil
 }
 
 // ProblemContentType je Content-Type chybové odpovědi podle RFC 7807.
@@ -216,5 +228,6 @@ type Problem struct {
 
 // Handler je HTTP adaptér nad službou.
 func Handler(svc *Service) http.Handler {
-	panic("TODO: úkol C")
+	// TODO: úkol C
+	return *new(http.Handler)
 }

@@ -18,7 +18,8 @@ const (
 
 // String implementuje fmt.Stringer.
 func (s Severity) String() string {
-	panic("TODO: úkol A")
+	// TODO: úkol A
+	return ""
 }
 
 // CheckItem je jedna položka review checklistu.
@@ -31,7 +32,8 @@ type CheckItem struct {
 // MergeChecklists spojí základní a osobní checklist. Osobní položka se stejným ID
 // přepíše základní, pořadí základních položek zůstává zachované.
 func MergeChecklists(base, personal []CheckItem) []CheckItem {
-	panic("TODO: úkol A")
+	// TODO: úkol A
+	return nil
 }
 
 // Role je role v pairing session s agentem.
@@ -49,7 +51,8 @@ const (
 
 // String implementuje fmt.Stringer.
 func (r Role) String() string {
-	panic("TODO: úkol B")
+	// TODO: úkol B
+	return ""
 }
 
 // Chyby pairing session.
@@ -81,32 +84,38 @@ type Session struct {
 // NewSession vytvoří session. Hodiny se předávají jako závislost kvůli testovatelnosti;
 // nil znamená time.Now.
 func NewSession(now func() time.Time) *Session {
-	panic("TODO: úkol B")
+	// TODO: úkol B
+	return nil
 }
 
 // Current vrací aktuální roli.
 func (s *Session) Current() Role {
-	panic("TODO: úkol B")
+	// TODO: úkol B
+	return *new(Role)
 }
 
 // Start zahájí session v dané roli.
 func (s *Session) Start(r Role) error {
-	panic("TODO: úkol B")
+	// TODO: úkol B
+	return nil
 }
 
 // Handoff předá session další roli. Důvod je povinný.
 func (s *Session) Handoff(to Role, reason string) error {
-	panic("TODO: úkol B")
+	// TODO: úkol B
+	return nil
 }
 
 // Finish uzavře session. Jde to jen z role review.
 func (s *Session) Finish() error {
-	panic("TODO: úkol B")
+	// TODO: úkol B
+	return nil
 }
 
 // Timeline vrací kopii historie přechodů.
 func (s *Session) Timeline() []Event {
-	panic("TODO: úkol B")
+	// TODO: úkol B
+	return nil
 }
 
 // Finding je jeden nález review drilu.
@@ -127,10 +136,12 @@ type Score struct {
 
 // RecommendLesson vrací doporučení k zopakování podle kategorie zmeškaného nálezu.
 func RecommendLesson(category string) string {
-	panic("TODO: úkol C")
+	// TODO: úkol C
+	return ""
 }
 
 // ScoreReview porovná nalezené nálezy s nastraženými a spočítá precision a recall.
 func ScoreReview(found, planted []Finding) Score {
-	panic("TODO: úkol C")
+	// TODO: úkol C
+	return *new(Score)
 }

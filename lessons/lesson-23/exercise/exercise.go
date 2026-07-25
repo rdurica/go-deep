@@ -30,12 +30,14 @@ type Loader interface {
 
 // Describe vrátí čitelný popis položky ve tvaru "Name: Qty ks".
 func Describe(l Loader, sku string) (string, error) {
-	panic("TODO: úkol A")
+	// TODO: úkol A
+	return "", nil
 }
 
 // LoadRecords načte položky z textového vstupu ve tvaru sku;name;qty.
 func LoadRecords(r io.Reader) ([]Record, error) {
-	panic("TODO: úkol B")
+	// TODO: úkol B
+	return nil, nil
 }
 
 // Store je sklad v paměti. Jeho zero value je prázdný, použitelný sklad.
@@ -45,30 +47,36 @@ type Store struct {
 
 // Put uloží nebo přepíše položku.
 func (s *Store) Put(r Record) error {
-	panic("TODO: úkol C")
+	// TODO: úkol C
+	return nil
 }
 
 // PutAll uloží všechny platné položky a spojí chyby těch neplatných.
 func (s *Store) PutAll(records []Record) error {
-	panic("TODO: úkol C")
+	// TODO: úkol C
+	return nil
 }
 
 // Load vrací položku podle SKU, a tím Store splňuje Loader.
 func (s *Store) Load(sku string) (Record, error) {
-	panic("TODO: úkol C")
+	// TODO: úkol C
+	return *new(Record), nil
 }
 
 // Remove smaže položku podle SKU.
 func (s *Store) Remove(sku string) error {
-	panic("TODO: úkol C")
+	// TODO: úkol C
+	return nil
 }
 
 // List vrací všechny položky seřazené podle SKU.
 func (s *Store) List() []Record {
-	panic("TODO: úkol C")
+	// TODO: úkol C
+	return nil
 }
 
 // TotalQty vrací součet množství všech položek.
 func (s *Store) TotalQty() int {
-	panic("TODO: úkol C")
+	// TODO: úkol C
+	return 0
 }

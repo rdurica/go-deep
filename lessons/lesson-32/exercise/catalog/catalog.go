@@ -48,25 +48,29 @@ type Catalog struct {
 // Validate ověří jeden produkt. Kontroluje v pořadí SKU, jméno, cenu
 // a vrací odpovídající sentinel obalený jménem produktu.
 func Validate(p Product) error {
-	panic("TODO: úkol A")
+	// TODO: úkol A
+	return nil
 }
 
 // New sestaví katalog ze zadaných produktů. Každý produkt projde Validate,
 // duplicitní SKU je chyba. Prázdný vstup dává prázdný katalog, ne chybu.
 func New(products ...Product) (*Catalog, error) {
-	panic("TODO: úkol A")
+	// TODO: úkol A
+	return nil, nil
 }
 
 // BySKU vrací produkt podle SKU. Neznámé SKU (i nil katalog) vrací chybu
 // obalující ErrNotFound.
 func (c *Catalog) BySKU(sku string) (Product, error) {
-	panic("TODO: úkol A")
+	// TODO: úkol A
+	return *new(Product), nil
 }
 
 // All vrací všechny produkty seřazené vzestupně podle SKU. Mapa nemá pořadí,
 // takže řazení je součástí kontraktu.
 func (c *Catalog) All() []Product {
-	panic("TODO: úkol A")
+	// TODO: úkol A
+	return nil
 }
 
 // norm je pomocník pro ořez bílých znaků. Malé písmeno = neviditelné mimo

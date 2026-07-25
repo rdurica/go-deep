@@ -47,7 +47,8 @@ type SystemClock struct{}
 
 // Now vrací aktuální systémový čas.
 func (SystemClock) Now() time.Time {
-	panic("TODO: úkol C")
+	// TODO: úkol C
+	return *new(time.Time)
 }
 
 // RandomIDGen je driven adaptér portu IDGen nad crypto/rand.
@@ -55,7 +56,8 @@ type RandomIDGen struct{}
 
 // NewID vrací 32 hexadecimálních znaků, tedy 16 náhodných bajtů.
 func (RandomIDGen) NewID() string {
-	panic("TODO: úkol C")
+	// TODO: úkol C
+	return ""
 }
 
 // Order je objednávka. Je to hodnotový typ — porovnatelný přes ==, protože
@@ -78,13 +80,15 @@ type Service struct {
 // NewService sestaví službu ze dvou portů. Chybějící port vrací
 // ErrMissingDependency.
 func NewService(clock Clock, ids IDGen) (*Service, error) {
-	panic("TODO: úkol A")
+	// TODO: úkol A
+	return nil, nil
 }
 
 // NewOrder sestaví novou objednávku. Jméno zákazníka ořízne o bílé znaky,
 // prázdné jméno je ErrEmptyCustomer, nekladná částka ErrInvalidTotal.
 func (s *Service) NewOrder(customer string, totalCents int64) (Order, error) {
-	panic("TODO: úkol A")
+	// TODO: úkol A
+	return *new(Order), nil
 }
 
 // MemoryStore je in-memory adaptér portu OrderStore. Je bezpečný pro
@@ -96,17 +100,20 @@ type MemoryStore struct {
 
 // NewMemoryStore vytvoří prázdné úložiště.
 func NewMemoryStore() *MemoryStore {
-	panic("TODO: úkol B")
+	// TODO: úkol B
+	return nil
 }
 
 // Save uloží objednávku; existující se stejným ID přepíše.
 func (s *MemoryStore) Save(o Order) error {
-	panic("TODO: úkol B")
+	// TODO: úkol B
+	return nil
 }
 
 // Get vrací objednávku podle ID a příznak, jestli existuje.
 func (s *MemoryStore) Get(id string) (Order, bool) {
-	panic("TODO: úkol B")
+	// TODO: úkol B
+	return *new(Order), false
 }
 
 // FailingStore je adaptér, který při zápisu vždy selže. Slouží k testům
@@ -118,12 +125,14 @@ type FailingStore struct {
 
 // Save vždy vrací nastavenou chybu.
 func (s FailingStore) Save(o Order) error {
-	panic("TODO: úkol B")
+	// TODO: úkol B
+	return nil
 }
 
 // Get vrací objednávku z předvyplněné mapy.
 func (s FailingStore) Get(id string) (Order, bool) {
-	panic("TODO: úkol B")
+	// TODO: úkol B
+	return *new(Order), false
 }
 
 // OrderService je doménová služba nad úložištěm. Skládá tři porty a nezná
@@ -136,28 +145,33 @@ type OrderService struct {
 // NewOrderService sestaví službu ze tří portů. Chybějící port vrací
 // ErrMissingDependency.
 func NewOrderService(store OrderStore, clock Clock, ids IDGen) (*OrderService, error) {
-	panic("TODO: úkol B")
+	// TODO: úkol B
+	return nil, nil
 }
 
 // Place vytvoří objednávku a uloží ji. Chybu úložiště obalí ErrStore
 // a zachová původní příčinu.
 func (s *OrderService) Place(customer string, totalCents int64) (Order, error) {
-	panic("TODO: úkol B")
+	// TODO: úkol B
+	return *new(Order), nil
 }
 
 // Find vrací objednávku podle ID, jinak chybu obalující ErrNotFound.
 func (s *OrderService) Find(id string) (Order, error) {
-	panic("TODO: úkol B")
+	// TODO: úkol B
+	return *new(Order), nil
 }
 
 // Cancel stornuje objednávku. Neznámé ID je ErrNotFound, opakované storno
 // ErrAlreadyCanceled, selhání zápisu ErrStore s původní příčinou.
 func (s *OrderService) Cancel(id string) (Order, error) {
-	panic("TODO: úkol B")
+	// TODO: úkol B
+	return *new(Order), nil
 }
 
 // Wire sestaví službu z produkčních adaptérů. Tohle je celý DI kontejner:
 // jeden výraz, ve kterém je vidět, co na čem visí.
 func Wire() (*OrderService, error) {
-	panic("TODO: úkol C")
+	// TODO: úkol C
+	return nil, nil
 }

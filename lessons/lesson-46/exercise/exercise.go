@@ -23,23 +23,26 @@ type Semaphore struct {
 
 // NewSemaphore vrátí semafor s kapacitou n. Pro n <= 0 panikuje.
 func NewSemaphore(n int) *Semaphore {
-	panic("TODO: úkol A")
+	// TODO: úkol A
+	return nil
 }
 
 // Acquire zabere jedno místo. Blokuje, dokud se místo neuvolní nebo se nezruší ctx.
 // Při zrušení kontextu vrací ctx.Err() a místo NEzabere.
 func (s *Semaphore) Acquire(ctx context.Context) error {
-	panic("TODO: úkol A")
+	// TODO: úkol A
+	return nil
 }
 
 // TryAcquire zabere místo, pokud je zrovna volné, a vrátí true. Nikdy neblokuje.
 func (s *Semaphore) TryAcquire() bool {
-	panic("TODO: úkol A")
+	// TODO: úkol A
+	return false
 }
 
 // Release uvolní jedno místo. Uvolnění bez předchozího zabrání panikuje.
 func (s *Semaphore) Release() {
-	panic("TODO: úkol A")
+	// TODO: úkol A
 }
 
 // LimitedMap aplikuje f na všechny vstupy, nejvýš limit z nich souběžně,
@@ -47,7 +50,8 @@ func (s *Semaphore) Release() {
 // Pro limit <= 0 se použije limit 1, pro f == nil vrací nil.
 // Když se ctx zruší, nespuštěné položky zůstanou na prázdném řetězci.
 func LimitedMap(ctx context.Context, inputs []string, limit int, f func(string) string) []string {
-	panic("TODO: úkol A")
+	// TODO: úkol A
+	return nil
 }
 
 // Job je jedna úloha pro Pool.
@@ -77,23 +81,26 @@ type Pool struct {
 
 // New spustí pool s daným počtem workerů. Pro workers <= 0 panikuje.
 func New(workers int) *Pool {
-	panic("TODO: úkol B")
+	// TODO: úkol B
+	return nil
 }
 
 // Submit předá úlohu poolu. Blokuje, dokud ji nepřevezme worker.
 // Po Close vrací ErrPoolClosed a úlohu zahodí.
 func (p *Pool) Submit(job Job) error {
-	panic("TODO: úkol B")
+	// TODO: úkol B
+	return nil
 }
 
 // Results vrací kanál výsledků. Zavře se, až doběhnou všechny úlohy přijaté před Close.
 func (p *Pool) Results() <-chan Result {
-	panic("TODO: úkol B")
+	// TODO: úkol B
+	return nil
 }
 
 // Close oznámí poolu, že další úlohy nepřijdou. Je bezpečné ho volat opakovaně.
 func (p *Pool) Close() {
-	panic("TODO: úkol B")
+	// TODO: úkol B
 }
 
 // MapErr aplikuje f na všechny prvky in, nejvýš limit z nich souběžně,
@@ -105,5 +112,6 @@ func (p *Pool) Close() {
 // Pro limit <= 0 vrací ErrInvalidWorkers, pro f == nil ErrNilJob.
 // Zrušený vstupní kontext vrací ctx.Err().
 func MapErr[T, U any](ctx context.Context, in []T, limit int, f func(context.Context, T) (U, error)) ([]U, error) {
-	panic("TODO: úkol C")
+	// TODO: úkol C
+	return nil, nil
 }

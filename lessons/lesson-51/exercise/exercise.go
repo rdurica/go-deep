@@ -38,35 +38,42 @@ func (v Version) String() string {
 
 // ParseSemver rozparsuje sémantickou verzi. Prefix "v" je volitelný.
 func ParseSemver(s string) (Version, error) {
-	panic("TODO: úkol A")
+	// TODO: úkol A
+	return *new(Version), nil
 }
 
 // Compare porovná dvě verze podle semver pravidel a vrací -1, 0 nebo 1.
 func Compare(a, b Version) int {
-	panic("TODO: úkol A")
+	// TODO: úkol A
+	return 0
 }
 
 // ParsePseudoVersion rozloží pseudo-verzi na základ, čas commitu a revizi.
 func ParsePseudoVersion(s string) (base string, ts time.Time, rev string, err error) {
-	panic("TODO: úkol B")
+	// TODO: úkol B
+	return
 }
 
 // IsPseudo vrací true, pokud je s platná pseudo-verze.
 func IsPseudo(s string) bool {
-	panic("TODO: úkol B")
+	// TODO: úkol B
+	return false
 }
 
 // MajorSuffix vrátí major verzi zakódovanou v cestě modulu.
 func MajorSuffix(modulePath string) (int, error) {
-	panic("TODO: úkol B")
+	// TODO: úkol B
+	return 0, nil
 }
 
 // SelectVersions implementuje minimal version selection nad požadavky modulů.
 func SelectVersions(reqs map[string][]string) (map[string]string, error) {
-	panic("TODO: úkol C")
+	// TODO: úkol C
+	return nil, nil
 }
 
 // CheckCompat ověří, že major verze v import path odpovídá verzi modulu.
 func CheckCompat(importPath, moduleVersion string) error {
-	panic("TODO: úkol C")
+	// TODO: úkol C
+	return nil
 }

@@ -36,22 +36,26 @@ type Server struct {
 
 // NewServer ověří povinné závislosti a vrátí připravený server.
 func NewServer(addr string, logger *slog.Logger) (*Server, error) {
-	panic("TODO: úkol A")
+	// TODO: úkol A
+	return nil, nil
 }
 
 // MustNewServer je varianta NewServer, která při chybě panikuje.
 func MustNewServer(addr string, logger *slog.Logger) *Server {
-	panic("TODO: úkol A")
+	// TODO: úkol A
+	return nil
 }
 
 // Addr vrací adresu, na které server poslouchá.
 func (s *Server) Addr() string {
-	panic("TODO: úkol A")
+	// TODO: úkol A
+	return ""
 }
 
 // Logger vrací logger serveru.
 func (s *Server) Logger() *slog.Logger {
-	panic("TODO: úkol A")
+	// TODO: úkol A
+	return nil
 }
 
 // Client je HTTP klient konfigurovaný přes functional options.
@@ -67,42 +71,50 @@ type Option func(*Client)
 
 // WithTimeout nastaví timeout klienta.
 func WithTimeout(d time.Duration) Option {
-	panic("TODO: úkol B")
+	// TODO: úkol B
+	return *new(Option)
 }
 
 // WithRetries nastaví počet opakování.
 func WithRetries(n int) Option {
-	panic("TODO: úkol B")
+	// TODO: úkol B
+	return *new(Option)
 }
 
 // WithUserAgent nastaví hlavičku User-Agent.
 func WithUserAgent(ua string) Option {
-	panic("TODO: úkol B")
+	// TODO: úkol B
+	return *new(Option)
 }
 
 // NewClient vrací klienta s výchozí konfigurací přepsanou zadanými options.
 func NewClient(baseURL string, opts ...Option) (*Client, error) {
-	panic("TODO: úkol B")
+	// TODO: úkol B
+	return nil, nil
 }
 
 // BaseURL vrací základní adresu bez koncového lomítka.
 func (c *Client) BaseURL() string {
-	panic("TODO: úkol B")
+	// TODO: úkol B
+	return ""
 }
 
 // Timeout vrací nastavený timeout.
 func (c *Client) Timeout() time.Duration {
-	panic("TODO: úkol B")
+	// TODO: úkol B
+	return *new(time.Duration)
 }
 
 // Retries vrací nastavený počet opakování.
 func (c *Client) Retries() int {
-	panic("TODO: úkol B")
+	// TODO: úkol B
+	return 0
 }
 
 // UserAgent vrací nastavenou hlavičku User-Agent.
 func (c *Client) UserAgent() string {
-	panic("TODO: úkol B")
+	// TODO: úkol B
+	return ""
 }
 
 // Record je jeden uložený záznam.
@@ -124,22 +136,26 @@ type Service struct {
 
 // NewService ověří závislost a vrátí službu.
 func NewService(store Store) (*Service, error) {
-	panic("TODO: úkol C")
+	// TODO: úkol C
+	return nil, nil
 }
 
 // Add uloží nový záznam.
 func (s *Service) Add(id, value string) error {
-	panic("TODO: úkol C")
+	// TODO: úkol C
+	return nil
 }
 
 // Count vrací počet záznamů ve Store.
 func (s *Service) Count() int {
-	panic("TODO: úkol C")
+	// TODO: úkol C
+	return 0
 }
 
 // Values vrací hodnoty všech záznamů v pořadí, v jakém je vrátil Store.
 func (s *Service) Values() []string {
-	panic("TODO: úkol C")
+	// TODO: úkol C
+	return nil
 }
 
 // Registry je typ s užitečnou zero value — funguje i bez konstruktoru.
@@ -149,20 +165,23 @@ type Registry struct {
 
 // Set uloží hodnotu pod klíč.
 func (r *Registry) Set(key, value string) {
-	panic("TODO: úkol C")
+	// TODO: úkol C
 }
 
 // Lookup vrací hodnotu a informaci, jestli klíč existuje.
 func (r *Registry) Lookup(key string) (string, bool) {
-	panic("TODO: úkol C")
+	// TODO: úkol C
+	return "", false
 }
 
 // Len vrací počet uložených klíčů.
 func (r *Registry) Len() int {
-	panic("TODO: úkol C")
+	// TODO: úkol C
+	return 0
 }
 
 // Keys vrací klíče seřazené vzestupně.
 func (r *Registry) Keys() []string {
-	panic("TODO: úkol C")
+	// TODO: úkol C
+	return nil
 }

@@ -21,12 +21,13 @@ type AtomicFlag struct {
 
 // Set nastaví hodnotu příznaku.
 func (f *AtomicFlag) Set(v bool) {
-	panic("TODO: úkol A")
+	// TODO: úkol A
 }
 
 // Get vrátí aktuální hodnotu příznaku.
 func (f *AtomicFlag) Get() bool {
-	panic("TODO: úkol A")
+	// TODO: úkol A
+	return false
 }
 
 // MutexFlag je Flag chráněný zámkem. Unlock jednoho zápisu se řadí před
@@ -38,12 +39,13 @@ type MutexFlag struct {
 
 // Set nastaví hodnotu příznaku.
 func (f *MutexFlag) Set(v bool) {
-	panic("TODO: úkol A")
+	// TODO: úkol A
 }
 
 // Get vrátí aktuální hodnotu příznaku.
 func (f *MutexFlag) Get() bool {
-	panic("TODO: úkol A")
+	// TODO: úkol A
+	return false
 }
 
 // StressFlag prožene příznak zátěží: writers goroutin ho nastavuje na true,
@@ -52,7 +54,8 @@ func (f *MutexFlag) Get() bool {
 //
 // Pro nil příznak nebo nekladné počty vrací 0 a nic nespouští.
 func StressFlag(f Flag, writers, readers, iterations int) int {
-	panic("TODO: úkol A")
+	// TODO: úkol A
+	return 0
 }
 
 // LazyInit je líná inicializace hodnoty. Inicializační funkce se musí zavolat
@@ -66,19 +69,22 @@ type LazyInit struct {
 
 // NewLazyInit vrátí líný inicializátor. Pro nil funkci panikuje.
 func NewLazyInit(init func() int) *LazyInit {
-	panic("TODO: úkol B")
+	// TODO: úkol B
+	return nil
 }
 
 // Value vrátí hodnotu a při prvním volání ji nechá spočítat.
 // Všechna volání musí vidět stejnou hodnotu.
 func (l *LazyInit) Value() int {
-	panic("TODO: úkol B")
+	// TODO: úkol B
+	return 0
 }
 
 // ConcurrentValues zavolá l.Value() z n goroutin najednou a vrátí, co která
 // viděla. Pořadí odpovídá pořadí goroutin. Pro n <= 0 vrací prázdný výsledek.
 func ConcurrentValues(l *LazyInit, n int) []int {
-	panic("TODO: úkol B")
+	// TODO: úkol B
+	return nil
 }
 
 // Box publikuje data jedním zápisem a zpřístupní je libovolnému počtu čtenářů.
@@ -92,29 +98,33 @@ type Box struct {
 
 // NewBox vrátí prázdný box, ze kterého se dá číst až po Publish.
 func NewBox() *Box {
-	panic("TODO: úkol C")
+	// TODO: úkol C
+	return nil
 }
 
 // Publish uloží data a oznámí to čtenářům. Volá se právě jednou.
 func (b *Box) Publish(data []int) {
-	panic("TODO: úkol C")
+	// TODO: úkol C
 }
 
 // Consume počká na Publish a vrátí publikovaná data.
 func (b *Box) Consume() []int {
-	panic("TODO: úkol C")
+	// TODO: úkol C
+	return nil
 }
 
 // PublishAndConsume publikuje data z jedné goroutiny a přečte je z readers
 // goroutin. Vrátí, co který čtenář viděl — všichni musí vidět kompletní data.
 // Pro readers <= 0 vrací prázdný výsledek.
 func PublishAndConsume(data []int, readers int) [][]int {
-	panic("TODO: úkol C")
+	// TODO: úkol C
+	return nil
 }
 
 // WaitGroupVisibility spustí n goroutin, každá zapíše i*i na svůj index
 // sdíleného slice. Po Wait jsou všechny zápisy viditelné, takže se dají
 // bez dalšího zamykání sečíst. Vrací ten součet, pro n <= 0 nulu.
 func WaitGroupVisibility(n int) int {
-	panic("TODO: úkol C")
+	// TODO: úkol C
+	return 0
 }

@@ -90,7 +90,8 @@ func ParallelAppend(nums []int) []int {
 // krát, a počká na jejich dokončení. Slouží k tomu, aby závod dostal šanci se
 // projevit a aby ho race detektor uviděl.
 func StressTest(t *testing.T, f func()) {
-	panic("TODO: úkol C")
+	// TODO: úkol C
+	t.Fatal("TODO: úkol C")
 }
 
 // Snapshot je konfigurace načtená v jednom okamžiku. Checksum musí vždy

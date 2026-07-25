@@ -13,25 +13,30 @@ type Record struct {
 // Median vrací medián hodnot a false pro prázdný vstup.
 // Vstupní slice nemění.
 func Median(nums []float64) (float64, bool) {
-	panic("TODO: úkol A")
+	// TODO: úkol A
+	return 0, false
 }
 
 // ParseRecords načte CSV s hlavičkou "name,amount,category" a vrátí datové řádky.
 func ParseRecords(r io.Reader) ([]Record, error) {
-	panic("TODO: úkol B")
+	// TODO: úkol B
+	return nil, nil
 }
 
 // SumByCategory sečte částky podle kategorie.
 func SumByCategory(recs []Record) map[string]float64 {
-	panic("TODO: úkol B")
+	// TODO: úkol B
+	return nil
 }
 
 // TopN vrací n záznamů s nejvyšší částkou, při shodě v původním pořadí.
 func TopN(recs []Record, n int) []Record {
-	panic("TODO: úkol C")
+	// TODO: úkol C
+	return nil
 }
 
 // LoadFile načte záznamy ze souboru na dané cestě.
 func LoadFile(path string) ([]Record, error) {
-	panic("TODO: úkol C")
+	// TODO: úkol C
+	return nil, nil
 }

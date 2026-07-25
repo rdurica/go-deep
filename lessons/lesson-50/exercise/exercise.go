@@ -32,13 +32,15 @@ type Stats struct {
 
 // Total vrací počet dokončených úloh, tedy Processed + Failed.
 func (s Stats) Total() int {
-	panic("TODO: úkol A")
+	// TODO: úkol A
+	return 0
 }
 
 // Throughput vrací průchodnost v úlohách za sekundu.
 // Pro nekladnou dobu běhu vrací 0.
 func (s Stats) Throughput() float64 {
-	panic("TODO: úkol A")
+	// TODO: úkol A
+	return 0
 }
 
 // Metrics sbírá metriky souběžně z několika workerů.
@@ -52,17 +54,18 @@ type Metrics struct {
 
 // Enter oznámí začátek jedné úlohy a aktualizuje maximum souběhu.
 func (m *Metrics) Enter() {
-	panic("TODO: úkol A")
+	// TODO: úkol A
 }
 
 // Leave oznámí konec jedné úlohy. Nenulové err se počítá jako chyba.
 func (m *Metrics) Leave(err error) {
-	panic("TODO: úkol A")
+	// TODO: úkol A
 }
 
 // Snapshot vrátí aktuální metriky doplněné o dobu běhu.
 func (m *Metrics) Snapshot(elapsed time.Duration) Stats {
-	panic("TODO: úkol A")
+	// TODO: úkol A
+	return *new(Stats)
 }
 
 // Item je jedna úloha v dávce.
@@ -97,7 +100,8 @@ type Config struct {
 // celé dávky: špatná konfigurace, zrušený kontext, nebo první chyba v režimu
 // FailFast (v tom případě je výsledek nil).
 func Process(ctx context.Context, cfg Config, items []Item) ([]Outcome, Stats, error) {
-	panic("TODO: úkol B")
+	// TODO: úkol B
+	return nil, *new(Stats), nil
 }
 
 // ProcessStream zpracuje neomezený proud úloh z kanálu in a výsledky posílá
@@ -108,5 +112,6 @@ func Process(ctx context.Context, cfg Config, items []Item) ([]Outcome, Stats, e
 // a fronta se vyprázdní, nebo při zrušení kontextu, nebo při první chybě
 // v režimu FailFast.
 func ProcessStream(ctx context.Context, cfg Config, in <-chan Item, out chan<- Outcome) (Stats, error) {
-	panic("TODO: úkol C")
+	// TODO: úkol C
+	return *new(Stats), nil
 }

@@ -31,31 +31,37 @@ type EchoResponse struct {
 // WriteJSON zapíše v jako JSON odpověď se status kódem status.
 // Musí nastavit hlavičku Content-Type dřív, než zavolá WriteHeader.
 func WriteJSON(w http.ResponseWriter, status int, v any) error {
-	panic("TODO: úkol A")
+	// TODO: úkol A
+	return nil
 }
 
 // HealthHandler vrací handler, který na jakoukoli metodu odpoví 200 a JSON {"status":"ok"}.
 func HealthHandler() http.Handler {
-	panic("TODO: úkol A")
+	// TODO: úkol A
+	return *new(http.Handler)
 }
 
 // EchoHandler vrací handler, který přijme POST s JSON tělem EchoRequest
 // a odpoví EchoResponse, nebo chybou v podobě ErrorResponse.
 func EchoHandler() http.Handler {
-	panic("TODO: úkol B")
+	// TODO: úkol B
+	return *new(http.Handler)
 }
 
 // NotFoundHandler vrací handler, který vždy odpoví 404 a JSON ErrorResponse.
 func NotFoundHandler() http.Handler {
-	panic("TODO: úkol C")
+	// TODO: úkol C
+	return *new(http.Handler)
 }
 
 // NewRouter složí health, echo a 404 fallback do jednoho http.ServeMux.
 func NewRouter() http.Handler {
-	panic("TODO: úkol C")
+	// TODO: úkol C
+	return *new(http.Handler)
 }
 
 // NewServer vrátí *http.Server s vyplněnou adresou, handlerem a všemi timeouty.
 func NewServer(addr string, h http.Handler) *http.Server {
-	panic("TODO: úkol C")
+	// TODO: úkol C
+	return nil
 }

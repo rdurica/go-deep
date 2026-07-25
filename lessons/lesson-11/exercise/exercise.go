@@ -24,11 +24,13 @@ func Split(a Amount, n int) ([]Amount, bool) { return money.Split(a, n) }
 // TotalOf sečte částky a vrátí výsledek jako Amount.
 // Smí použít jen veřejné API balíčku money.
 func TotalOf(amounts []Amount) Amount {
-	panic("TODO: úkol B")
+	// TODO: úkol B
+	return *new(Amount)
 }
 
 // MustParse převede zápis částky ("19.99", "-2.5", "7") na Amount.
 // Při neplatném vstupu panikuje.
 func MustParse(s string) Amount {
-	panic("TODO: úkol B")
+	// TODO: úkol B
+	return *new(Amount)
 }

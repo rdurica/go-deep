@@ -42,22 +42,26 @@ type Bookmark struct {
 // NormalizeURL převede URL na kanonický tvar: malé schéma a host, bez výchozího portu,
 // bez utm_ parametrů, bez fragmentu, s seřazeným query a bez koncového lomítka.
 func NormalizeURL(raw string) (string, error) {
-	panic("TODO: úkol A")
+	// TODO: úkol A
+	return "", nil
 }
 
 // NormalizeTags ořeže, převede na malá písmena, odstraní duplicity a seřadí tagy.
 func NormalizeTags(tags []string) ([]string, error) {
-	panic("TODO: úkol A")
+	// TODO: úkol A
+	return nil, nil
 }
 
 // Validate zkontroluje, že je záložka kompletní a normalizovaná.
 func (b Bookmark) Validate() error {
-	panic("TODO: úkol A")
+	// TODO: úkol A
+	return nil
 }
 
 // New sestaví normalizovanou a ověřenou záložku.
 func New(id, rawURL, title string, tags []string, createdAt time.Time) (Bookmark, error) {
-	panic("TODO: úkol A")
+	// TODO: úkol A
+	return *new(Bookmark), nil
 }
 
 // Store je in-memory úložiště záložek s indexem podle tagu, bezpečné pro souběžné použití.
@@ -69,32 +73,38 @@ type Store struct {
 
 // NewStore vytvoří prázdné úložiště.
 func NewStore() *Store {
-	panic("TODO: úkol B")
+	// TODO: úkol B
+	return nil
 }
 
 // Add uloží novou záložku. Duplicitní ID vrací ErrDuplicateID.
 func (s *Store) Add(b Bookmark) error {
-	panic("TODO: úkol B")
+	// TODO: úkol B
+	return nil
 }
 
 // Get vrátí záložku podle ID.
 func (s *Store) Get(id string) (Bookmark, error) {
-	panic("TODO: úkol B")
+	// TODO: úkol B
+	return *new(Bookmark), nil
 }
 
 // Delete smaže záložku podle ID i její záznamy v indexu.
 func (s *Store) Delete(id string) error {
-	panic("TODO: úkol B")
+	// TODO: úkol B
+	return nil
 }
 
 // Len vrací počet uložených záložek.
 func (s *Store) Len() int {
-	panic("TODO: úkol B")
+	// TODO: úkol B
+	return 0
 }
 
 // ByTag vrátí záložky s daným tagem od nejnovější.
 func (s *Store) ByTag(tag string) []Bookmark {
-	panic("TODO: úkol B")
+	// TODO: úkol B
+	return nil
 }
 
 // SortOrder je řazení výsledků hledání.
@@ -125,5 +135,6 @@ type Page struct {
 
 // Search vrátí stránku záložek podle dotazu.
 func (s *Store) Search(q Query) (Page, error) {
-	panic("TODO: úkol C")
+	// TODO: úkol C
+	return *new(Page), nil
 }

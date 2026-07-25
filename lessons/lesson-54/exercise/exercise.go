@@ -43,60 +43,72 @@ type BadConfig struct {
 
 // Ok vytvoří úspěšný výsledek.
 func Ok[T any](v T) Result[T] {
-	panic("TODO: úkol A")
+	// TODO: úkol A
+	return *new(Result[T])
 }
 
 // Err vytvoří chybový výsledek. Err(nil) je platný Ok.
 func Err[T any](err error) Result[T] {
-	panic("TODO: úkol A")
+	// TODO: úkol A
+	return *new(Result[T])
 }
 
 // IsOk vrací true, pokud výsledek nese hodnotu (chyba je nil).
 func (r Result[T]) IsOk() bool {
-	panic("TODO: úkol A")
+	// TODO: úkol A
+	return false
 }
 
 // Unwrap vrací hodnotu a chybu. Při chybě vrací nulovou hodnotu T.
 func (r Result[T]) Unwrap() (T, error) {
-	panic("TODO: úkol A")
+	// TODO: úkol A
+	return *new(T), nil
 }
 
 // Map převede hodnotu uvnitř výsledku. Nad chybou se f nevolá.
 func Map[T, U any](r Result[T], f func(T) U) Result[U] {
-	panic("TODO: úkol A")
+	// TODO: úkol A
+	return *new(Result[U])
 }
 
 // Must vrátí v, nebo panikuje hodnotou err.
 func Must[T any](v T, err error) T {
-	panic("TODO: úkol A")
+	// TODO: úkol A
+	return *new(T)
 }
 
 // NewUser sestaví User včetně neexportovaného hesla.
 func NewUser(id int, name, email string, active bool, password string) User {
-	panic("TODO: úkol B")
+	// TODO: úkol B
+	return *new(User)
 }
 
 // Password vrací neexportované heslo.
 func (u User) Password() string {
-	panic("TODO: úkol B")
+	// TODO: úkol B
+	return ""
 }
 
 // Secret vrací neexportované pole Config.
 func (c Config) Secret() string {
-	panic("TODO: úkol B")
+	// TODO: úkol B
+	return ""
 }
 
 // StructToMap převede struct (nebo ukazatel na struct) na mapu podle tagů map.
 func StructToMap(v any) (map[string]any, error) {
-	panic("TODO: úkol B")
+	// TODO: úkol B
+	return nil, nil
 }
 
 // UserToMap dělá totéž co StructToMap pro User, ale ručně bez reflexe.
 func UserToMap(u User) map[string]any {
-	panic("TODO: úkol B")
+	// TODO: úkol B
+	return nil
 }
 
 // SetDefaults nastaví nulová exportovaná pole podle tagu default.
 func SetDefaults(v any) error {
-	panic("TODO: úkol B")
+	// TODO: úkol B
+	return nil
 }

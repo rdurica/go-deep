@@ -31,35 +31,42 @@ type Note struct {
 
 // LoadConfig sestaví Config z getenv a posbírá všechny chyby najednou.
 func LoadConfig(getenv func(string) string) (Config, error) {
-	panic("TODO: úkol A")
+	// TODO: úkol A
+	return *new(Config), nil
 }
 
 // Chain složí middleware kolem handleru; první uvedená je nejvíc vně.
 func Chain(h http.Handler, mws ...func(http.Handler) http.Handler) http.Handler {
-	panic("TODO: úkol B")
+	// TODO: úkol B
+	return *new(http.Handler)
 }
 
 // RequestIDMiddleware zajistí, že každý požadavek má identifikátor v kontextu i hlavičce.
 func RequestIDMiddleware(next http.Handler) http.Handler {
-	panic("TODO: úkol B")
+	// TODO: úkol B
+	return *new(http.Handler)
 }
 
 // RequestIDFromContext vytáhne identifikátor požadavku z kontextu.
 func RequestIDFromContext(ctx context.Context) (string, bool) {
-	panic("TODO: úkol B")
+	// TODO: úkol B
+	return "", false
 }
 
 // NewServer sestaví router s middleware chainem a in-memory úložištěm poznámek.
 func NewServer(logger *slog.Logger) http.Handler {
-	panic("TODO: úkol B")
+	// TODO: úkol B
+	return *new(http.Handler)
 }
 
 // RecoveryMiddleware zachytí paniku v handleru, zaloguje ji a vrátí 500 v JSONu.
 func RecoveryMiddleware(logger *slog.Logger) func(http.Handler) http.Handler {
-	panic("TODO: úkol C")
+	// TODO: úkol C
+	return nil
 }
 
 // Run obsluhuje ln, dokud se nezruší ctx, pak server elegantně ukončí.
 func Run(ctx context.Context, cfg Config, h http.Handler, ln net.Listener) error {
-	panic("TODO: úkol C")
+	// TODO: úkol C
+	return nil
 }

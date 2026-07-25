@@ -34,51 +34,61 @@ type MyErr struct{}
 
 // Area vrací obsah obdélníku.
 func (r Rect) Area() float64 {
-	panic("TODO: úkol A")
+	// TODO: úkol A
+	return 0
 }
 
 // Area vrací obsah kruhu.
 func (c Circle) Area() float64 {
-	panic("TODO: úkol A")
+	// TODO: úkol A
+	return 0
 }
 
 // TotalArea sečte obsahy všech tvarů. Prvky rovné nil přeskočí.
 func TotalArea(shapes []Shape) float64 {
-	panic("TODO: úkol A")
+	// TODO: úkol A
+	return 0
 }
 
 // Describe vrací popis dynamického typu hodnoty.
 func Describe(v any) string {
-	panic("TODO: úkol B")
+	// TODO: úkol B
+	return ""
 }
 
 // Notify zaznamená zprávu, nebo vrátí r.Err.
 func (r *Recorder) Notify(msg string) error {
-	panic("TODO: úkol B")
+	// TODO: úkol B
+	return nil
 }
 
 // Messages vrací kopii zaznamenaných zpráv.
 func (r *Recorder) Messages() []string {
-	panic("TODO: úkol B")
+	// TODO: úkol B
+	return nil
 }
 
 // NotifyAll pošle zprávu všem příjemcům a vrátí první chybu.
 func NotifyAll(ns []Notifier, msg string) error {
-	panic("TODO: úkol B")
+	// TODO: úkol B
+	return nil
 }
 
 // Area splňuje Shape s pointer receiverem, takže Shape implementuje *MyErr.
 func (e *MyErr) Area() float64 {
-	panic("TODO: úkol C")
+	// TODO: úkol C
+	return 0
 }
 
 // ReturnsNilPointer vrací Shape, uvnitř kterého je nil pointer typu *MyErr.
 // Výsledek NENÍ roven nil, i když ukazatel uvnitř nil je.
 func ReturnsNilPointer() Shape {
-	panic("TODO: úkol C")
+	// TODO: úkol C
+	return *new(Shape)
 }
 
 // IsNilInterface vrací true, jen když je celá interface hodnota nil.
 func IsNilInterface(s Shape) bool {
-	panic("TODO: úkol C")
+	// TODO: úkol C
+	return false
 }

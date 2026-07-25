@@ -41,36 +41,43 @@ func WriteJSON(w http.ResponseWriter, status int, v any) error {
 
 // WithUser vrátí kopii kontextu s uloženým uživatelem.
 func WithUser(ctx context.Context, u User) context.Context {
-	panic("TODO: úkol A")
+	// TODO: úkol A
+	return *new(context.Context)
 }
 
 // UserFrom vytáhne uživatele z kontextu.
 func UserFrom(ctx context.Context) (User, bool) {
-	panic("TODO: úkol A")
+	// TODO: úkol A
+	return *new(User), false
 }
 
 // Authenticate vrací middleware, který ověří Bearer token a vloží uživatele do kontextu.
 func Authenticate(users map[string]User) Middleware {
-	panic("TODO: úkol B")
+	// TODO: úkol B
+	return *new(Middleware)
 }
 
 // WhoAmI vrací handler, který odpoví uživatelem z kontextu.
 func WhoAmI() http.Handler {
-	panic("TODO: úkol B")
+	// TODO: úkol B
+	return *new(http.Handler)
 }
 
 // FetchWithTimeout zavolá fn s kontextem omezeným na d a respektuje deadline.
 func FetchWithTimeout(ctx context.Context, fn func(context.Context) (string, error), d time.Duration) (string, error) {
-	panic("TODO: úkol C")
+	// TODO: úkol C
+	return "", nil
 }
 
 // SlowHandler vrací handler, který pracuje work dlouho a reaguje na zrušení kontextu.
 func SlowHandler(work time.Duration) http.Handler {
-	panic("TODO: úkol C")
+	// TODO: úkol C
+	return *new(http.Handler)
 }
 
 // SlowHandlerWithHook je jako SlowHandler, ale při odchodu zavolá onExit
 // s důvodem ukončení (nil při úspěchu). Slouží k otestování zrušení.
 func SlowHandlerWithHook(work time.Duration, onExit func(error)) http.Handler {
-	panic("TODO: úkol C")
+	// TODO: úkol C
+	return *new(http.Handler)
 }

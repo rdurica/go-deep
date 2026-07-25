@@ -24,65 +24,76 @@ type Cache[K comparable, V any] struct {
 
 // Map převede každý prvek s na nový typ pomocí f.
 func Map[T, U any](s []T, f func(T) U) []U {
-	panic("TODO: úkol A")
+	// TODO: úkol A
+	return nil
 }
 
 // Filter vrací prvky, pro které keep vrátí true.
 func Filter[T any](s []T, keep func(T) bool) []T {
-	panic("TODO: úkol A")
+	// TODO: úkol A
+	return nil
 }
 
 // Sum sečte prvky slice. Prázdný vstup dá nulu daného typu.
 func Sum[T Number](s []T) T {
-	panic("TODO: úkol B")
+	// TODO: úkol B
+	return *new(T)
 }
 
 // Max vrací největší prvek a true. Pro prázdný vstup vrací zero value a false.
 func Max[T cmp.Ordered](s []T) (T, bool) {
-	panic("TODO: úkol B")
+	// TODO: úkol B
+	return *new(T), false
 }
 
 // Keys vrací klíče mapy v nespecifikovaném pořadí.
 func Keys[K comparable, V any](m map[K]V) []K {
-	panic("TODO: úkol B")
+	// TODO: úkol B
+	return nil
 }
 
 // Push vloží hodnotu na vrchol zásobníku.
 func (s *Stack[T]) Push(v T) {
-	panic("TODO: úkol C")
+	// TODO: úkol C
 }
 
 // Pop odebere a vrátí vrchol. Na prázdném zásobníku vrací zero value a false.
 func (s *Stack[T]) Pop() (T, bool) {
-	panic("TODO: úkol C")
+	// TODO: úkol C
+	return *new(T), false
 }
 
 // Peek vrátí vrchol bez odebrání. Na prázdném zásobníku vrací zero value a false.
 func (s *Stack[T]) Peek() (T, bool) {
-	panic("TODO: úkol C")
+	// TODO: úkol C
+	return *new(T), false
 }
 
 // Len vrací počet prvků v zásobníku.
 func (s *Stack[T]) Len() int {
-	panic("TODO: úkol C")
+	// TODO: úkol C
+	return 0
 }
 
 // NewCache vytvoří cache pro nejvýš max záznamů. Hodnoty menší než 1 se berou jako 1.
 func NewCache[K comparable, V any](max int) *Cache[K, V] {
-	panic("TODO: úkol C")
+	// TODO: úkol C
+	return nil
 }
 
 // Get vrací hodnotu a true, pokud klíč existuje.
 func (c *Cache[K, V]) Get(key K) (V, bool) {
-	panic("TODO: úkol C")
+	// TODO: úkol C
+	return *new(V), false
 }
 
 // Set uloží hodnotu. Při překročení limitu vypadne nejdéle uložený záznam.
 func (c *Cache[K, V]) Set(key K, value V) {
-	panic("TODO: úkol C")
+	// TODO: úkol C
 }
 
 // Len vrací počet uložených záznamů.
 func (c *Cache[K, V]) Len() int {
-	panic("TODO: úkol C")
+	// TODO: úkol C
+	return 0
 }

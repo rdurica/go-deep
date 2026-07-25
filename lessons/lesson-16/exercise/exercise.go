@@ -41,30 +41,36 @@ type Cents int64
 
 // ToJSON serializuje uživatele do JSON.
 func ToJSON(u User) ([]byte, error) {
-	panic("TODO: úkol A")
+	// TODO: úkol A
+	return nil, nil
 }
 
 // FromJSON deserializuje uživatele z JSON a ověří povinná pole.
 func FromJSON(data []byte) (User, error) {
-	panic("TODO: úkol B")
+	// TODO: úkol B
+	return *new(User), nil
 }
 
 // DecodeEvent podle pole Kind dekóduje payload do odpovídajícího typu.
 func DecodeEvent(data []byte) (any, error) {
-	panic("TODO: úkol B")
+	// TODO: úkol B
+	return nil, nil
 }
 
 // MarshalJSON zapíše částku jako desetinné číslo.
 func (c Cents) MarshalJSON() ([]byte, error) {
-	panic("TODO: úkol C")
+	// TODO: úkol C
+	return nil, nil
 }
 
 // UnmarshalJSON načte částku z desetinného čísla nebo z řetězce.
 func (c *Cents) UnmarshalJSON(data []byte) error {
-	panic("TODO: úkol C")
+	// TODO: úkol C
+	return nil
 }
 
 // StrictDecode dekóduje data do v a odmítne neznámá pole i data navíc.
 func StrictDecode(data []byte, v any) error {
-	panic("TODO: úkol C")
+	// TODO: úkol C
+	return nil
 }

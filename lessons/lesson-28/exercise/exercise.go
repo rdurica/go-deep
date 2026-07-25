@@ -24,25 +24,30 @@ type Config struct {
 
 // LookupString vrátí hodnotu klíče key z getenv, nebo def, pokud je prázdná.
 func LookupString(getenv func(string) string, key, def string) string {
-	panic("TODO: úkol A")
+	// TODO: úkol A
+	return ""
 }
 
 // LookupInt vrátí hodnotu klíče key z getenv převedenou na int, nebo def, pokud je prázdná.
 func LookupInt(getenv func(string) string, key string, def int) (int, error) {
-	panic("TODO: úkol A")
+	// TODO: úkol A
+	return 0, nil
 }
 
 // Load sestaví Config z getenv a posbírá všechny chyby najednou.
 func Load(getenv func(string) string) (Config, error) {
-	panic("TODO: úkol B")
+	// TODO: úkol B
+	return *new(Config), nil
 }
 
 // String implementuje fmt.Stringer a maskuje tajemství.
 func (c Config) String() string {
-	panic("TODO: úkol C")
+	// TODO: úkol C
+	return ""
 }
 
 // LoadFromEnviron sestaví Config ze slice ve formátu os.Environ() ("KEY=VALUE").
 func LoadFromEnviron(environ []string) (Config, error) {
-	panic("TODO: úkol C")
+	// TODO: úkol C
+	return *new(Config), nil
 }

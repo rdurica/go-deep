@@ -30,7 +30,8 @@ type Config struct {
 
 // ReadConfig načte konfiguraci ve tvaru key=value a každou chybu opatří kontextem.
 func ReadConfig(r io.Reader) (Config, error) {
-	panic("TODO: úkol A")
+	// TODO: úkol A
+	return *new(Config), nil
 }
 
 // Step je pojmenovaný krok pipeline.
@@ -46,20 +47,24 @@ type Pipeline struct {
 
 // NewPipeline vrací pipeline složenou ze zadaných kroků.
 func NewPipeline(steps ...Step) *Pipeline {
-	panic("TODO: úkol B")
+	// TODO: úkol B
+	return nil
 }
 
 // Run protáhne vstup všemi kroky.
 func (p *Pipeline) Run(input string) (string, error) {
-	panic("TODO: úkol B")
+	// TODO: úkol B
+	return "", nil
 }
 
 // CloseAll zavře všechny closery a spojí jejich chyby.
 func CloseAll(closers []io.Closer) error {
-	panic("TODO: úkol C")
+	// TODO: úkol C
+	return nil
 }
 
 // WithCleanup zavolá f a poté vždy cleanup, přičemž správně zkombinuje obě chyby.
 func WithCleanup(f func() error, cleanup func() error) (err error) {
-	panic("TODO: úkol C")
+	// TODO: úkol C
+	return
 }

@@ -16,26 +16,31 @@ type Record struct {
 // Normalize ořízne okrajové bílé znaky, sjednotí vnitřní bílé znaky
 // na jednu mezeru a převede text na malá písmena.
 func Normalize(s string) string {
-	panic("TODO: úkol A")
+	// TODO: úkol A
+	return ""
 }
 
 // Encode zapíše záznamy do textového formátu "id|name|score" po řádcích.
 func Encode(recs []Record) string {
-	panic("TODO: úkol B")
+	// TODO: úkol B
+	return ""
 }
 
 // Decode přečte formát vyrobený funkcí Encode.
 func Decode(s string) ([]Record, error) {
-	panic("TODO: úkol B")
+	// TODO: úkol B
+	return nil, nil
 }
 
 // RenderTable vykreslí záznamy jako zarovnanou textovou tabulku.
 func RenderTable(recs []Record) string {
-	panic("TODO: úkol C")
+	// TODO: úkol C
+	return ""
 }
 
 // RenderTableFast vrací totéž co RenderTable, ale staví výstup
 // v jediném bufferu s předalokací.
 func RenderTableFast(recs []Record) string {
-	panic("TODO: úkol C")
+	// TODO: úkol C
+	return ""
 }

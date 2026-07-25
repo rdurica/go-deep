@@ -30,7 +30,8 @@ const RouteUnknown = "unknown"
 
 // ParseBearer vytáhne token z hodnoty hlavičky Authorization.
 func ParseBearer(header string) (string, error) {
-	panic("TODO: úkol A")
+	// TODO: úkol A
+	return "", nil
 }
 
 // HashPassword spočítá otisk hesla se solí.
@@ -40,22 +41,26 @@ func ParseBearer(header string) (string, error) {
 // zůstalo ve standardní knihovně. V produkci patří bcrypt nebo argon2
 // (golang.org/x/crypto/bcrypt, golang.org/x/crypto/argon2).
 func HashPassword(password, salt string) string {
-	panic("TODO: úkol A")
+	// TODO: úkol A
+	return ""
 }
 
 // VerifyPassword porovná otisk hesla v konstantním čase.
 func VerifyPassword(hash, password, salt string) bool {
-	panic("TODO: úkol A")
+	// TODO: úkol A
+	return false
 }
 
 // Authenticate vrací middleware, který ověří Bearer token proti mapě token → uživatel.
 func Authenticate(tokens map[string]string) Middleware {
-	panic("TODO: úkol B")
+	// TODO: úkol B
+	return *new(Middleware)
 }
 
 // UserFrom vrací jméno ověřeného uživatele z kontextu.
 func UserFrom(ctx context.Context) (string, bool) {
-	panic("TODO: úkol B")
+	// TODO: úkol B
+	return "", false
 }
 
 // Stat je souhrn jedné metrické řady.
@@ -73,46 +78,53 @@ type Metrics struct {
 
 // NewMetrics vytvoří prázdný registr metrik.
 func NewMetrics() *Metrics {
-	panic("TODO: úkol B")
+	// TODO: úkol B
+	return nil
 }
 
 // SeriesKey složí jméno řady se seřazenými labely, například
 // `http_requests_total{method="GET",route="/items/{id}"}`.
 func SeriesKey(name string, labels map[string]string) string {
-	panic("TODO: úkol B")
+	// TODO: úkol B
+	return ""
 }
 
 // Inc zvýší čítač o jedna.
 func (m *Metrics) Inc(name string, labels map[string]string) {
-	panic("TODO: úkol B")
+	// TODO: úkol B
 }
 
 // Observe zaznamená jedno pozorování do řady name.
 func (m *Metrics) Observe(name string, v float64) {
-	panic("TODO: úkol B")
+	// TODO: úkol B
 }
 
 // Snapshot vrací kopii všech řad.
 func (m *Metrics) Snapshot() map[string]Stat {
-	panic("TODO: úkol B")
+	// TODO: úkol B
+	return nil
 }
 
 // Text serializuje registr do deterministického textového formátu.
 func (m *Metrics) Text() string {
-	panic("TODO: úkol B")
+	// TODO: úkol B
+	return ""
 }
 
 // WithRoute uloží vzor cesty do kontextu požadavku.
 func WithRoute(route string, next http.Handler) http.Handler {
-	panic("TODO: úkol C")
+	// TODO: úkol C
+	return *new(http.Handler)
 }
 
 // RouteFrom vrací vzor cesty z kontextu, nebo RouteUnknown.
 func RouteFrom(ctx context.Context) string {
-	panic("TODO: úkol C")
+	// TODO: úkol C
+	return ""
 }
 
 // Instrument vrací middleware, který měří počet požadavků a jejich dobu.
 func Instrument(m *Metrics) Middleware {
-	panic("TODO: úkol C")
+	// TODO: úkol C
+	return *new(Middleware)
 }

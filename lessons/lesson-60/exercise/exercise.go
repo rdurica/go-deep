@@ -27,22 +27,26 @@ type bucket struct {
 // NewRateLimiter vytvoří omezovač s kapacitou capacity a doplňováním jednoho tokenu
 // za refill. Hodiny se předávají jako závislost; nil znamená time.Now.
 func NewRateLimiter(capacity int, refill time.Duration, now func() time.Time) *RateLimiter {
-	panic("TODO: úkol A")
+	// TODO: úkol A
+	return nil
 }
 
 // Allow odebere token pro daný klíč. Vrací false, když je kbelík prázdný.
 func (rl *RateLimiter) Allow(key string) bool {
-	panic("TODO: úkol A")
+	// TODO: úkol A
+	return false
 }
 
 // Cleanup zahodí kbelíky, které se nepoužily aspoň idle, a vrátí jejich počet.
 func (rl *RateLimiter) Cleanup(idle time.Duration) int {
-	panic("TODO: úkol A")
+	// TODO: úkol A
+	return 0
 }
 
 // Len vrací počet sledovaných klíčů.
 func (rl *RateLimiter) Len() int {
-	panic("TODO: úkol A")
+	// TODO: úkol A
+	return 0
 }
 
 // HardenOptions konfiguruje middleware chain funkce Harden.
@@ -64,7 +68,8 @@ var SecurityHeaders = map[string]string{
 // Harden složí produkční middleware chain: recovery, bezpečnostní hlavičky,
 // rate limiting, limit velikosti těla a timeout.
 func Harden(h http.Handler, opts HardenOptions) http.Handler {
-	panic("TODO: úkol B")
+	// TODO: úkol B
+	return *new(http.Handler)
 }
 
 // Chyby produkčního auditu.
@@ -94,7 +99,8 @@ type Report struct {
 
 // AuditReport vyhodnotí připravenost k nasazení podle production checklistu.
 func AuditReport(checks []Check) (Report, error) {
-	panic("TODO: úkol C")
+	// TODO: úkol C
+	return *new(Report), nil
 }
 
 // LessonResult je výsledek jedné lekce kurzu.
@@ -121,5 +127,6 @@ type Summary struct {
 
 // Coverage spočítá pokrok kurzem a najde nejslabší fázi.
 func Coverage(lessons []LessonResult) Summary {
-	panic("TODO: úkol C")
+	// TODO: úkol C
+	return *new(Summary)
 }

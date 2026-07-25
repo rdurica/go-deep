@@ -37,26 +37,31 @@ var (
 
 // Validate ověří jeden produkt doménovými pravidly.
 func Validate(p Product) error {
-	panic("TODO: úkol A")
+	// TODO: úkol A
+	return nil
 }
 
 // BuildCatalog sestaví katalog ze zadaných produktů.
 func BuildCatalog(products ...Product) (*Catalog, error) {
-	panic("TODO: úkol A")
+	// TODO: úkol A
+	return nil, nil
 }
 
 // PriceOf vrátí cenu qty kusů produktu se zadaným SKU.
 // Neznámé SKU propaguje ErrNotFound, nekladné množství ErrInvalidQty.
 func PriceOf(c *Catalog, sku string, qty int) (int64, error) {
-	panic("TODO: úkol B")
+	// TODO: úkol B
+	return 0, nil
 }
 
 // TotalOf spočítá cenu celého košíku.
 func TotalOf(items []Item) (int64, error) {
-	panic("TODO: úkol B")
+	// TODO: úkol B
+	return 0, nil
 }
 
 // NewIDGen vytvoří generátor identifikátorů s daným prefixem.
 func NewIDGen(prefix string) *IDGen {
-	panic("TODO: úkol C")
+	// TODO: úkol C
+	return nil
 }

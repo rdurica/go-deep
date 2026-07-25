@@ -40,41 +40,48 @@ type statusRecorder struct {
 
 // WriteHeader zapamatuje status a přepošle ho podkladovému writeru — jen jednou.
 func (rec *statusRecorder) WriteHeader(status int) {
-	panic("TODO: úkol B")
+	// TODO: úkol B
 }
 
 // Write přepošle data a přičte jejich délku k počítadlu.
 func (rec *statusRecorder) Write(b []byte) (int, error) {
-	panic("TODO: úkol B")
+	// TODO: úkol B
+	return 0, nil
 }
 
 // Chain obalí h middlewary tak, že první uvedený je nejvíc vnější.
 func Chain(h http.Handler, mws ...Middleware) http.Handler {
-	panic("TODO: úkol A")
+	// TODO: úkol A
+	return *new(http.Handler)
 }
 
 // Logging vrací middleware, který po dokončení požadavku zaloguje
 // metodu, cestu, status a velikost odpovědi.
 func Logging(logger *slog.Logger) Middleware {
-	panic("TODO: úkol B")
+	// TODO: úkol B
+	return *new(Middleware)
 }
 
 // Recovery vrací middleware, který z paniky v handleru udělá 500 s JSON tělem.
 func Recovery() Middleware {
-	panic("TODO: úkol B")
+	// TODO: úkol B
+	return *new(Middleware)
 }
 
 // RequestID vrací middleware, který doplní ID požadavku do kontextu i do odpovědi.
 func RequestID() Middleware {
-	panic("TODO: úkol C")
+	// TODO: úkol C
+	return *new(Middleware)
 }
 
 // RequestIDFrom vytáhne ID požadavku z kontextu.
 func RequestIDFrom(ctx context.Context) (string, bool) {
-	panic("TODO: úkol C")
+	// TODO: úkol C
+	return "", false
 }
 
 // Timeout vrací middleware, který požadavku nastaví deadline d.
 func Timeout(d time.Duration) Middleware {
-	panic("TODO: úkol C")
+	// TODO: úkol C
+	return *new(Middleware)
 }

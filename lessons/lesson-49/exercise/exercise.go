@@ -11,7 +11,7 @@ const BlockingDuration = 50 * time.Millisecond
 // RunWithMaxProcs dočasně nastaví GOMAXPROCS na n, spustí f a původní hodnotu
 // zase vrátí — i když f panikuje. Pro n <= 0 GOMAXPROCS nemění, pro nil f nedělá nic.
 func RunWithMaxProcs(n int, f func()) {
-	panic("TODO: úkol A")
+	// TODO: úkol A
 }
 
 // ObserveParallelism změří, kolik goroutin se doopravdy sešlo naráz.
@@ -20,19 +20,21 @@ func RunWithMaxProcs(n int, f func()) {
 // společné uvolnění. Vrací nejvyšší naměřenou hodnotu čítače.
 // Po návratu nesmí zůstat běžící goroutina. Pro workers <= 0 vrací 0.
 func ObserveParallelism(workers int) int {
-	panic("TODO: úkol A")
+	// TODO: úkol A
+	return 0
 }
 
 // CPUBound udělá work jednotek čistě výpočetní práce (žádné čekání)
 // a vrátí kontrolní součet. Pro stejný vstup vrací vždy stejnou hodnotu.
 func CPUBound(work int) uint64 {
-	panic("TODO: úkol B")
+	// TODO: úkol B
+	return 0
 }
 
 // Blocking simuluje blokující syscall — nedělá nic, jen zabere čas.
 // Pro d <= 0 se vrací hned.
 func Blocking(d time.Duration) {
-	panic("TODO: úkol B")
+	// TODO: úkol B
 }
 
 // Compare změří, jak dlouho trvá workers souběžných CPU-bound úloh a jak dlouho
@@ -41,7 +43,8 @@ func Blocking(d time.Duration) {
 // Blokující varianta škáluje i s jedním P, protože čekající goroutina P uvolní.
 // CPU-bound varianta škáluje jen do počtu P. Pro workers <= 0 se použije 1.
 func Compare(workers int) (cpu, blocking time.Duration) {
-	panic("TODO: úkol B")
+	// TODO: úkol B
+	return
 }
 
 // StackGrowth zavolá sama sebe do hloubky depth, přičemž každý rámec zabere
@@ -49,19 +52,22 @@ func Compare(workers int) (cpu, blocking time.Duration) {
 // Smysl: zásobník goroutiny začíná na dvou kilobajtech a runtime ho podle
 // potřeby zvětšuje — což je vidět na tom, že tohle vůbec projde.
 func StackGrowth(depth int) int {
-	panic("TODO: úkol C")
+	// TODO: úkol C
+	return 0
 }
 
 // GoroutineCost spustí n goroutin, počká, až všechny opravdu běží, a vrátí
 // počet goroutin před jejich spuštěním a v okamžiku, kdy všechny běží.
 // Před návratem je všechny uklidí. Pro n <= 0 vrací dvakrát aktuální počet.
 func GoroutineCost(n int) (before, after int) {
-	panic("TODO: úkol C")
+	// TODO: úkol C
+	return
 }
 
 // BytesPerGoroutine odhadne, kolik bajtů zásobníku připadá na jednu goroutinu.
 // Měří přes runtime.ReadMemStats a StackInuse, takže jde o hrubý odhad —
 // když měření nic nezachytí, vrací 0. Pro n <= 0 vrací 0.
 func BytesPerGoroutine(n int) uint64 {
-	panic("TODO: úkol C")
+	// TODO: úkol C
+	return 0
 }

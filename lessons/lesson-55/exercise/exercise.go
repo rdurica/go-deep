@@ -51,40 +51,47 @@ type ShutdownStep struct {
 
 // String vrací "verze (commit, čas)"; prázdná pole nahradí výchozími hodnotami.
 func (b BuildInfo) String() string {
-	panic("TODO: úkol A")
+	// TODO: úkol A
+	return ""
 }
 
 // Current vrátí BuildInfo poskládané z ldflags proměnných.
 func Current() BuildInfo {
-	panic("TODO: úkol A")
+	// TODO: úkol A
+	return *new(BuildInfo)
 }
 
 // VersionHandler vrací JSON s informacemi o buildu.
 func VersionHandler(info BuildInfo) http.Handler {
-	panic("TODO: úkol A")
+	// TODO: úkol A
+	return *new(http.Handler)
 }
 
 // NewHealthChecker vytvoří checker s daným timeoutem pro readiness kontroly.
 func NewHealthChecker(timeout time.Duration) *HealthChecker {
-	panic("TODO: úkol B")
+	// TODO: úkol B
+	return nil
 }
 
 // Register přidá nebo přepíše pojmenovanou kontrolu.
 func (h *HealthChecker) Register(name string, check Check) {
-	panic("TODO: úkol B")
+	// TODO: úkol B
 }
 
 // LiveHandler odpovídá 200, dokud proces žije.
 func (h *HealthChecker) LiveHandler() http.Handler {
-	panic("TODO: úkol B")
+	// TODO: úkol B
+	return *new(http.Handler)
 }
 
 // ReadyHandler spustí kontroly souběžně a vrátí 200, nebo 503 s detailem.
 func (h *HealthChecker) ReadyHandler() http.Handler {
-	panic("TODO: úkol B")
+	// TODO: úkol B
+	return *new(http.Handler)
 }
 
 // ShutdownSequence provede kroky v pořadí a vrátí souhrnnou chybu.
 func ShutdownSequence(ctx context.Context, timeout time.Duration, steps []ShutdownStep) error {
-	panic("TODO: úkol C")
+	// TODO: úkol C
+	return nil
 }

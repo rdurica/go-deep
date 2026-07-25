@@ -30,41 +30,47 @@ type Admin struct {
 
 // Add vrátí nový bod, který je součtem p a q.
 func (p Point) Add(q Point) Point {
-	panic("TODO: úkol A")
+	// TODO: úkol A
+	return *new(Point)
 }
 
 // String implementuje fmt.Stringer, formát je "(1,2)".
 func (p Point) String() string {
-	panic("TODO: úkol A")
+	// TODO: úkol A
+	return ""
 }
 
 // Inc zvýší počítadlo o jedna.
 func (c *Counter) Inc() {
-	panic("TODO: úkol B")
+	// TODO: úkol B
 }
 
 // Add přičte n k počítadlu. Záporné n počítadlo snižuje.
 func (c *Counter) Add(n int) {
-	panic("TODO: úkol B")
+	// TODO: úkol B
 }
 
 // Value vrací aktuální hodnotu počítadla.
 func (c Counter) Value() int {
-	panic("TODO: úkol B")
+	// TODO: úkol B
+	return 0
 }
 
 // Describe vrací popis základu ve tvaru "base:<ID>".
 func (b Base) Describe() string {
-	panic("TODO: úkol C")
+	// TODO: úkol C
+	return ""
 }
 
 // Describe překrývá promotovanou metodu Base.Describe.
 // Formát je "user:<Name> (base:<ID>)".
 func (u User) Describe() string {
-	panic("TODO: úkol C")
+	// TODO: úkol C
+	return ""
 }
 
 // Tag vrací "admin:<ID>/<Level>" a používá pole promotovaná přes dvě úrovně.
 func (a Admin) Tag() string {
-	panic("TODO: úkol C")
+	// TODO: úkol C
+	return ""
 }

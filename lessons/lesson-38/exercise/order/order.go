@@ -34,7 +34,8 @@ const (
 
 // String implementuje fmt.Stringer.
 func (s Status) String() string {
-	panic("TODO: úkol A")
+	// TODO: úkol A
+	return ""
 }
 
 // Line je jedna položka objednávky.
@@ -46,7 +47,8 @@ type Line struct {
 
 // TotalCents vrací cenu položky v celých centech.
 func (l Line) TotalCents() int64 {
-	panic("TODO: úkol A")
+	// TODO: úkol A
+	return 0
 }
 
 // Order je objednávka. Metody přechodů vracejí novou hodnotu,
@@ -59,25 +61,30 @@ type Order struct {
 
 // New vytvoří novou objednávku ve stavu StatusNew a ověří invarianty.
 func New(id string, lines []Line) (Order, error) {
-	panic("TODO: úkol A")
+	// TODO: úkol A
+	return *new(Order), nil
 }
 
 // TotalCents vrací celkovou cenu objednávky v celých centech.
 func (o Order) TotalCents() int64 {
-	panic("TODO: úkol A")
+	// TODO: úkol A
+	return 0
 }
 
 // Pay převede novou objednávku do stavu StatusPaid.
 func (o Order) Pay() (Order, error) {
-	panic("TODO: úkol A")
+	// TODO: úkol A
+	return *new(Order), nil
 }
 
 // Ship převede zaplacenou objednávku do stavu StatusShipped.
 func (o Order) Ship() (Order, error) {
-	panic("TODO: úkol A")
+	// TODO: úkol A
+	return *new(Order), nil
 }
 
 // Cancel zruší objednávku, která ještě není odeslaná ani zrušená.
 func (o Order) Cancel() (Order, error) {
-	panic("TODO: úkol A")
+	// TODO: úkol A
+	return *new(Order), nil
 }

@@ -201,7 +201,7 @@ např. `Greet("Radek")` → `"Hello, Radek!"`
 
 ### B — jádro (~25 min)
 
-Doplň dvě funkce v `exercise/exercise.go` (místo `panic("TODO: úkol B")`).
+Doplň dvě funkce v `exercise/exercise.go` (místo `// TODO: úkol B`).
 #### `SumAll(nums ...int) int`
 Sečti libovolný počet celých čísel předaných jako argumenty.
 - `...int` znamená variadickou funkci: voláš ji jako `SumAll(1, 2, 3)`, ne jako slice.

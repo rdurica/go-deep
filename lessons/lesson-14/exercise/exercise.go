@@ -19,40 +19,48 @@ type NotFoundError struct {
 
 // Divide dělí a a b. Při b == 0 vrací chybu obalující ErrDivideByZero.
 func Divide(a, b int) (int, error) {
-	panic("TODO: úkol A")
+	// TODO: úkol A
+	return 0, nil
 }
 
 // Error implementuje interface error.
 func (e *ValidationError) Error() string {
-	panic("TODO: úkol B")
+	// TODO: úkol B
+	return ""
 }
 
 // ValidateUser ověří jméno a e-mail a vrátí spojení všech nalezených chyb.
 func ValidateUser(name, email string) error {
-	panic("TODO: úkol B")
+	// TODO: úkol B
+	return nil
 }
 
 // FieldsWithErrors posbírá jména polí ze všech ValidationError v řetězu chyb.
 func FieldsWithErrors(err error) []string {
-	panic("TODO: úkol B")
+	// TODO: úkol B
+	return nil
 }
 
 // Error implementuje interface error.
 func (e *NotFoundError) Error() string {
-	panic("TODO: úkol C")
+	// TODO: úkol C
+	return ""
 }
 
 // fetchFromStore simuluje čtení z úložiště. Neexportovaná — testy ji nevidí.
 func fetchFromStore(id string) error {
-	panic("TODO: úkol C")
+	// TODO: úkol C
+	return nil
 }
 
 // LoadUser načte uživatele a případnou chybu obalí kontextem.
 func LoadUser(id string) error {
-	panic("TODO: úkol C")
+	// TODO: úkol C
+	return nil
 }
 
 // IsNotFound vrací true, pokud kdekoli v řetězu chyb leží *NotFoundError.
 func IsNotFound(err error) bool {
-	panic("TODO: úkol C")
+	// TODO: úkol C
+	return false
 }

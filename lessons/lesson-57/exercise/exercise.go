@@ -13,7 +13,8 @@ const (
 
 // String implementuje fmt.Stringer.
 func (s Severity) String() string {
-	panic("TODO: úkol A")
+	// TODO: úkol A
+	return ""
 }
 
 // Finding je jeden nález review nad zdrojovým kódem.
@@ -35,22 +36,26 @@ type FuncInfo struct {
 
 // ParseFuncs vytáhne ze zdrojáku přehled všech funkcí a metod v pořadí výskytu.
 func ParseFuncs(src string) ([]FuncInfo, error) {
-	panic("TODO: úkol A")
+	// TODO: úkol A
+	return nil, nil
 }
 
 // CheckIgnoredErrors najde přiřazení návratové hodnoty volání do _.
 func CheckIgnoredErrors(src string) []Finding {
-	panic("TODO: úkol B")
+	// TODO: úkol B
+	return nil
 }
 
 // CheckContextInStruct najde pole typu context.Context ve struct typech.
 func CheckContextInStruct(src string) []Finding {
-	panic("TODO: úkol B")
+	// TODO: úkol B
+	return nil
 }
 
 // CheckContextNotFirst najde funkce, které berou context.Context, ale ne jako první parametr.
 func CheckContextNotFirst(src string) []Finding {
-	panic("TODO: úkol B")
+	// TODO: úkol B
+	return nil
 }
 
 // Hunk je jeden blok změn z unified diffu.
@@ -64,10 +69,12 @@ type Hunk struct {
 
 // CriticalPath vrátí z unified diffu hunky, které mění kód uvnitř funkcí.
 func CriticalPath(diff string) []Hunk {
-	panic("TODO: úkol C")
+	// TODO: úkol C
+	return nil
 }
 
 // ReviewReport sestaví textový přehled nálezů seskupený podle závažnosti.
 func ReviewReport(findings []Finding) string {
-	panic("TODO: úkol C")
+	// TODO: úkol C
+	return ""
 }

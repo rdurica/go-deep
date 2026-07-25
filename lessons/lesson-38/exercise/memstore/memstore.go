@@ -16,15 +16,18 @@ type Repository struct {
 
 // New vytvoří prázdné úložiště.
 func New() *Repository {
-	panic("TODO: úkol B")
+	// TODO: úkol B
+	return nil
 }
 
 // Save uloží nebo přepíše objednávku.
 func (r *Repository) Save(ctx context.Context, o order.Order) error {
-	panic("TODO: úkol B")
+	// TODO: úkol B
+	return nil
 }
 
 // Find vrátí objednávku podle ID, jinak chybu obalující order.ErrNotFound.
 func (r *Repository) Find(ctx context.Context, id string) (order.Order, error) {
-	panic("TODO: úkol B")
+	// TODO: úkol B
+	return *new(order.Order), nil
 }

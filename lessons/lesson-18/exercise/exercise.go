@@ -36,35 +36,42 @@ type Report struct {
 
 // String formátuje částku jako desetinné číslo se dvěma místy.
 func (m Money) String() string {
-	panic("TODO: úkol A")
+	// TODO: úkol A
+	return ""
 }
 
 // Error implementuje rozhraní error.
 func (e *ValidationError) Error() string {
-	panic("TODO: úkol A")
+	// TODO: úkol A
+	return ""
 }
 
 // ParseTransactions načte pole transakcí z JSON a ověří je.
 func ParseTransactions(r io.Reader) ([]Transaction, error) {
-	panic("TODO: úkol B")
+	// TODO: úkol B
+	return nil, nil
 }
 
 // TotalsByCategory sečte částky podle kategorie.
 func TotalsByCategory(txs []Transaction) map[string]Money {
-	panic("TODO: úkol B")
+	// TODO: úkol B
+	return nil
 }
 
 // GroupBy seskupí prvky podle klíče spočítaného funkcí key.
 func GroupBy[T any, K comparable](items []T, key func(T) K) map[K][]T {
-	panic("TODO: úkol C")
+	// TODO: úkol C
+	return nil
 }
 
 // String implementuje fmt.Stringer.
 func (r Report) String() string {
-	panic("TODO: úkol C")
+	// TODO: úkol C
+	return ""
 }
 
 // BuildReport načte transakce ze vstupu a sestaví z nich souhrn.
 func BuildReport(r io.Reader) (Report, error) {
-	panic("TODO: úkol C")
+	// TODO: úkol C
+	return *new(Report), nil
 }
