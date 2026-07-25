@@ -211,6 +211,8 @@ Pracuj v `exercise/`. Postupuj A → B → C, po každé části spusť test.
 `Swap(a, b *int)` prohodí hodnoty, na které pointery ukazují. Když je kterýkoli z nich `nil`,
 funkce **nesmí panikovat** a nemá dělat nic. Volání `Swap(&x, &x)` musí `x` nechat beze změny.
 
+např. `Swap(&a, &b)` pro `a=1, b=2` → `a=2, b=1`
+
 ### B — jádro (~35 min)
 
 1. `ApplyDefaults(c *Config)` doplní do konfigurace výchozí hodnoty:
@@ -231,6 +233,8 @@ funkce **nesmí panikovat** a nemá dělat nic. Volání `Swap(&x, &x)` musí `x
    že si musíš data zkopírovat, ne jen zavolat `append`. Pro `nil` vstup vrať slice s jedním
    prvkem.
 
+např. `IncrementAll([]int{1, 2, 3})` → `[2, 3, 4]`
+
 ### C — rozšíření (~25 min)
 
 Jednosměrně zřetězený seznam. Typ `Node{Val int; Next *Node}` je předpřipravený, prázdný
@@ -245,6 +249,8 @@ seznam reprezentuje `nil` hlava. Všechny tři funkce musí `nil` hlavu zvládno
 Až budeš hotový, projdi si `Reverse` po řádcích s tužkou nad papírem a nakresli, kam ukazují
 `prev`, `node` a `next` v každé iteraci. Tenhle jeden obrázek je důvod, proč je v kurzu
 zřetězený seznam, i když bys ho v produkci nikdy nepsal.
+
+např. `Push(nil, 42)` → `&Node{Val: 42}`
 
 ```bash
 make lesson L=06

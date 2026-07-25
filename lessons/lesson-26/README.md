@@ -239,6 +239,8 @@ Pracuj v `exercise/`. `WriteJSON`, `ErrorResponse`, typ `Middleware` a kostra
 `Chain(h http.Handler, mws ...Middleware) http.Handler` — obalí `h` tak, že **první**
 middleware v seznamu je nejvíc vnější. Volání bez middlewarů vrátí `h` beze změny.
 
+např. `Chain(h, A, B)` → pořadí `A:pred, B:pred, handler, B:po, A:po`
+
 ### B — jádro (~35 min)
 
 1. Metody `statusRecorder`:
@@ -253,6 +255,8 @@ middleware v seznamu je nejvíc vnější. Volání bez middlewarů vrátí `h` 
    a `Content-Type: application/json`. Text paniky se do odpovědi nesmí dostat.
    `http.ErrAbortHandler` musí propustit dál (`panic(recovered)`).
 
+např. `Recovery()` + `panic(...)` → `500` JSON `ErrorResponse` (bez textu paniky)
+
 ### C — rozšíření (~25 min)
 
 1. `RequestID() Middleware` — vezme hlavičku `X-Request-ID` (konstanta `RequestIDHeader`),
@@ -263,6 +267,8 @@ middleware v seznamu je nejvíc vnější. Volání bez middlewarů vrátí `h` 
    middlewaru vrací `("", false)`.
 3. `Timeout(d time.Duration) Middleware` — handler dostane kontext s deadline `d`
    a při jeho překročení odejde **503** s tělem obsahujícím slovo `timeout`.
+
+např. `RequestID` + hlavička `X-Request-ID: abc-123` → totéž ID v kontextu i odpovědi
 
 ```bash
 make lesson L=26

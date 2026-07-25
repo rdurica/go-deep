@@ -161,6 +161,8 @@ func (f HandlerFunc) Handle(path string) string
 Musí platit, že `var h Handler = HandlerFunc(nejakaFunkce)` se zkompiluje a `h.Handle("/x")`
 zavolá tu funkci. Je to jeden řádek — ale musíš pochopit, proč funguje.
 
+např. `HandlerFunc(...).Handle("/svete")` → `ahoj /svete`
+
 ### B — jádro (~35 min)
 
 `Mux` je zjednodušený `ServeMux`. Jeho **zero value je použitelná**, konstruktor nepiš
@@ -192,6 +194,8 @@ na `/` (protože `/api/` není prefix `/api`), zatímco `/api/users/42` jde na `
 Protože `Handle` má stejnou signaturu jako metoda v `Handler`, tvůj `*Mux` sám splňuje
 `Handler` a půjde vnořit do jiného muxu. Nic pro to dělat nemusíš — a to je ta lekce.
 
+např. `Handle("/api/users")` → `users:/api/users` (vzory `/`, `/api/`, `/api/users`)
+
 ### C — rozšíření (~25 min)
 
 `Marshal(v any) (string, error)` — mini `encoding/json` **bez reflexe**, jen přes
@@ -220,6 +224,8 @@ Detaily, na kterých to stojí:
 
 Až budeš hotový, spusť `go doc -src encoding/json.Marshal` a najdi, kde se ta funkce
 větví na reflexi. Kolik řádků má tvoje verze a kolik ta jejich?
+
+např. `Marshal("ahoj")` → `"ahoj"`
 
 ```bash
 make lesson L=22

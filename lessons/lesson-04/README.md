@@ -265,6 +265,8 @@ Pracuj v `exercise/`. Postupuj A → B → C, po každé části spusť test.
    nebo `nil` vstup vrať `0, 0, false`. Signatura má pojmenované návratové hodnoty; v těle
    piš explicitní `return`. Funkce nesmí měnit vstupní slice (tedy žádné třídění na místě).
 
+např. `Sum(2, 3)` → `5`
+
 ### B — jádro (~35 min)
 
 1. `Counter() func() int` — vrátí funkci, která při každém volání vrátí o jedna víc. První
@@ -274,6 +276,8 @@ Pracuj v `exercise/`. Postupuj A → B → C, po každé části spusť test.
    pole se vstupem. Pro `nil` a prázdný vstup vrať slice délky `0`.
 3. `Compose(fs ...func(int) int) func(int) int` — složí funkce **zleva doprava**, tedy
    `Compose(f, g)(x)` je `g(f(x))`. Bez argumentů vrať identitu (`func(x int) int { return x }`).
+
+např. `Apply([]int{1, 2, 3}, double)` → `[2, 4, 6]`
 
 ### C — rozšíření (~25 min)
 
@@ -288,6 +292,8 @@ v lekci 08, pro teď stačí `make(map[int]int)`, zápis `m[k] = v` a comma-ok �
 `v, ok := m[k]`.
 
 Každé volání `Memoize` musí vytvořit nezávislou instanci s vlastní cache.
+
+např. `memo(4)` po `Memoize(x*x)` → `16` (opakovaně, `calls()` = `1`)
 
 ```bash
 make lesson L=04

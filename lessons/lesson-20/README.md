@@ -254,6 +254,8 @@ Pracuj v `exercise/`. Postupuj A → B → C, po každé části spusť test.
   a při chybě panikuje **s tou chybou** (`panic(err)`, ne `panic(err.Error())`).
 - Gettery `Addr() string` a `Logger() *slog.Logger` — bez prefixu `Get`.
 
+např. `NewServer(":8080", logger).Addr()` → `":8080"`
+
 ### B — jádro (~35 min)
 
 Klient konfigurovaný functional options.
@@ -271,6 +273,8 @@ Klient konfigurovaný functional options.
   `retries == 0` je platná hodnota.
 - Při jakékoli chybě vrať `nil` klienta.
 - Gettery `BaseURL()`, `Timeout()`, `Retries()`, `UserAgent()`.
+
+např. `NewClient("https://api.example.com/").BaseURL()` → `"https://api.example.com"`
 
 ### C — rozšíření (~25 min)
 
@@ -296,6 +300,8 @@ a rovnou `reg.Set(...)`.
 - `Set(key, value string)` — líná inicializace mapy, přepis existujícího klíče.
 - `Lookup(key string) (string, bool)` — čtení musí fungovat i na nulové `Registry`.
 - `Len() int`, `Keys() []string` (vzestupně seřazené; na prázdné registry prázdný slice).
+
+např. `svc.Values()` → `["alfa", "beta"]`
 
 ```bash
 make lesson L=20

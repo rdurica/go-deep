@@ -262,6 +262,8 @@ která **obaluje** připravený sentinel `ErrDivideByZero` a přidává kontext 
 dělence). Test ověří tři věci najednou: `errors.Is` projde, text obsahuje
 `"division by zero"`, a vrácená chyba **není** holý sentinel — musí být obalená.
 
+např. `Divide(10, 2)` → `5, nil`
+
 ### B — jádro (~35 min)
 
 1. `func (e *ValidationError) Error() string` — přesně ve tvaru
@@ -282,6 +284,8 @@ dělence). Test ověří tři věci najednou: `errors.Is` projde, text obsahuje
    - a hlavně **nesmí duplikovat**. Rozmysli si, proč naivní `errors.As` na každém uzlu
      stromu vrátí stejnou chybu vícekrát.
 
+např. `FieldsWithErrors(ValidateUser("", "nope"))` → `["name", "email"]`
+
 ### C — rozšíření (~25 min)
 
 Vrstvení chyb přes hranici „úložiště → služba".
@@ -297,6 +301,8 @@ Vrstvení chyb přes hranici „úložiště → služba".
 Test ověří, že text chyby obsahuje **obě vrstvy** (`"load user u9"` i `"not found"`)
 a **zároveň** že `errors.As` skrz obalení projde a vytáhne správné `ID`. Kdybys použil
 `%v` místo `%w`, první polovina projde a druhá spadne — přesně jako v produkci.
+
+např. `IsNotFound(LoadUser("u9"))` → `true`
 
 ```bash
 make lesson L=14

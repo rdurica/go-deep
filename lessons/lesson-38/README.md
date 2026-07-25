@@ -267,8 +267,10 @@ V `order/`:
    (`ErrInvalidLine`: prázdné SKU, nekladné množství, nekladná cena). Vrátí objednávku
    ve stavu `new` s **kopií** slice položek. Při chybě nulovou hodnotu.
 3. `Order.TotalCents()` a přechody `Pay`, `Ship`, `Cancel` s hodnotovým receiverem.
-   Povolené cesty: new→paid→shipped, `Cancel` z new i paid. Odeslanou ani zrušenou
-   objednávku už nelze změnit — chyba obalující `ErrInvalidTransition`.
+Povolené cesty: new→paid→shipped, `Cancel` z new i paid. Odeslanou ani zrušenou
+objednávku už nelze změnit — chyba obalující `ErrInvalidTransition`.
+
+např. `Line{Qty:3, UnitPriceCents:1999}.TotalCents()` → `5997`
 
 ### B — porty, adaptér a use-casy (~35 min)
 
@@ -280,6 +282,8 @@ V `order/`:
    **nesmí** uložit. Přechodové use-casy načtou, nechají rozhodnout doménu a uloží —
    a když doména přechod zamítne, `Save` se nezavolá vůbec. Chyby portů obal přes `%w`.
 
+např. `Place(lines)` → `{ID:"ord-1", Status:new}`
+
 ### C — HTTP adaptér (~25 min)
 
 V `httpapi/`:
@@ -290,8 +294,10 @@ V `httpapi/`:
    (`DisallowUnknownFields`, `io.LimitReader`) a převeď DTO na doménové typy — doména
    JSON tagy nemá a mít nebude.
 2. Mapování chyb na **jednom místě**: `ErrNotFound` → 404, `ErrInvalidTransition` → 409,
-   invarianty objednávky → 422, nečitelné tělo → 400, cokoli jiného → 500 bez
-   prozrazení detailu. Chyby posílej jako `application/problem+json`.
+invarianty objednávky → 422, nečitelné tělo → 400, cokoli jiného → 500 bez
+prozrazení detailu. Chyby posílej jako `application/problem+json`.
+
+např. `POST /orders` → `201`
 
 ```bash
 make lesson L=38

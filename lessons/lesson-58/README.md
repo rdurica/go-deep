@@ -160,6 +160,8 @@ a vyhodnocení review drilu.
    - položka s prázdným `ID` se zahodí,
    - prázdné vstupy dávají prázdný výsledek (ne paniku).
 
+např. `MergeChecklists(base, personal)` → `ctx-first` přepsané, `rows-err` na konci
+
 ### B — jádro (~35 min)
 
 Model pairing session. `NewSession(now func() time.Time) *Session`; `nil` znamená
@@ -181,6 +183,8 @@ Model pairing session. `NewSession(now func() time.Time) *Session`; `nil` znamen
 - `Role.String()` → `"none"`, `"spec"`, `"tests"`, `"impl"`, `"review"`, `"done"`;
   hodnota mimo rozsah `"none"`.
 
+např. `Start(spec)` → … → `Finish()` → `Current() = done`
+
 ### C — rozšíření (~25 min)
 
 1. `RecommendLesson(category string) string` — case-insensitive mapa kategorie na
@@ -196,6 +200,8 @@ Model pairing session. `NewSession(now func() time.Time) *Session`; `nil` znamen
    - `Recall` = TP / počet nastražených, při nule nastražených `1`,
    - `Review` — doporučení pro kategorie **zmeškaných** nálezů, bez duplicit, seřazená
      abecedně.
+
+např. `ScoreReview` (TP=2, FP=1, Missed=2) → `Precision=2/3`, `Recall=0.5`
 
 ```bash
 make lesson L=58

@@ -212,6 +212,8 @@ parser pseudo-verzí a výběr verzí. Postupuj A → B → C, po každé část
    číselně (`rc.2 < rc.10`), číselný je menší než textový, dva textové podle ASCII;
    při shodném prefixu je kratší menší (`rc < rc.1`).
 
+např. `Compare(v1.0.0-rc.1, v1.0.0)` → `-1`
+
 ### B — jádro (~35 min)
 
 1. `ParsePseudoVersion(s string) (base string, ts time.Time, rev string, err error)` —
@@ -226,6 +228,8 @@ parser pseudo-verzí a výběr verzí. Postupuj A → B → C, po každé část
    i `example.com/v2/sub` → `1`). Sufix `/v0`, `/v1` a `/v02` je chyba obalující
    `ErrMajorSuffix`, stejně jako prázdná cesta nebo cesta končící lomítkem.
 
+např. `MajorSuffix("example.com/m/v2")` → `2`
+
 ### C — rozšíření (~25 min)
 
 1. `SelectVersions(reqs map[string][]string) (map[string]string, error)` — minimal version
@@ -237,6 +241,8 @@ parser pseudo-verzí a výběr verzí. Postupuj A → B → C, po každé část
    Major z cesty musí odpovídat major verzi modulu, přičemž `v0.x` i `v1.x` patří k cestě
    bez sufixu. Nesoulad je chyba obalující `ErrIncompatible`; rozbitý vstup propaguje
    `ErrSyntax`, respektive `ErrMajorSuffix`.
+
+např. `SelectVersions({"example.com/a": ["v1.2.0", "v1.4.1", "v1.3.9"]})` → `"v1.4.1"`
 
 ```bash
 make lesson L=51

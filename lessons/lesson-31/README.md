@@ -127,6 +127,8 @@ vyzkoušíš všechno z fáze 3 v malém. Projekt P02 pak dělá totéž ve velk
 Chyby posbírej přes `errors.Join` a obal `ErrInvalid`; text musí obsahovat jména
 vadných klíčů.
 
+např. `LoadConfig(prázdné env)` → `Addr:"127.0.0.1:8080", LogLevel:Info, ShutdownTimeout:5s`
+
 ### B — jádro (~40 min)
 
 1. `Chain(h http.Handler, mws ...func(http.Handler) http.Handler) http.Handler` —
@@ -151,14 +153,18 @@ Chyby mají vždy tvar `{"error":{"code":"…","message":"…"}}` a `Content-Typ
 metoda `405` s hlavičkou `Allow`, chybějící nebo jiný `Content-Type` u `POST` je `415`,
 rozbitý JSON `400`, prázdný nebo delší než 500 znaků text `400`.
 
+např. `Chain(h, a, b, c)` → `"a>b>c>handler"`
+
 ### C — rozšíření (~25 min)
 
 1. `RecoveryMiddleware(logger *slog.Logger) func(http.Handler) http.Handler` — zachytí
    paniku, zaloguje ji na úrovni Error s atributem `request_id` z kontextu a odpoví
    `500` v JSONu s kódem `internal_error`.
 2. `Run(ctx context.Context, cfg Config, h http.Handler, ln net.Listener) error` — obsluhuje
-   listener, na zrušení kontextu udělá `Shutdown` s `cfg.ShutdownTimeout` a vrátí `nil`
-   při čistém ukončení.
+listener, na zrušení kontextu udělá `Shutdown` s `cfg.ShutdownTimeout` a vrátí `nil`
+při čistém ukončení.
+
+např. panic v handleru → `500` + `{"error":{"code":"internal_error",…}}`
 
 ```bash
 make lesson L=31

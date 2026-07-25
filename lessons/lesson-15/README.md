@@ -268,6 +268,8 @@ Pracuj v `exercise/`. Postupuj A → B → C, po každé části spusť test.
 Zkus si funkce zavolat jednou explicitně (`Map[int, string](...)`) a jednou s odvozením.
 V testu jsou schválně použité na `int`, `string` i na vlastní typ `UserID`.
 
+např. `Map([1, 2, 3], strconv.Itoa)` → `["1", "2", "3"]`
+
 ### B — jádro (~35 min)
 
 1. `Sum[T Number](s []T) T` — součet. Prázdný nebo `nil` vstup dá nulu **daného typu**.
@@ -279,6 +281,8 @@ V testu jsou schválně použité na `int`, `string` i na vlastní typ `UserID`.
 3. `Keys[K comparable, V any](m map[K]V) []K` — klíče mapy. Pořadí není definované
    (test si výsledek seřadí). `nil` mapa dá prázdný výsledek. Rozmysli si, proč
    `K` musí být `comparable` a `V` stačí `any`.
+
+např. `Sum([1, 2, 3])` → `6`
 
 ### C — rozšíření (~25 min)
 
@@ -296,6 +300,8 @@ V testu jsou schválně použité na `int`, `string` i na vlastní typ `UserID`.
 
 Testy instanciují oba typy nejméně dvakrát různými typy, včetně vlastní struktury
 a pojmenovaného typu `UserID` jako klíče.
+
+např. po `Push(1)`, `Push(2)`: `Pop()` → `2, true`
 
 ```bash
 make lesson L=15

@@ -252,6 +252,8 @@ Pracuj v `exercise/`. Postupuj A → B → C, po každé části spusť test.
    Použij `time.NewTimer` a `defer timer.Stop()`, ne `time.After` — test funkci volá
    dva tisíckrát po sobě.
 
+např. `RecvWithTimeout(ch, time.Second)` pro `ch←42` → `(42, true)`
+
 ### B — jádro (~35 min)
 
 1. `First(ctx context.Context, fns ...func(context.Context) (string, error)) (string, error)` —
@@ -266,6 +268,8 @@ Pracuj v `exercise/`. Postupuj A → B → C, po každé části spusť test.
    Po zavření vstupu doruč čekající hodnotu (pokud nějaká je) a výstup zavři. Timer
    vytvoř jednou a správně ho resetuj.
 
+např. `First(ctx, slow, fast, slow)` → `"rychlý"`
+
 ### C — rozšíření (~25 min)
 
 `Heartbeat(ctx context.Context, interval time.Duration, work func()) <-chan time.Time` —
@@ -279,6 +283,8 @@ každých `interval` zavolej `work` a pošli tep do vráceného kanálu. Podmín
 
 Test počítá tepy v daném okně s velkorysou tolerancí a hlavně kontroluje, že po zrušení
 nezůstane žádná goroutina navíc.
+
+např. `Heartbeat(už zrušený ctx, 10ms, nil)` → rovnou zavřený kanál (žádný tep)
 
 ```bash
 make lesson L=42

@@ -148,6 +148,8 @@ znamená `time.Now`.
 
 Test běží s `-race` a osm goroutin se pere o 500 tokenů; musí projít **přesně** 500.
 
+např. `Allow("a")` ×4 při kapacitě 3 → `true, true, true, false`
+
 ### B — middleware chain (~35 min)
 
 `Harden(h http.Handler, opts HardenOptions) http.Handler` složí (od vnějšku dovnitř):
@@ -165,6 +167,8 @@ Test běží s `-race` a osm goroutin se pere o 500 tokenů; musí projít **př
 Každá vlastnost má vlastní test přes `httptest`; testy nesmí spoléhat na reálný čas
 kromě samotného timeoutu.
 
+např. `Harden` + limiter kapacita 2 → 3. požadavek `429`
+
 ### C — audit a pokrok (~25 min)
 
 1. `AuditReport(checks []Check) (Report, error)`:
@@ -178,6 +182,8 @@ kromě samotného timeoutu.
    - `ByPhase` — vždy inicializovaná mapa fáze → `PhaseStat`,
    - `WeakestPhase` — fáze s nejnižším poměrem splněných; při shodě nižší číslo fáze,
      u prázdného vstupu `0`.
+
+např. `AuditReport` (8/10, 1 kritický chybí) → `Ready=false`, `Score=0.8`
 
 ```bash
 make lesson L=60

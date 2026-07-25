@@ -225,6 +225,8 @@ Pracuj v `exercise/`. Postupuj A → B → C, po každé části spusť test.
    zaloguje na úrovni Info zprávu `"http_request"` s atributy `method`, `path`, `status`
    (int) a `duration` (jako `slog.Duration`). Použij `LogAttrs`.
 
+např. `LogRequest(..., "POST", "/tasks", 201, 1500ms)` → JSON `"http_request"` se `status:201`
+
 ### B — jádro (~35 min)
 
 1. `NewService(logger *slog.Logger) *Service` — uloží logger odvozený přes
@@ -238,6 +240,8 @@ Pracuj v `exercise/`. Postupuj A → B → C, po každé části spusť test.
    přidané přes `With` (`WithAttrs`) i **rekurzivně uvnitř skupin** `slog.Group`.
    `Enabled` a `WithGroup` deleguj na obalovaný handler.
 
+např. `Process("task-42")` → `nil` (+ log `"processed"`, `id:"task-42"`)
+
 ### C — rozšíření (~20 min)
 
 `LoggingMiddleware(logger *slog.Logger) func(http.Handler) http.Handler` — middleware,
@@ -245,6 +249,8 @@ která po dokončení požadavku zaloguje `"http_request"` s atributy `method`, 
 `status` a `duration`. Status musí být ten **skutečně odeslaný**, takže potřebuješ obalit
 `http.ResponseWriter` a zachytit `WriteHeader`. Handler, který `WriteHeader` nezavolá
 vůbec, poslal 200. Middleware nesmí odpověď nijak změnit.
+
+např. handler pošle `418` → odpověď beze změny, log `"http_request"` se `status:418`
 
 ```bash
 make lesson L=29

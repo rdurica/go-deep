@@ -195,6 +195,8 @@ Porty `Clock` a `IDGen` jsou předepsané. Implementuj:
 Test dosadí za porty vlastní fake adaptéry (`fixedClock`, `seqIDs`) a porovná celou
 objednávku přes `==`.
 
+např. `NewOrder("  Alice  ", 1999)` → `{ID:"ord-1", Customer:"Alice", TotalCents:1999}`
+
 ### B — jádro (~35 min)
 
 1. `NewMemoryStore() *MemoryStore`, `Save` a `Get` — in-memory adaptér portu
@@ -212,6 +214,8 @@ objednávku přes `==`.
    jinak nastaví `Canceled` a uloží. Selhání zápisu obal stejně jako u `Place`. Storno
    musí být vidět i při dalším `Find`.
 
+např. `Place("Alice", 1999)` → `{ID:"ord-1", Canceled:false}`; po `Cancel` → `Canceled:true`
+
 ### C — rozšíření (~20 min)
 
 1. `SystemClock.Now()` — produkční adaptér nad `time.Now`.
@@ -222,6 +226,8 @@ objednávku přes `==`.
 
 Až budeš hotový, zkus si myšlenkový experiment: kdyby přišel požadavek ukládat do
 Postgresu, kolik souborů se musí změnit? (Správná odpověď je „jeden nový a `Wire`".)
+
+např. `Wire().Place("Alice", 4200).ID` → 32 hex znaků (`^[0-9a-f]{32}$`)
 
 ```bash
 make lesson L=33

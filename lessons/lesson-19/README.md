@@ -255,6 +255,8 @@ func ParseUserID(rawUserIdString string) (int, error) {
 vrať `nil` a chybu obalenou indexem (0-based) ve tvaru `fmt.Errorf("id at index %d: %w", i, err)`,
 aby `errors.Is` dál našel sentinel.
 
+např. `ParseUserID("42")` → `42, nil`
+
 ### B — jádro (~35 min)
 
 `ProcessOrders(orders []Order) (Summary, error)` — projde objednávky a spočítá souhrn.
@@ -299,6 +301,8 @@ func ProcessOrders(orderList []Order) (Summary, error) {
 Cílem je plochá verze: validace přes early `continue` / `return` a agregace položek
 vytažená do neexportované pomocné funkce.
 
+např. `ProcessOrders([...])` → `{OrderCount: 3, TotalCents: 4798}`
+
 ### C — rozšíření (~25 min)
 
 `RenderInvoice(inv Invoice) string` musíš **rozdělit** na tři neexportované funkce:
@@ -323,6 +327,8 @@ TOTAL: 44.98
 - Součet počítej v centech, nikdy ne ve `float64`.
 
 Na skládání textu použij `strings.Builder`, ne `+=` v cyklu.
+
+např. `RenderInvoice(Invoice{Number: "2024-001", …})` → `…\nTOTAL: 44.98\n`
 
 ```bash
 make lesson L=19

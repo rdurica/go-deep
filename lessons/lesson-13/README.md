@@ -251,6 +251,8 @@ Každý řádek ve tvaru `"%d. %s\n"` s číslováním od 1, na konci vždy `"ce
 (i pro prázdný vstup). Chybu z každého zápisu **propaguj** — test tě prověří writerem,
 který po prvním zápisu selže.
 
+např. `WriteReport(["první"])` → `"1. první\ncelkem: 1\n"`
+
 ### B — jádro (~35 min)
 
 1. `CountLines(r io.Reader) (int, error)` — počet řádků. Prázdný vstup dá 0, `"a\nb"`
@@ -264,6 +266,8 @@ který po prvním zápisu selže.
 3. `Tail(r io.Reader, n int) ([]string, error)` — posledních `n` řádků v původním pořadí.
    Je-li řádků méně, vrať všechny. Pro `n <= 0` vrať prázdný výsledek. Nepotřebuješ
    držet v paměti víc než `n` řádků.
+
+např. `ReadAll(NewUpperReader("ahoj"))` → `"AHOJ"`
 
 ### C — rozšíření (~25 min)
 
@@ -281,6 +285,8 @@ který po prvním zápisu selže.
 
 Test na závěr spojí obojí dohromady: `Pipeline` čte z tvého `UpperReaderu` a píše do
 tvého `CountingWriteru`. Ani jeden o druhém neví — to je pointa.
+
+např. po `Write("ahoj\nsvete\n")`: `Bytes(), Lines()` → `11, 2`
 
 ```bash
 make lesson L=13

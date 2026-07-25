@@ -74,6 +74,9 @@ Aspoň dvě z nich musí vycházet z PHP reflexů.
 
 **Úkol** — části A, B, C s odhadem času. Popiš, co má funkce dělat, včetně hraničních
 případů. Nepíšeš řešení, ale zadání musí být jednoznačné, aby ho testy nemohly překvapit.
+Každá část A/B/C končí **jedním** krátkým řádkem `např. \`…\` → \`…\`` (vstup → výstup,
+hodnoty ze testů). Ne blok s více odrážkami. U checklistových částí stačí jedna konkrétní
+očekávaná akce nebo výsledek.
 
 **Ověření** — checklist: `make lesson L=NN` plus 3–5 otázek k sebehodnocení
 („umíš vysvětlit…"). Hned pod nadpis `## Ověření` patří výzva spustit

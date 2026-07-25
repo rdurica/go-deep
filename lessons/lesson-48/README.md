@@ -234,6 +234,8 @@ A k tomu `StressFlag(f Flag, writers, readers, iterations int) int`, která spus
 a vrátí, kolikrát čtenáři viděli `true`. Nekladné počty nebo `nil` příznak: vrať 0 a nic
 nespouštěj. Test prožene obě varianty a pod `-race` nesmí hlásit nic.
 
+např. `Set(true); Get()` → `true`
+
 ### B — jádro (~35 min)
 
 1. `NewLazyInit(init func() int) *LazyInit` a metoda `Value() int` — správný double-checked
@@ -246,6 +248,8 @@ nespouštěj. Test prožene obě varianty a pod `-race` nesmí hlásit nic.
 Test spustí 100 goroutin a hlídá atomickým čítačem, že inicializační funkce proběhla
 **právě jednou** a že všichni vidí stejnou hodnotu.
 
+např. `ConcurrentValues(NewLazyInit(→42), 100)` → sto hodnot `42`, init jen 1×
+
 ### C — rozšíření (~20 min)
 
 1. `Box` s `NewBox()`, `Publish(data []int)` a `Consume() []int` — publikace dat přes
@@ -256,6 +260,8 @@ Test spustí 100 goroutin a hlídá atomickým čítačem, že inicializační f
    data (test používá tisíc prvků, aby se případná nedokončená publikace projevila).
 3. `WaitGroupVisibility(n int) int` — `n` goroutin zapíše `i*i` na svůj index, po `Wait`
    se výsledky bez dalšího zamykání sečtou. Vrací součet, pro `n <= 0` nulu.
+
+např. `WaitGroupVisibility(4)` → `14` (`0+1+4+9`)
 
 ```bash
 make lesson L=48

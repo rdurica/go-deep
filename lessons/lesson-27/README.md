@@ -240,6 +240,8 @@ Pracuj v `exercise/`. `User`, `ErrorResponse`, `StatusResponse`, typ `Middleware
 2. `UserFrom(ctx context.Context) (User, bool)` — typově bezpečné čtení. Bez uloženého
    uživatele vrací zero value a `false`.
 
+např. `UserFrom(WithUser(ctx, {ID:"42", Name:"Kdosi"}))` → `{ID:"42", Name:"Kdosi"}, true`
+
 ### B — jádro (~35 min)
 
 1. `Authenticate(users map[string]User) Middleware`:
@@ -251,6 +253,8 @@ Pracuj v `exercise/`. `User`, `ErrorResponse`, `StatusResponse`, typ `Middleware
 2. `WhoAmI() http.Handler` — přečte uživatele z kontextu a vrátí ho jako JSON se
    statusem **200**. Když v kontextu není (middleware chybí), vrátí **500** —
    je to chyba wiringu, ne klienta.
+
+např. `Authorization: Bearer tok-radek` + `WhoAmI()` → `200` + `{ID:"1", Name:"Radek"}`
 
 ### C — rozšíření (~25 min)
 
@@ -265,6 +269,8 @@ Pracuj v `exercise/`. `User`, `ErrorResponse`, `StatusResponse`, typ `Middleware
    okamžitě skončí bez zápisu do `w` a zavolá `onExit(ctx.Err())`.
    `onExit` může být `nil`.
 3. `SlowHandler(work time.Duration) http.Handler` — totéž bez hooku.
+
+např. `FetchWithTimeout(..., fn → "hotovo")` → `"hotovo", nil`
 
 ```bash
 make lesson L=27

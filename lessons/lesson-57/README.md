@@ -190,6 +190,8 @@ Píšeš vlastní review nástroj: čtečku funkcí, tři kontroly nad AST a fil
 
    Nevalidní zdroják vrací chybu.
 
+např. `ParseFuncs` u `Add(a, b int) int` → `{Name:"Add", Params:2, Results:1}`
+
 ### B — jádro (~35 min)
 
 Tři kontroly. Když se zdroják nepodaří rozebrat, každá vrací **jediný** nález
@@ -208,6 +210,8 @@ a `Message`.
    typu `context.Context` na jiné než první pozici (pozor na `func f(a, b int, ctx …)`,
    kde je `ctx` třetí parametr, ale druhý `Field`). Na jednu funkci nanejvýš jeden nález.
    `Rule: "context-not-first"`, `Severity: SeverityWarn`.
+
+např. `CheckIgnoredErrors` na `_ = os.Remove("x")` → nález `ignored-error` na ř. 6
 
 ### C — rozšíření (~25 min)
 
@@ -236,6 +240,8 @@ a `Message`.
 ```
 
    Mezi skupinami je jeden prázdný řádek, výstup končí jediným `\n`.
+
+např. `ReviewReport(nil)` → `"Žádné nálezy.\n"`
 
 ```bash
 make lesson L=57

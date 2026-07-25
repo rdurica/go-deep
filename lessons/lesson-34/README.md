@@ -229,6 +229,8 @@ Pomocníky `validCurrency`, `formatAmount` a `moneyRe` máš předpřipravené �
 3. `(Money).String()` — `"19.99 EUR"`, `"0.05 EUR"`, `"-19.99 EUR"`, `"1.00 EUR"`.
    Nulová hodnota `Money{}` nemá měnu a vypíše se jako `"0.00"` bez mezery na konci.
 
+např. `NewMoney(1999, "EUR").String()` → `"19.99 EUR"`
+
 ### B — jádro (~35 min)
 
 Všechny metody mají **hodnotový receiver** a vracejí novou hodnotu.
@@ -244,6 +246,8 @@ Všechny metody mají **hodnotový receiver** a vracejí novou hodnotu.
 Test kontroluje i to, že po operacích zůstaly operandy nedotčené, a že `Money`
 funguje jako klíč mapy.
 
+např. `Money(1999 EUR).Add(250 EUR)` → `2249` centů
+
 ### C — rozšíření (~25 min)
 
 1. `Allocate(n int) ([]Money, error)` — rozdělí částku na `n` dílů tak, aby jejich
@@ -258,8 +262,10 @@ funguje jako klíč mapy.
    celá část, tečka, **přesně dvě** desetinná místa, mezera, kód měny. Okolní
    bílé znaky se ignorují. Cokoli jiného (`"19.9 EUR"`, `"19,99 EUR"`, `"+19.99 EUR"`,
    `"19.99 EUR extra"`) je `ErrInvalidFormat`. Musí platit
-   `ParseMoney(m.String()) == m` pro každou platnou částku — test to ověřuje na tisíci
-   generovaných hodnotách.
+`ParseMoney(m.String()) == m` pro každou platnou částku — test to ověřuje na tisíci
+generovaných hodnotách.
+
+např. `Allocate(3)` na `100 EUR` → `[34, 33, 33]`
 
 ```bash
 make lesson L=34

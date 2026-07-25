@@ -272,6 +272,8 @@ chyby mají jednotný tvar `ErrorResponse` (`{"error":"..."}`).
 2. `HealthHandler() http.Handler` — na jakoukoli metodu odpoví 200 a tělem
    `{"status":"ok"}` (typ `HealthResponse`).
 
+např. `HealthHandler()` → `200` + `{"status":"ok"}`
+
 ### B — jádro (~35 min)
 
 `EchoHandler() http.Handler` přijímá `POST` s JSON tělem `EchoRequest`. Postup a hraniční
@@ -289,6 +291,8 @@ případy:
 
 Každá chybová větev vrací `ErrorResponse` s neprázdným textem.
 
+např. `POST /echo {"message":"ab","repeat":3}` → `200` + `Echo:"ababab", Count:3`
+
 ### C — rozšíření (~25 min)
 
 1. `NotFoundHandler() http.Handler` — vždy **404** a `ErrorResponse`.
@@ -298,6 +302,8 @@ Každá chybová větev vrací `ErrorResponse` s neprázdným textem.
 3. `NewServer(addr string, h http.Handler) *http.Server` — vyplněná `Addr`, `Handler`
    a všechny čtyři timeouty kladnou hodnotou, přičemž `ReadHeaderTimeout` nesmí být delší
    než `ReadTimeout`.
+
+např. `GET /healthz` přes `NewRouter()` → `200` + `{"status":"ok"}`
 
 ```bash
 make lesson L=24

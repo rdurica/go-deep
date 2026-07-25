@@ -230,6 +230,8 @@ Navíc: než se podíváš na dodaný test, napiš si **vlastní** table-driven 
 v dodaném souboru). Vymysli aspoň pět případů včetně prázdného vstupu a duplicit.
 Teprve pak spusť `go test` a porovnej, které případy tě nenapadly.
 
+např. `Median([3, 1, 2])` → `2, true`
+
 ### B — jádro (~35 min)
 
 1. `ParseRecords(r io.Reader) ([]Record, error)` — čti CSV přes `encoding/csv`. První
@@ -240,6 +242,8 @@ Teprve pak spusť `go test` a porovnej, které případy tě nenapadly.
 2. `SumByCategory(recs []Record) map[string]float64` — součet částek po kategoriích.
    Pro prázdný vstup vrať prázdnou, ale **nenilovou** mapu.
 
+např. `SumByCategory(sample)["food"]` → `320.75`
+
 ### C — rozšíření (~20 min)
 
 1. `TopN(recs []Record, n int) []Record` — n záznamů s nejvyšší částkou. Řazení je
@@ -247,6 +251,8 @@ Teprve pak spusť `go test` a porovnej, které případy tě nenapadly.
    `n > len(recs)` → všechny záznamy. Vstupní slice nemění.
 2. `LoadFile(path string) ([]Record, error)` — otevři soubor, zavři ho přes `defer`
    a deleguj na `ParseRecords`. Chyby obaluj přes `%w` a doplň cestu.
+
+např. `TopN(recs, 1)[0].Name` → `"Grace"`
 
 ```bash
 make lesson L=17

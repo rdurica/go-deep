@@ -205,6 +205,8 @@ Pracuj v `exercise/`. Postupuj A → B → C, po každé části spusť test.
 2. `Collect(ch <-chan int) []int` — přečti kanál až do zavření a vrať hodnoty v pořadí,
    v jakém dorazily. Prázdný vstup vrací prázdný slice, ne `nil` s panikou.
 
+např. `Collect(Generate(1, 2, 3, 4, 5))` → `[1, 2, 3, 4, 5]`
+
 ### B — jádro (~35 min)
 
 1. `Merge(chs ...<-chan int) <-chan int` — fan-in. Každý vstup obsluhuje vlastní
@@ -214,6 +216,8 @@ Pracuj v `exercise/`. Postupuj A → B → C, po každé části spusť test.
    se hodnoty rozdělí (každá hodnota skončí právě v jednom z nich, rozdělení nemusí být
    rovnoměrné). Po vyčerpání vstupu se musí zavřít všechny výstupy. `n < 1` se chová
    jako 1.
+
+např. `Collect(Merge(Generate(1, 2, 3), Generate(10, 20), Generate(100)))` → `[1, 2, 3, 10, 20, 100]` (libovolné pořadí)
 
 ### C — rozšíření (~25 min)
 
@@ -231,6 +235,8 @@ Pracuj v `exercise/`. Postupuj A → B → C, po každé části spusť test.
 
 Test hlídá, že po `Close` nezůstane viset žádná goroutina odběratele, a pouští publish i
 subscribe souběžně pod `-race`.
+
+např. `Publish("a"); Publish("b"); Close()` → odběratelé dostanou `[a b]`, `Dropped() = 0`
 
 ```bash
 make lesson L=41

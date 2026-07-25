@@ -306,6 +306,8 @@ Pracuj v `exercise/`. Postupuj A → B → C, po každé části spusť test.
 2. `HashPassword(password, salt string) string` — hex zápis SHA-256 nad solí a heslem.
 3. `VerifyPassword(hash, password, salt string) bool` — porovnání přes `crypto/subtle`.
 
+např. `ParseBearer("Bearer abc123")` → `"abc123"`
+
 ### B — middleware a registr metrik (~40 min)
 
 1. `Authenticate(tokens map[string]string) Middleware` — naparsuje hlavičku, porovná token
@@ -321,6 +323,8 @@ Pracuj v `exercise/`. Postupuj A → B → C, po každé části spusť test.
    ne na nulu. `Snapshot` vrací **kopii** mapy, `Text` deterministický výpis se
    seřazenými řadami. Testy běží pod `-race`.
 
+např. `Authorization: Bearer tok-alice` → `200` + `"alice"`
+
 ### C — instrumentace (~25 min)
 
 1. `WithRoute(route string, next http.Handler) http.Handler` a
@@ -330,6 +334,8 @@ Pracuj v `exercise/`. Postupuj A → B → C, po každé části spusť test.
    musí být **vzor cesty**, takže dva požadavky na `/items/1` a `/items/2` dají jedinou
    řadu; test to hlídá. Handler, který nezavolá `WriteHeader`, se počítá jako 200
    a middleware nesmí odpověď nijak změnit.
+
+např. `GET /items/1|/items/2|/items/9999` → jedna řada `route="/items/{id}"`, `Count=3`
 
 Testy části C běží s `-race`:
 

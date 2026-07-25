@@ -252,6 +252,8 @@ Pracuj v `exercise/`. Postupuj A → B → C, po každé části spusť test.
 Obě funkce berou `getenv` jako parametr místo toho, aby volaly `os.Getenv`. Test díky
 tomu běží paralelně a nedotýká se prostředí procesu.
 
+např. `LookupString(env, "ADDR", "0.0.0.0")` → `"127.0.0.1"` (když `ADDR=127.0.0.1`)
+
 ### B — jádro (~35 min)
 
 `Load(getenv func(string) string) (Config, error)` sestaví `Config` z těchto klíčů:
@@ -270,6 +272,8 @@ a vrať je spojené přes `errors.Join`, aby `errors.Is(err, ErrMissing)` i
 `errors.Is(err, ErrInvalid)` fungovalo a text obsahoval jména všech vadných klíčů.
 Při chybě vrať nulový `Config`.
 
+např. `Load(validEnv)` → `Port:8080, Addr:"0.0.0.0", ReadTimeout:5s, Debug:false`
+
 ### C — rozšíření (~20 min)
 
 1. `func (c Config) String() string` — vypíše konfiguraci tak, aby se do výstupu nedostal
@@ -279,6 +283,8 @@ Při chybě vrať nulový `Config`.
 2. `LoadFromEnviron(environ []string) (Config, error)` — dostane slice ve formátu
    `os.Environ()`, tedy `"KEY=VALUE"`. Rozděl na **prvním** `=` (hodnota může další `=`
    obsahovat), přeskoč položky bez `=` a s prázdným klíčem, a výsledek předej `Load`.
+
+např. `Config.String()` → obsahuje `8080` a `db:5432`, ne API klíč ani heslo
 
 ```bash
 make lesson L=28

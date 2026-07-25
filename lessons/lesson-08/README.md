@@ -296,6 +296,8 @@ Pracuj v `exercise/`. Postupuj A → B → C, po každé části spusť test.
 ne-nil mapu, i pro prázdný nebo `nil` vstup. Využij toho, že chybějící klíč se čte jako
 nula — comma-ok tady nepotřebuješ.
 
+např. `WordCount(["go", "php", "go", "go", "php"])` → `map[go:3 php:2]`
+
 ### B — jádro (~35 min)
 
 Doplň typ `Set` jako `map[string]struct{}` a jeho API:
@@ -316,6 +318,8 @@ Doplň typ `Set` jako `map[string]struct{}` a jeho API:
 8. `func (s Set) Intersect(other Set) Set` — nová množina s prvky, které jsou v obou.
    Také nic nemění.
 
+např. `NewSet("cesta", "a", "b").Sorted()` → `["a", "b", "cesta"]`
+
 ### C — rozšíření (~25 min)
 
 1. `type Inventory map[string]*Item`, kde `Item` má pole `SKU string` a `Qty int`.
@@ -331,6 +335,8 @@ Doplň typ `Set` jako `map[string]struct{}` a jeho API:
    slova podle klíče, který vrátí funkce `key`. Uvnitř skupiny zachovej pořadí, v jakém
    slova přišla. Vždy vrací ne-nil mapu. Test výstup porovnává přes seřazené klíče,
    protože jinak by byl nedeterministický.
+
+např. `GroupBy(["gopher", "php", "go"], firstLetter)` → `g:[gopher go], p:[php]`
 
 ```bash
 make lesson L=08

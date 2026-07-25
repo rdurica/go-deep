@@ -219,6 +219,8 @@ Pracuj v `exercise/`. Postupuj A → B → C, po každé části spusť test.
 Implementuj `Classify(n int) string`, která vrací `"negative"`, `"zero"` nebo `"positive"`.
 Použij `switch` bez výrazu (`switch { case n < 0: ... }`), ne řetězec `if/else`.
 
+např. `Classify(-1)` → `"negative"`
+
 ### B — jádro (~35 min)
 
 1. `ZeroValueOf(kind string) string` — pro názvy typů `"int"`, `"float64"`, `"string"`,
@@ -230,6 +232,8 @@ Použij `switch` bez výrazu (`switch { case n < 0: ... }`), ne řetězec `if/el
 3. `ToInt8(n int) (int8, bool)` — vrátí hodnotu jako `int8` a `true`, pokud se do rozsahu
    `int8` vejde; jinak `0, false`. Rozsah si odvoď, nebo použij `math.MinInt8` a
    `math.MaxInt8`.
+
+např. `CentsToPrice(1999)` → `19.99`
 
 ### C — rozšíření (~25 min)
 
@@ -243,6 +247,8 @@ Vytvoř typ `Level int` s konstantami `LevelUnknown`, `LevelDebug`, `LevelInfo`,
 - `func (l Level) Enabled(min Level) bool` — vrací `true`, pokud je úroveň alespoň `min`.
 
 Až budeš hotový, ověř si v `go doc fmt.Stringer`, co jsi právě implementoval.
+
+např. `ParseLevel("DEBUG")` → `LevelDebug`
 
 ```bash
 make lesson L=03

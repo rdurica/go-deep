@@ -283,6 +283,8 @@ Pracuj v `exercise/`. Postupuj A → B → C, po každé části spusť test.
 
 Pro `"go"` obojí vrátí `2`, pro `"kůň"` `5` a `3` — `ů` i `ň` zaberou po dvou bajtech.
 
+např. `ByteLen("kůň")` → `5`
+
 ### B — jádro (~35 min)
 
 1. `ReverseRunes(s string) string` — otočí pořadí run. Musí správně zvládnout češtinu
@@ -298,6 +300,8 @@ Pro `"go"` obojí vrátí `2`, pro `"kůň"` `5` a `3` — `ů` i `ň` zaberou p
    převedená na velké písmeno. `"Radek Ďurica"` → `"RĎ"`. Ošetři vícenásobné mezery,
    tabulátory a okrajové mezery (`"  jan   novák "` → `"JN"`) i prázdný vstup (`""`).
    Hodí se `strings.Fields` a `unicode.ToUpper`.
+
+např. `ReverseRunes("kůň")` → `"ňůk"`
 
 ### C — rozšíření (~25 min)
 
@@ -327,6 +331,8 @@ BenchmarkConcat-16          968       1288358 ns/op    12504270 B/op       1998 
 Sto sedmdesátkrát pomalejší a tisíckrát víc naalokované paměti — protože `+=` pokaždé
 zkopíruje celý dosavadní výsledek. Benchmarky se při běžném `go test` nespouštějí, takže
 ti nic nerozbijí.
+
+např. `Join([]string{"go", "php"}, ", ")` → `"go, php"`
 
 ```bash
 make lesson L=09

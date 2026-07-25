@@ -232,6 +232,8 @@ Implementuj `Group.Go(func() error)` a `Group.Wait() error`:
 
 Zapamatování první chyby vyřeš přes `sync.Once` — dostaneš tím synchronizaci zadarmo.
 
+např. `20× Go(ok); Wait()` → `nil`
+
 ### B — jádro (~35 min)
 
 1. `WithContext(ctx) (*Group, context.Context)` — vrátí skupinu a odvozený kontext, který
@@ -245,6 +247,8 @@ Testy ověřují dodržení limitu (atomickým maximem), propagaci první chyby,
 opravdu dorazí ke všem ostatním úlohám, že se propíše i zrušení rodiče, a že po `Wait`
 nezůstane žádná goroutina navíc.
 
+např. `WithContext` po úspěšném `Wait()` → `ctx.Err() = context.Canceled`
+
 ### C — rozšíření (~20 min)
 
 1. `RunAll(ctx context.Context, tasks []Task) error` — spustí všechny úlohy souběžně.
@@ -257,6 +261,8 @@ nezůstane žádná goroutina navíc.
 
 Test kontroluje, že odpojená úloha doběhne i po zrušení rodiče, že běžná ne, že odpojená
 pořád vidí hodnoty z kontextu, a že `RunAll` na odpojenou počká.
+
+např. `Cause(wrap("c", wrap("b", wrap("a", base))))` → `base`
 
 ```bash
 make lesson L=47

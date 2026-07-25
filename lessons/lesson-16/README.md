@@ -240,6 +240,8 @@ Struct `User` už je předvyplněný — projdi si jeho tagy a implementuj
 Výstup musí splňovat: `password` v JSON **nikdy** není, prázdný `email` a nil `tags`
 zmizí, `active` je ve výstupu i s hodnotou `false`, `created_at` je RFC 3339.
 
+např. `ToJSON(User{ID: 7, Name: "Ada", Password: "tajne"})` → JSON bez klíče `password`
+
 ### B — jádro (~35 min)
 
 1. `FromJSON(data []byte) (User, error)` — dekóduj a validuj: `ID` musí být kladné,
@@ -250,6 +252,8 @@ zmizí, `active` je ve výstupu i s hodnotou `false`, `created_at` je RFC 3339.
    (`"user.deleted"`). Vracej **hodnotu**, ne pointer. Neznámý kind, chybějící payload
    i nevalidní payload jsou chyby a chybová hláška obsahuje jméno kindu.
 
+např. `DecodeEvent({"kind":"user.created","payload":{"id":42,"name":"Grace"}})` → `UserCreated{ID: 42, Name: "Grace"}`
+
 ### C — rozšíření (~20 min)
 
 1. `Cents` je částka v celých centech. Implementuj `MarshalJSON` tak, aby v JSON vznikl
@@ -259,6 +263,8 @@ zmizí, `active` je ve výstupu i s hodnotou `false`, `created_at` je RFC 3339.
    Round-trip musí být přesný — pozor na binární plovoucí čárku, výsledek zaokrouhli.
 2. `StrictDecode(data []byte, v any) error` — dekóduj přes `json.Decoder`
    s `DisallowUnknownFields()`. Když za první hodnotou zbývají další data, je to chyba.
+
+např. `json.Marshal(Cents(1999))` → `19.99`
 
 ```bash
 make lesson L=16

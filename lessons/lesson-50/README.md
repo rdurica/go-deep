@@ -172,6 +172,8 @@ a metriky nad atomikou (48).
 Test pouští osm goroutin, které se přes bariéru sejdou naráz, a kontroluje, že
 `MaxInFlight` je přesně osm a že se počty úspěchů a chyb neztrácejí.
 
+např. `Stats{Processed: 50, Failed: 50, Elapsed: 2s}.Total()` → `100`, `Throughput()` → `50`
+
 ### B — dávkový zpracovatel (~40 min)
 
 `Process(ctx, cfg Config, items []Item) ([]Outcome, Stats, error)`:
@@ -187,6 +189,8 @@ Test pouští osm goroutin, které se přes bariéru sejdou naráz, a kontroluje
 - **Validace:** `ErrInvalidWorkers`, `ErrInvalidQueueSize`, `ErrNilHandler`.
 - Prázdná dávka vrací prázdný výsledek a `nil`. Po návratu žádná živá goroutina.
 
+např. `Process(ctx, cfg, Item{Payload: "payload-00"})` → `Outcome{Value: "PAYLOAD-00"}`
+
 ### C — proudová varianta (~25 min)
 
 `ProcessStream(ctx, cfg Config, in <-chan Item, out chan<- Outcome) (Stats, error)`:
@@ -199,6 +203,8 @@ Test pouští osm goroutin, které se přes bariéru sejdou naráz, a kontroluje
 - zápis do `out` nikdy holý: vždy `select` s `ctx.Done()`, jinak si vyrobíš leak,
   když konzument odejde,
 - `FailFast` a rušení kontextem se chovají stejně jako v části B.
+
+např. `ProcessStream(…)` po zavření `in` → zavře `out`, `Stats.Processed` = počet úloh
 
 ```bash
 make lesson L=50

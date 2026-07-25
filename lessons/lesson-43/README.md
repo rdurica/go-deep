@@ -213,6 +213,8 @@ Pracuj v `exercise/`. Postupuj A → B → C, po každé části spusť test.
 `Value() int64`. Podmínka: **zero value musí být rovnou použitelná**, tedy `var c Counter`
 funguje bez konstruktoru. Test spustí 100 goroutin po 1000 zvýšeních a běží s `-race`.
 
+např. `Inc(); Add(41); Add(-2)` → `Value() = 40`
+
 ### B — jádro (~35 min)
 
 `Cache` — mapa chráněná zámkem:
@@ -224,6 +226,8 @@ funguje bez konstruktoru. Test spustí 100 goroutin po 1000 zvýšeních a běž
   výsledek toho prvního. Test to hlídá atomickým čítačem volání.
 - Během volání `f` nesmíš držet zámek cache — pomalý výpočet jednoho klíče nesmí
   zablokovat práci s ostatními klíči.
+
+např. `GetOrCompute("drahý", f→"spočítáno")` ze 100 goroutin → `"spočítáno"`, `f` jen 1×
 
 ### C — rozšíření (~25 min)
 
@@ -238,6 +242,8 @@ funguje bez konstruktoru. Test spustí 100 goroutin po 1000 zvýšeních a běž
   limitem.
 - `Total()` musí vracet konzistentní součet i uprostřed převodů. Test ho volá souběžně
   a jakákoli jiná hodnota než počáteční suma je chyba.
+
+např. `Transfer("a", "b", 30)` pro `a=100, b=50` → `a=70, b=80`
 
 ```bash
 make lesson L=43

@@ -180,6 +180,8 @@ kvůli rozsahu v jednom, ale hranice mezi nimi je v kódu vidět.
 3. `DateRange.Nights()` a `DateRange.Overlaps(other DateRange) bool`. Interval je
    **polootevřený**: odjezd 20. a příjezd dalšího hosta 20. se nepřekrývají.
 
+např. `ParseRoomID("a-101")` → `"A-101"`
+
 ### B — port, adaptér, služba a metrika (~40 min)
 
 1. `NewMemoryRepo`, `Save`, `ByRoom` — in-memory adaptér portu `Repository`. Duplicitní
@@ -191,6 +193,8 @@ kvůli rozsahu v jednom, ale hranice mezi nimi je v kódu vidět.
    načte rezervace pokoje, odmítne překryv (`ErrRoomTaken`), spočítá cenu
    (`nightly_rate × počet nocí`) a uloží. Metriky: `MetricCreated` po úspěchu,
    `MetricRejected` při validační chybě, překryvu i duplicitní referenci.
+
+např. `Book(BK-1, A-101, 3 noci × 1500)` → `Total:4500`
 
 ### C — hranice systému (~30 min)
 
@@ -205,6 +209,8 @@ kvůli rozsahu v jednom, ale hranice mezi nimi je v kódu vidět.
    vracející snapshot. Mapování: 400 nečitelné tělo, 422 validace (s polem `errors`),
    409 `ErrRoomTaken` i `ErrDuplicateRef`, 500 cokoli jiného. Chyby jako
    `application/problem+json`.
+
+např. `POST /bookings` → `201` + `Location:/bookings/BK-1`, `total:4500`
 
 ```bash
 make lesson L=39

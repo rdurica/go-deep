@@ -296,6 +296,8 @@ Pracuj v `exercise/`. Postupuj A → B → C, po každé části spusť test.
 
 Rozmysli si, proč `Reverse` nemusí nic vracet, i když `Grow` z části B musí.
 
+např. `Sum([]int{1, 2, 3, 4})` → `10`
+
 ### B — jádro (~35 min)
 
 1. `Grow(s []int, n int) []int` — zajistí, že výsledek má `cap >= n`, a **zachová `len`
@@ -312,6 +314,8 @@ Rozmysli si, proč `Reverse` nemusí nic vracet, i když `Grow` z části B mus�
    ve vstupu a naopak. `nil` vstup vrací `nil`. Prázdný ne-nil slice vrací prázdný ne-nil
    slice.
 
+např. `RemoveAt([]int{1, 2, 3, 4}, 1)` → `[1, 3, 4]`
+
 ### C — rozšíření (~25 min)
 
 1. `Chunk(s []int, size int) [][]int` — rozdělí `s` na kusy délky `size`; poslední kus
@@ -325,6 +329,8 @@ Rozmysli si, proč `Reverse` nemusí nic vracet, i když `Grow` z části B mus�
    Test tenhle trik cíleně odhaluje: po zavolání `Filter` zkontroluje, že se **vstupní
    slice přepsal**. To je cena za nulovou alokaci a musíš o ní vědět — proto se tenhle
    vzor nikdy nepoužívá na data, která ti nepatří.
+
+např. `Chunk([]int{1, 2, 3, 4, 5}, 2)` → `[[1, 2], [3, 4], [5]]`
 
 ```bash
 make lesson L=07

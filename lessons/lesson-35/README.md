@@ -246,6 +246,8 @@ Dvě věci navíc, které test kontroluje: každá metoda nejdřív zkontroluje
 musí být bezpečný pro souběžné použití, takže `sync.RWMutex` (čtení `RLock`,
 zápis `Lock`). Test běží s `-race`.
 
+např. `List()` po uložení `u-3,u-1,u-2` → `[u-1, u-2, u-3]`
+
 ### B — jádro (~35 min)
 
 `BuildSelect(table string, cols []string, filters map[string]any) (query string, args []any, err error)`
@@ -267,6 +269,8 @@ Test obsahuje pokusy o injection ve jménu tabulky, ve jménu sloupce i v klíč
 filtru (všechny musí skončit chybou) a jeden v hodnotě — ten naopak projít musí
 a payload `' OR 1=1 --` skončí v `args`, ne v dotazu.
 
+např. `BuildSelect("users", ["id","email"], nil)` → `"SELECT id, email FROM users"`
+
 ### C — rozšíření (~25 min)
 
 `Plan(applied []int, all []Migration) ([]Migration, error)` spočítá, co dobíhá:
@@ -278,6 +282,8 @@ a payload `' OR 1=1 --` skončí v `args`, ne v dotazu.
 - Vrať migrace, které ještě neproběhly, **seřazené vzestupně podle verze**.
   Nic k doběhnutí znamená prázdný plán, ne chybu.
 - Při chybě vrať `nil` plán.
+
+např. `Plan([1], all)` → migrace verzí `[2, 3]`
 
 ```bash
 make lesson L=35

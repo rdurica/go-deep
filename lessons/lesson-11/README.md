@@ -254,6 +254,8 @@ V `exercise/money/money.go` implementuj:
 Zero value `Amount{}` musí dál fungovat jako nula — nespoléhej na to, že konstruktor
 proběhl vždy.
 
+např. `New(1999).String()` → `"19.99"`
+
 ### B — jádro (~35 min)
 
 V `exercise/exercise.go`, tedy **zvenku** balíčku `money`:
@@ -273,6 +275,8 @@ V `exercise/exercise.go`, tedy **zvenku** balíčku `money`:
    Používá se jen tam, kde je vstup konstanta v kódu (viz `regexp.MustCompile`).
    Pomocné funkce si klidně přidej — nech je neexportované.
 
+např. `MustParse("19.99").Cents()` → `1999`
+
 ### C — rozšíření (~25 min)
 
 Zpět v `exercise/money/money.go`, tedy **uvnitř** balíčku:
@@ -288,6 +292,8 @@ Zpět v `exercise/money/money.go`, tedy **uvnitř** balíčku:
 Bonus bez testu: vytvoř v repozitáři vedle sebe adresář `internal/` s balíčkem a zkus ho
 importovat z jiného modulu. Chyba `use of internal package ... not allowed` je to,
 co chceš vidět.
+
+např. `Split(1000, 3)` → `[334, 333, 333], true`
 
 ```bash
 make lesson L=11

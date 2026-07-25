@@ -264,6 +264,8 @@ Typ `Point struct{ X, Y int }`:
 
 Test taky porovnává body přes `==`. Rozmysli si, proč to jde.
 
+např. `Point{1, 2}.Add(Point{3, 4})` → `{4, 6}`
+
 ### B — jádro (~35 min)
 
 Typ `Counter struct{ n int }` má **neexportované** pole, takže se dá měnit jen metodami:
@@ -278,6 +280,8 @@ Testy ověřují dvě věci navíc, které jsou pointou úkolu. Za prvé, že p�
 do funkce hodnotou vytvoří kopii a `Inc()` na ní originál nezmění. Za druhé, přes
 type assertion na `any`, že `Counter` **nemá** `Inc` v method setu, zatímco `*Counter` ano.
 Kdybys `Inc` napsal s value receiverem, obojí selže.
+
+např. `var c Counter; c.Inc()` → `Value() == 1`
 
 ### C — rozšíření (~25 min)
 
@@ -294,6 +298,8 @@ Embedding ve třech úrovních. Typy jsou hotové: `Base{ID string}`, `User{Base
 
 `Admin` schválně `Describe` nedefinuje — test ověří, že se promotuje z `User` a že `Admin`
 díky tomu splní interface s metodou `Describe()`.
+
+např. `Admin{…}.Tag()` → `"admin:a1/9"`
 
 ```bash
 make lesson L=05

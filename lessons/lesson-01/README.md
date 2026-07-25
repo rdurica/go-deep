@@ -197,6 +197,8 @@ Implementuj `Greet(name string) string`. Pro prázdné jméno (i po odstranění
 vrať `"Hello, Go!"`, jinak `"Hello, <name>!"` s ořezanými bílými znaky.
 Hodí se `strings` (ořez) a `fmt` (složení výsledku) — viz sekce o importech výše.
 
+např. `Greet("Radek")` → `"Hello, Radek!"`
+
 ### B — jádro (~25 min)
 
 Doplň dvě funkce v `exercise/exercise.go` (místo `panic("TODO: úkol B")`).
@@ -243,6 +245,8 @@ go mod init example.com/hello
 4. Zkus záměrně: přejmenovat funkci na malé písmeno a importovat ji. Přečti si chybu.
 5. Spusť `go build .` a podívej se, jaká binárka vznikla a jak je velká.
 6. Zavolej `go doc strings.TrimSpace` a `go doc -all strings | head -40`.
+
+např. `go run .` s importem `example.com/hello/greet` → výpis z `main`
 
 ```bash
 make lesson L=01

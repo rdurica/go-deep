@@ -147,6 +147,8 @@ v plovoucí čárce. V JSON přichází jako celé číslo (`12050` = 120,50).
 2. `func (e *ValidationError) Error() string` — text musí obsahovat index transakce,
    jméno pole a důvod, například `transakce 2: pole "amount": nesmí být nula`.
 
+např. `Money(1999).String()` → `"19.99"`
+
 ### B — jádro (~35 min)
 
 1. `ParseTransactions(r io.Reader) ([]Transaction, error)` — dekóduj z `io.Reader`
@@ -159,6 +161,8 @@ v plovoucí čárce. V JSON přichází jako celé číslo (`12050` = 120,50).
 2. `TotalsByCategory(txs []Transaction) map[string]Money` — součty po kategoriích.
    Prázdný vstup dá prázdnou, ale **nenilovou** mapu.
 
+např. `TotalsByCategory(txs)["food"]` → `32075`
+
 ### C — rozšíření (~25 min)
 
 1. `GroupBy[T any, K comparable](items []T, key func(T) K) map[K][]T` — seskupení podle
@@ -169,6 +173,8 @@ v plovoucí čárce. V JSON přichází jako celé číslo (`12050` = 120,50).
    spočítej jejich počet a celkovou částku a najdi kategorii s nejvyšším součtem
    (při shodě rozhoduje abeceda). Kniha bez transakcí vrací `ErrEmptyLedger`
    (ověřitelné přes `errors.Is`), chyba validace se skrz `BuildReport` propíše beze změny.
+
+např. `BuildReport(sample)` → `{Count: 4, Total: 37075, Top: "food"}`
 
 ```bash
 make lesson L=18

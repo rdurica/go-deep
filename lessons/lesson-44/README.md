@@ -198,6 +198,8 @@ make race L=44     # padá s WARNING: DATA RACE
 `SafeIncrement(n int) int` — spustí `n` goroutin, každá zvýší společný čítač o jedna, a
 vrátí výslednou hodnotu. Oprav ho tak, aby vracel přesně `n`.
 
+např. `SafeIncrement(1000)` → `1000`
+
 ### B — jádro (~35 min)
 
 1. `Registry` — registr se dvěma závody najednou: **líná inicializace** mapy a
@@ -206,6 +208,8 @@ vrátí výslednou hodnotu. Oprav ho tak, aby vracel přesně `n`.
    zámek na přístup k ní. `Get` a `Len` musí být bezpečné souběžně se `Set`.
 2. `ParallelAppend(nums []int) []int` — vrací druhé mocniny v libovolném pořadí. Oprav
    souběžný `append`. Výpočet nech mimo kritickou sekci.
+
+např. `ParallelAppend([]int{0, 1, 2, 3})` → `[0, 1, 4, 9]` (libovolné pořadí)
 
 ### C — rozšíření (~25 min)
 
@@ -219,6 +223,8 @@ vrátí výslednou hodnotu. Oprav ho tak, aby vracel přesně `n`.
    rozepsaný zápis. Oprav to tak, aby se konfigurace měnila **jako celek** — přes
    `atomic.Value` nebo `sync.RWMutex`. Zero value `Config` musí být použitelná a
    `Load()` na ní vrací konzistentní (prázdný) snapshot.
+
+např. `Store(NewSnapshot("api.example.com", 30)); Load()` → stejný konzistentní snapshot
 
 ### Jak si ověříš, že je to opravdu bez závodu
 

@@ -253,6 +253,8 @@ Pracuj v `exercise/`. Postupuj A → B → C, po každé části spusť test.
    Zavírej jen svůj výstup a měj cestu ven přes `ctx.Done()`. Test tě chytí za to,
    že po zrušení uprostřed proudu zůstane goroutina.
 
+např. `Square(ctx, Gen(ctx, 1, 2, 3, 4))` → `[1, 4, 9, 16]`
+
 ### B — jádro (~35 min)
 
 1. `Stage[T, U any](ctx, in <-chan T, f func(T) U) <-chan U` — obecná verze `Square`.
@@ -263,6 +265,8 @@ Pracuj v `exercise/`. Postupuj A → B → C, po každé části spusť test.
    výstup zavři. Když se vstup vyčerpá dřív, skonči s méně prvky. `n <= 0` znamená rovnou
    zavřený kanál. Test staví pipeline nad stotisícovým generátorem, odebere pět prvků,
    zruší kontext a kontroluje, že **nezbyla ani jedna goroutina**.
+
+např. `Take(ctx, Gen(ctx, 1, 2, 3, 4, 5), 3)` → `[1, 2, 3]`
 
 ### C — rozšíření (~25 min)
 
@@ -280,6 +284,8 @@ Pravidla:
 - Pořadí výsledků není zaručené (fan-out), test je porovnává jako množinu.
 - Když konzument přestane odebírat a zruší kontext, nesmí zůstat žádná goroutina.
   Přesně to je poslední test lekce.
+
+např. `Pipeline(ctx, "alfa")` → `Result{Value: "ok:ALFA"}`
 
 ```bash
 make lesson L=45

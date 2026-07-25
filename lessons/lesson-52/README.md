@@ -228,6 +228,8 @@ vstup smí alokovat nejvýš 4×.
 
 Napiš si k tomu vlastní benchmark pro čistý i špinavý vstup a porovnej je.
 
+např. `Normalize("  Ahoj   Svete \n")` → `"ahoj svete"`
+
 ### B — jádro (~35 min)
 
 Textový formát pro `Record`. Jeden záznam na řádek, tři pole oddělená `|`:
@@ -261,6 +263,8 @@ v `exercise_test.go` včetně seed korpusu v `testdata/fuzz/`. Pusť si je i v f
 go test -run xxx -fuzz=FuzzRoundTrip -fuzztime=10s .
 ```
 
+např. `Encode([{ID:"a", Name:"b", Score:1}])` → `"a|b|1"`
+
 ### C — rozšíření (~20 min)
 
 Report o pevné šířce sloupců (`8 | 20 | 5`, oddělené jednou mezerou):
@@ -288,6 +292,8 @@ records: 1  total: 42  avg: 42.00
    a přesně to je v testovacích datech.
 
 Referenční řešení dosahuje 23 → 2 alokací a 2574 → 716 ns/op.
+
+např. `RenderTable([{a1, Alice, 100}, …])` → shoda s `testdata/table.golden`
 
 ```bash
 make lesson L=52

@@ -200,6 +200,8 @@ a analyzátor kvality zadání.
 4. `(ADR).Filename() string` → `"0007-pouzij-stdlib-router.md"`. Číslo je na čtyři místa
    doplněné nulami, delší číslo se nezkracuje. Prázdný slug nahraď `"adr"`.
 
+např. `Slug("Použij stdlib router")` → `"pouzij-stdlib-router"`
+
 ### B — jádro (~35 min)
 
 1. `(ADR).Render() string` — přesně tenhle markdown (bez odsazení, `\n` na konci):
@@ -239,6 +241,8 @@ a analyzátor kvality zadání.
    a pro každé duplicitní číslo vzestupně řádek
    `> pozor: duplicitní číslo 7 (2×)`.
 
+např. `Index(nil)` → `"_Žádné ADR._\n"`
+
 ### C — rozšíření (~25 min)
 
 Analyzátor zadání. `SpecCheck` drží pravidla, `Rule` má `ID`, klíčová slova, závažnost
@@ -260,6 +264,8 @@ a zprávu.
    písmen ani diakritice nezáleží. Pořadí nálezů = pořadí pravidel. Bez pravidel žádné
    nálezy.
 4. `CheckSpec(spec string) []Finding` — zkratka nad `DefaultSpecCheck()`.
+
+např. `CheckSpec("Napiš mi službu na záložky…")` → `5` nálezů (`acceptance`…`deps`)
 
 ```bash
 make lesson L=56

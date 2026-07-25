@@ -321,6 +321,8 @@ registrace `"first"`, `"second"`, `"third"`. Návratová hodnota tedy bude
 Poznámka: bez pojmenované návratové hodnoty by tohle nešlo napsat, protože `return`
 by zafixoval prázdný slice dřív, než defery doběhnou. Zkus si obě varianty.
 
+např. `DeferOrder()` → `["third", "second", "first"]`
+
 ### B — jádro (~35 min)
 
 1. `SumWithLog(nums []int) (total int, steps []string)` — sečte čísla a vede u toho
@@ -344,6 +346,8 @@ by zafixoval prázdný slice dřív, než defery doběhnou. Zkus si obě variant
    některá vrátí chybu, a vrátí **první** vzniklou chybu (nebo `nil`). `nil` položky
    přeskoč. Prázdný i `nil` vstup vrací `nil`.
 
+např. `SumWithLog([]int{1, 2, 3})` → `6, ["+1=1", "+2=3", "+3=6", "total=6"]`
+
 ### C — rozšíření (~25 min)
 
 Doplň `type Stack struct` (obsah si navrhni sám, hodí se `items []int`) s metodami:
@@ -359,6 +363,8 @@ Doplň `type Stack struct` (obsah si navrhni sám, hodí se `items []int`) s met
 Test ověřuje, že zásobník je **po zotavení dál použitelný** — po neúspěšném `TryPop`
 musí `Push` a `Pop` fungovat normálně. To je právě ta hranice, kde je `recover`
 v pořádku: nezotavuješ se z poloviční mutace, jen ze zjištění „nic tam nebylo".
+
+např. `TryPop` na prázdném zásobníku → `0, false`
 
 ```bash
 make lesson L=10

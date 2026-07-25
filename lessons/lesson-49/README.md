@@ -205,6 +205,8 @@ tolerantní — měříme chování scheduleru, ne stopky.
    bufferovaného kanálu), pak je pusť zavřením druhého kanálu. Tím je souběh měřitelný
    spolehlivě, a ne podle štěstí.
 
+např. `ObserveParallelism(1)` → `1`
+
 ### B — jádro (~35 min)
 
 1. `CPUBound(work int) uint64` — `work` iterací čistého počítání (klidně FNV hash),
@@ -219,6 +221,8 @@ protože čekající goroutiny P uvolní, a tak osm spánků po 50 ms zabere zhr
 400. CPU-bound část naopak omezuje `GOMAXPROCS`. Zkus si `Compare` pustit ručně pod
 `RunWithMaxProcs(1, …)` a porovnat čísla — to je ta lekce, kterou test nezachytí.
 
+např. `Compare(8)` → blocking ≈ `BlockingDuration` (ne 8×), ne sekvenční součet
+
 ### C — rozšíření (~20 min)
 
 1. `StackGrowth(depth int) int` — rekurze do hloubky `depth`, každý rámec obsahuje
@@ -230,6 +234,8 @@ protože čekající goroutiny P uvolní, a tak osm spánků po 50 ms zabere zhr
    je všechny uklidí.
 3. `BytesPerGoroutine(n int) uint64` — hrubý odhad zásobníku na goroutinu přes
    `runtime.ReadMemStats` a `StackInuse`. Když měření nic nezachytí, vrať 0.
+
+např. `StackGrowth(1000)` → `1000`
 
 ```bash
 make lesson L=49

@@ -220,6 +220,8 @@ Chybové odpovědi mají tvar `ErrorResponse`.
 - `GET /items/{id}` → **200** a položku ze `Store.Get`, nebo **404** s `ErrorResponse`,
   pokud neexistuje.
 
+např. `GET /items/2` → `200` + `{ID:"2", Name:"Banana"}`
+
 ### B — jádro (~35 min)
 
 1. `ParseListQuery(values url.Values) (limit int, q string, err error)`:
@@ -238,6 +240,8 @@ Chybové odpovědi mají tvar `ErrorResponse`.
 Ověř si v testu, že `PUT /items/1` vrací 405 s hlavičkou `Allow` — a že jsi pro to
 nenapsal ani řádek.
 
+např. `ParseListQuery("limit=5&q=ban")` → `5, "ban", nil`
+
 ### C — rozšíření (~25 min)
 
 1. `SafeJoin(root, rel string) (string, error)` — vrátí cestu k souboru pod `root`,
@@ -248,6 +252,8 @@ nenapsal ani řádek.
    (jinak **404**), a soubor pošle přes `http.ServeFile`.
 3. `FilesRouter(root string) http.Handler` — `ServeMux` se vzorem
    `GET /files/{path...}` napojeným na `FilesHandler`.
+
+např. `SafeJoin(root, "sub/hello.txt")` → `root/sub/hello.txt`
 
 ```bash
 make lesson L=25

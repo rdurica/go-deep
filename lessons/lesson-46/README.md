@@ -258,6 +258,8 @@ Pracuj v `exercise/`. Postupuj A → B → C, po každé části spusť test.
    vstup. `limit <= 0` se chová jako 1, `f == nil` vrací `nil`, zrušený kontext nechá
    nespuštěné položky na prázdném řetězci. Po návratu nesmí zůstat běžící goroutina.
 
+např. `LimitedMap(ctx, []string{"a", "b"}, 0, strings.ToUpper)` → `["A", "B"]`
+
 ### B — jádro (~35 min)
 
 Postav `Pool` s pevným počtem workerů:
@@ -276,6 +278,8 @@ atomickým maximem), a že po dočerpání `Results()` nezůstane žádná gorou
 Kanál úloh je nebufferovaný, takže z `Results()` se musí číst souběžně se `Submit` —
 tohle si napiš do doc commentu, je to součást kontraktu.
 
+např. `Submit(Job{ID: 1, Run: →7}); Close()` → `Result{Value: 7}`
+
 ### C — rozšíření (~20 min)
 
 `MapErr[T, U any](ctx, in []T, limit int, f func(context.Context, T) (U, error)) ([]U, error)`:
@@ -288,6 +292,8 @@ tohle si napiš do doc commentu, je to součást kontraktu.
 
 Nápověda: `context.WithCancel` + `sync.Once` na zapamatování první chyby. A nezapomeň na
 `defer cancel()`, jinak ti unikne kontext i v úspěšné větvi.
+
+např. `MapErr(ctx, []int{1, 2, 3}, 2, f)` → `["*", "**", "***"]`
 
 ```bash
 make lesson L=46

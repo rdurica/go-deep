@@ -186,6 +186,8 @@ Generický `Result[T]` — hodnota, nebo chyba.
 - `Must[T any](v T, err error) T` — při chybě panikuje hodnotou té chyby
   (test ji vytahuje přes `recover()` a `errors.Is`).
 
+např. `Must(strconv.Atoi("123"))` → `123`
+
 ### B — jádro (~35 min)
 
 1. `StructToMap(v any) (map[string]any, error)` — přes reflexi převede struct nebo pointer
@@ -199,6 +201,8 @@ Generický `Result[T]` — hodnota, nebo chyba.
    `string`, celočíselné typy (`ParseInt` na správný počet bitů) a `bool`. Vyplněné pole
    se nepřepisuje, neexportované se ignoruje. Špatný vstup je `ErrNotPointer`,
    nepřevoditelná hodnota `ErrBadDefault`, nepodporovaný typ pole `ErrUnsupportedKind`.
+
+např. `StructToMap(User{…Alice…})` → `{"id":7, "name":"Alice", "Active":true}`
 
 ### C — rozšíření (~20 min)
 
@@ -219,6 +223,8 @@ cd exercise && go test -tags fancy -count=1 .     # fancy
 
 Všimni si, že testy musí být otagované také — jinak by test na `"basic"` spadl při buildu
 s `-tags fancy`. Obě varianty musí projít `gofmt` i `go vet -tags fancy`.
+
+např. `FeatureName()` bez `-tags fancy` → `"basic"`
 
 Až budeš hotový, porovnej se `solutions/` (spoiler).
 

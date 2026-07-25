@@ -252,6 +252,8 @@ Pracuj v `exercise/`. Postupuj A → B → C, po každé části spusť test.
    `MaxBodyBytes`; při překročení vrať chybu obalující `ErrBodyTooLarge`. Nakonec
    rozparsuj JSON do `T`. Při chybě vrať nulovou hodnotu `T`.
 
+např. `FetchJSON[user](..., url)` → `{ID:7, Name:"radek"}`
+
 ### B — jádro (~35 min)
 
 `Retry(ctx context.Context, attempts int, base time.Duration, fn func(ctx context.Context) error) error`:
@@ -266,6 +268,8 @@ Pracuj v `exercise/`. Postupuj A → B → C, po každé části spusť test.
   reagovat na zrušení kontextu.
 - Po vyčerpání pokusů vrať chybu obalující poslední chybu z `fn` přes `%w`.
 
+např. `Retry(..., fn → nil)` → `nil` (1 volání)
+
 ### C — rozšíření (~20 min)
 
 `RunServer(ctx context.Context, srv *http.Server, ln net.Listener) error`:
@@ -277,6 +281,8 @@ Pracuj v `exercise/`. Postupuj A → B → C, po každé části spusť test.
 
 Test spustí server na `127.0.0.1:0`, pošle požadavek, uprostřed jeho zpracování zruší
 kontext a ověří, že požadavek doběhl a `RunServer` se vrátil.
+
+např. cancel `ctx` uprostřed požadavku → tělo `"hotovo"`, `RunServer` → `nil`
 
 ```bash
 make lesson L=30

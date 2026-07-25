@@ -227,7 +227,7 @@ to spolehnout nemohl, a proto se tam píšou obranné klony a `readonly`. V Go t
 Pracuj v `exercise/`. Postupuj A → B → C, po každé části spusť test.
 
 Doména je záměrně ta, kterou znáš: ceník a objednávka. Cena je vždy v **celých centech**
-(`int`), nikdy ve `float64` — peníze se v žádném jazyce nepočítají v plovoucí čárce.
+(`int`), nikdy ve `float64` — peníze se v žádném jazyce nepočítají jako desetinné číslo.
 
 ### A — rozcvička (~10 min)
 
@@ -237,6 +237,8 @@ Doména je záměrně ta, kterou znáš: ceník a objednávka. Cena je vždy v *
   na `0`, nad sto na `100`. Nepanikař a nevracej chybu.
 - Výsledek zaokrouhli na celé centy, půlku nahoru (`5` centů se slevou 50 % je `3`).
 - `priceCents` menší nebo rovno nule vrací `0`.
+
+např. `ApplyDiscount(5, 50)` → `3`
 
 ### B — jádro (~35 min)
 
@@ -252,6 +254,8 @@ Struktura `Item` je předpřipravená: `Name string`, `PriceCents int`, `Qty int
 
 Všimni si, že vracíš `Item` hodnotou. Test ověřuje, že když volající vrácenou položku změní,
 původní slice se nezmění.
+
+např. `TotalCents([{kava, 4500, 2}])` → `9000`
 
 ### C — rozšíření (~25 min)
 
@@ -271,6 +275,8 @@ Postav malý „service", který má skutečný stav — ceník. Typ `Catalog` j
 Až budeš hotový, podívej se na `Checkout`: složil jsi ji z funkce a metody, které už
 existovaly, bez kontejneru, bez interface a bez dědičnosti. Tohle je v Go běžný způsob, jak
 vzniká „služba".
+
+např. ceník s `kava=4500`, `Checkout(["kava", "kava"], 0)` → `9000, true`
 
 ```bash
 make lesson L=02

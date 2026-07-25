@@ -223,6 +223,8 @@ Port `Loader` má jedinou metodu. `Describe(l Loader, sku string) (string, error
 Všimni si, co jsi právě získal: test si napíše pětiřádkový `stubLoader` a nepotřebuje
 mockovací knihovnu. Podívej se na něj v `exercise_test.go`.
 
+např. `Describe(loader, "A1")` → `"Šroub: 12 ks"`
+
 ### B — error handling a wrapping (~30 min)
 
 `LoadRecords(r io.Reader) ([]Record, error)` čte řádky `sku;name;qty`.
@@ -242,6 +244,8 @@ Přesné texty chyb (číslování řádků od 1, při chybě vrať `nil` slice)
 | selhalo čtení | `read records: io timeout` |
 
 Sentinely musí zůstat dohledatelné přes `errors.Is`.
+
+např. `LoadRecords("A1;Šroub;12")` → `[{SKU:"A1", Name:"Šroub", Qty:12}]`
 
 ### C — celý balíček (~30 min)
 
@@ -266,6 +270,8 @@ Pravidla, která platí pro celé řešení:
 - Žádná ignorovaná chyba, žádná panika.
 - Žádná funkce delší než 20 řádků.
 - Žádný getter s prefixem `Get`.
+
+např. `Put({SKU:"A1", Name:"Šroub", Qty:5}); TotalQty()` → `5`
 
 ```bash
 make lesson L=23

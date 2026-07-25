@@ -237,6 +237,8 @@ Vyzkoušej si vložení verze do binárky:
 go build -ldflags "-X 'github.com/rdurica/go-deep/lessons/lesson-55/exercise.version=v1.0.0'" ./...
 ```
 
+např. `BuildInfo{}.String()` → `"dev (none, unknown)"`
+
 ### B — sondy (~35 min)
 
 1. `NewHealthChecker(timeout time.Duration) *HealthChecker` — nekladný timeout nahraď
@@ -254,6 +256,8 @@ go build -ldflags "-X 'github.com/rdurica/go-deep/lessons/lesson-55/exercise.ver
    Bez registrovaných kontrol je odpověď 200 s prázdnou mapou. Handler nesmí držet zámek
    po dobu běhu kontrol — udělej si kopii registru.
 
+např. `LiveHandler()` (kontrola vždy selže) → `200`
+
 ### C — ukončovací sekvence (~25 min)
 
 `ShutdownSequence(ctx context.Context, timeout time.Duration, steps []ShutdownStep) error`
@@ -269,6 +273,8 @@ provede kroky **v pořadí**, v jakém přišly, pod jedním společným rozpoč
 
 Test ověřuje pořadí, chování po chybě, dodržení limitu i to, že se `errors.Is` dostane
 jak k chybě kroku, tak k `context.DeadlineExceeded`.
+
+např. chyba v kroku `db` → sekvence pokračuje, výsledek `errors.Join`
 
 ```bash
 make lesson L=55

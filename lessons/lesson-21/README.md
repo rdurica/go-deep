@@ -216,6 +216,8 @@ Sentinely (`ErrMalformedLine`, `ErrUnknownKey`, `ErrInvalidPort`, `ErrInvalidBoo
 `ErrMissingKey`) jsou v `exercise.go` a musí být dohledatelné přes `errors.Is`.
 Chybějící `name` se hlásí dřív než chybějící `port`. Při jakékoli chybě vrať `Config{}`.
 
+např. `ReadConfig("name=api\nport=8080\ndebug=true")` → `{Name:"api", Port:8080, Debug:true}`
+
 ### B — jádro (~30 min)
 
 `Pipeline` skládá pojmenované kroky a staví z jejich chyb řetěz kontextu.
@@ -234,6 +236,8 @@ step "inner": step "boom": boom
 ```
 
 Tři úrovně, tři fakty, žádné „failed to". Tohle je celý smysl řetězení kontextu.
+
+např. `Run("  ahoj  ")` → `AHOJ!`
 
 ### C — rozšíření (~25 min)
 
@@ -258,6 +262,8 @@ Dvě funkce, které v produkčním kódu potkáš pořád.
   prefixem `cleanup: `.
 
 Bez named returnu (`(err error)`) tuhle funkci nenapíšeš. Přesně proto tu je.
+
+např. `WithCleanup(nil, cleanup)` → `ErrNilFunc` (cleanup se nevolá)
 
 ```bash
 make lesson L=21

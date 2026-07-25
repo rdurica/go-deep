@@ -186,6 +186,8 @@ v `projects/p05-capstone/`.
 4. `New(...) (Bookmark, error)` — normalizuje ID (trim), URL, titulek (trim) a tagy,
    pak zavolá `Validate`.
 
+např. `NormalizeURL("HTTPS://Example.com/a/?utm_source=x")` → `"https://example.com/a"`
+
 ### B — jádro (~35 min)
 
 In-memory store bezpečný pro souběžné použití, s indexem podle tagu.
@@ -204,6 +206,8 @@ In-memory store bezpečný pro souběžné použití, s indexem podle tagu.
 Store nesmí sdílet `Tags` s volajícím ani na vstupu, ani na výstupu. Test to zkouší
 a běží s `-race`.
 
+např. `ByTag("go")` po Add b1…b3 → `[b2, b1]` (od nejnovější)
+
 ### C — rozšíření (~25 min)
 
 `Search(q Query) (Page, error)`:
@@ -218,6 +222,8 @@ a běží s `-race`.
 - **Stránkování:** `Cursor` je ID poslední položky předchozí stránky; když ve výsledku
   není, vrať `ErrInvalidCursor`. `NextCursor` je ID poslední vrácené položky, pokud ještě
   něco zbývá, jinak prázdný řetězec. `Total` je počet položek **před** stránkováním.
+
+např. `Search({Tags:["http"]})` → IDs `[b4, b2]`
 
 ```bash
 make lesson L=59

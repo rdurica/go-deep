@@ -37,13 +37,19 @@ Pracuj v `exercise/`. Postupuj A → B → C, po každé části spusť test.
 
 …
 
+např. `…` → `…`
+
 ### B — jádro (~35 min)
 
 …
 
+např. `…` → `…`
+
 ### C — rozšíření (~20 min)
 
 …
+
+např. `…` → `…`
 
 ```bash
 make lesson L=NN

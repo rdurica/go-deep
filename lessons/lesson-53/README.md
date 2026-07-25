@@ -189,6 +189,8 @@ stejný výsledek jako `SumDigitsSlow` (test to ověřuje na náhodných datech)
 Nápověda: `for _, r := range s` dekóduje UTF-8. Číslice `0`–`9` jsou jednobajtové, takže
 je nemusíš dekódovat vůbec.
 
+např. `SumDigits("a1b2c3")` → `6`
+
 ### B — jádro (~35 min)
 
 1. `CountWords(text string) map[string]int` — počty výskytů slov, kde slovo je souvislý
@@ -204,6 +206,8 @@ je nemusíš dekódovat vůbec.
 2. `JoinIDs(ids []int) string` — čísla spojená čárkou, prázdný vstup dá prázdný řetězec.
    Test povoluje nejvýš **2 alokace** pro 64 čísel. `strconv.Itoa` v cyklu tenhle limit
    nesplní; `strings.Builder` s `Grow` a `strconv.AppendInt` do lokálního pole ano.
+
+např. `JoinIDs([]int{1, 2, 3})` → `"1,2,3"`
 
 ### C — rozšíření (~25 min)
 
@@ -221,6 +225,8 @@ Programové profilování a jeho vystavení přes HTTP.
 
 Test ověřuje, že oba profily začínají gzip hlavičkou a nejsou prázdné, a že handler
 odpovídá 200 na `/debug/pprof/`, `/debug/pprof/heap` i `/debug/pprof/goroutine?debug=1`.
+
+např. `PprofHandler()` GET `/debug/pprof/` → `200`, GET `/metrics` → `404`
 
 ```bash
 make lesson L=53

@@ -245,6 +245,8 @@ Pracuj v `exercise/`. Postupuj A → B → C, po každé části spusť test.
 
 Všimni si, že u `Rect` ani `Circle` nikde nepíšeš, že implementují `Shape`.
 
+např. `Rect{W: 3, H: 4}.Area()` → `12`
+
 ### B — jádro (~35 min)
 
 1. `Describe(v any) string` — přes **type switch** vrať:
@@ -265,6 +267,8 @@ Všimni si, že u `Rect` ani `Circle` nikde nepíšeš, že implementují `Shape
 `Recorder` je vzor, který budeš v Go používat pořád: místo mockovacího frameworku
 napíšeš deset řádků fake implementace.
 
+např. `Describe(42)` → `"int:42"`
+
 ### C — rozšíření (~25 min)
 
 Tohle je nejdůležitější část lekce.
@@ -280,6 +284,8 @@ Tohle je nejdůležitější část lekce.
 Až test projde, zkus si v hlavě zodpovědět: jak bys tuhle past odhalil v cizím kódu při
 review? (Nápověda: hledej lokální proměnnou konkrétního pointer typu, která se vrací
 jako interface.)
+
+např. `ReturnsNilPointer() == nil` → `false`
 
 ```bash
 make lesson L=12

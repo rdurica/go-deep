@@ -207,6 +207,8 @@ V `catalog/catalog.go`:
 4. `(*Catalog).All() []Product` — všechny produkty **seřazené vzestupně podle SKU**.
    Iterace mapy má náhodné pořadí, takže řazení je součást kontraktu.
 
+např. `Validate({SKU:"A-1", Name:"Kniha", Cents:1999})` → `nil`
+
 ### B — jádro (~35 min)
 
 V `pricing/pricing.go` implementuj `Total(items []catalog.Item) (int64, error)`:
@@ -223,6 +225,8 @@ najde produkt v katalogu a nechá cenu spočítat `pricing`.
 Všimni si, že `pricing` importuje `catalog`, ale ne naopak. Zkus si do `catalog` přidat
 import `pricing` — build spadne na `import cycle not allowed`. Pak to vrať zpátky.
 
+např. `TotalOf([{Kniha, 1999, Qty:3}])` → `5997, nil`
+
 ### C — rozšíření (~20 min)
 
 V `internal/idgen/idgen.go` implementuj generátor:
@@ -236,6 +240,8 @@ V `internal/idgen/idgen.go` implementuj generátor:
 Ve `exercise.go` doplň `NewIDGen`. Nakonec si vyzkoušej, co `internal/` znamená: zkus
 `idgen` naimportovat z jiné lekce (třeba `lessons/lesson-03/exercise`) a přečti si, co
 řekne kompilátor.
+
+např. `NewIDGen("prod").NewID()` → `"prod-000001"`
 
 ```bash
 make lesson L=32

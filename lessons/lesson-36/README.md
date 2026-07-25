@@ -322,6 +322,8 @@ Pracuj v `exercise/`. Postupuj A → B → C, po každé části spusť test.
 
 Chyby obal přes `%w`, aby `errors.Is` fungovalo i s dodatečným kontextem.
 
+např. `ParseEmail("Radek@Example.COM")` → `"radek@example.com"`
+
 ### B — validace na hranici (~35 min)
 
 1. `func (v ValidationErrors) Error() string` — souhrn s **abecedně seřazenými** poli,
@@ -332,8 +334,10 @@ Chyby obal přes `%w`, aby `errors.Is` fungovalo i s dodatečným kontextem.
    Nezapomeň na past s typovaným nil.
 3. `DecodeAndValidate[T Validator](r *http.Request) (T, error)` — omez tělo přes
    `io.LimitReader`, zakaž neznámá pole, odmítni druhý JSON dokument v těle i chybějící
-   tělo. Chyba dekódování → obal `ErrMalformedJSON`; chyba validace → propusť tak, jak
-   je, aby ji šlo vytáhnout přes `errors.As`.
+tělo. Chyba dekódování → obal `ErrMalformedJSON`; chyba validace → propusť tak, jak
+je, aby ji šlo vytáhnout přes `errors.As`.
+
+např. `CreateUserRequest{Email:"Radek@Example.com", Username:"radek", Age:40}.Validate()` → `nil`
 
 ### C — chybové odpovědi (~25 min)
 
@@ -347,6 +351,8 @@ Chyby obal přes `%w`, aby `errors.Is` fungovalo i s dodatečným kontextem.
    chyby. `body.Status` se vždy rovná vrácenému statusu.
 3. `WriteError(w, err)` — složení obou. Test přes `httptest` ověří tvar odpovědi,
    Content-Type i to, že se text interní chyby v těle **neobjeví**.
+
+např. `ErrorHandler(ErrNotFound)` → `404`
 
 ```bash
 make lesson L=36

@@ -281,6 +281,8 @@ nesmí panikovat.
 Test vedle správnosti hlídá i to, že goroutiny skutečně vznikají: sleduje maximum
 `runtime.NumGoroutine()` během běhu, takže sekvenční smyčka neprojde.
 
+např. `ParallelSquares([-3, 0, 4])` → `[9, 0, 16]`
+
 ### B — jádro (~35 min)
 
 1. `FanOutSum(nums []int, workers int) int` — sečti všechna čísla nejvýše ve `workers`
@@ -294,6 +296,8 @@ Test vedle správnosti hlídá i to, že goroutiny skutečně vznikají: sleduje
    odpověď. Pro čistou funkci musí vrátit 0, pro funkci, která nechá viset tři
    goroutiny, alespoň 3. Tímhle nástrojem se pak měří tvoje vlastní řešení v části C.
 
+např. `FanOutSum([1, 2, 3, 4, 5, 6, 7], 3)` → `28`
+
 ### C — rozšíření (~25 min)
 
 1. `LeakyGenerator()` — napiš funkci, která **záměrně leakuje**: spustí goroutinu
@@ -304,6 +308,8 @@ Test vedle správnosti hlídá i to, že goroutiny skutečně vznikají: sleduje
    - po zavření `done` musí goroutina skončit **i tehdy, když z výstupu nikdo nečte**,
    - výstupní kanál zavírá generátor (odesílatel), ne volající,
    - `GoroutineDelta` kolem celého scénáře musí vyjít 0.
+
+např. `GoroutineDelta(SafeGenerator po close(done))` → `0`
 
 ```bash
 make lesson L=40
