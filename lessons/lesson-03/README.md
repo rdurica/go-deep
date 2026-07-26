@@ -7,7 +7,7 @@
 - Vyjmenovat zero value každého základního i složeného typu a odvodit ji u vlastního typu.
 - Rozhodnout mezi `var`, `:=` a `const` a vědět, proč to není jen otázka vkusu.
 - Vysvětlit, proč Go nemá implicitní konverze a co to znamená pro `int` × `float64`.
-- Vytvořit vlastní pojmenovaný typ, dát mu konstanty přes `iota` a metodu `String()`.
+- Doplnit metody u vlastního pojmenovaného typu s konstantami přes `iota` a `String()`.
 
 ## PHP → Go most
 
@@ -237,8 +237,8 @@ např. `CentsToPrice(1999)` → `19.99`
 
 ### C — rozšíření (~25 min)
 
-Vytvoř typ `Level int` s konstantami `LevelUnknown`, `LevelDebug`, `LevelInfo`,
-`LevelWarn`, `LevelError` v tomto pořadí přes `iota` a implementuj:
+Typ `Level int` a konstanty `LevelUnknown`, `LevelDebug`, `LevelInfo`, `LevelWarn`,
+`LevelError` přes `iota` jsou předpřipravené v `exercise.go` — dopiš metody:
 
 - `func (l Level) String() string` → `"UNKNOWN"`, `"DEBUG"`, `"INFO"`, `"WARN"`, `"ERROR"`;
   hodnota mimo rozsah také `"UNKNOWN"`.
