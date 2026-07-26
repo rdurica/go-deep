@@ -32,5 +32,7 @@ func LeakyGenerator() {
 // Po zavření done goroutina skončí a výstupní kanál zavře.
 func SafeGenerator(done <-chan struct{}) <-chan int {
 	// TODO: úkol C
-	return nil
+	ch := make(chan int)
+	close(ch)
+	return ch
 }

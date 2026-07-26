@@ -31,12 +31,16 @@ func First(ctx context.Context, fns ...func(context.Context) (string, error)) (s
 // Po zavření vstupu pošle poslední čekající hodnotu a výstup zavře.
 func Debounce(in <-chan string, d time.Duration) <-chan string {
 	// TODO: úkol B
-	return nil
+	ch := make(chan string)
+	close(ch)
+	return ch
 }
 
 // Heartbeat každých interval zavolá work a pošle tep do vráceného kanálu.
 // Po zrušení kontextu skončí a kanál zavře.
 func Heartbeat(ctx context.Context, interval time.Duration, work func()) <-chan time.Time {
 	// TODO: úkol C
-	return nil
+	ch := make(chan time.Time)
+	close(ch)
+	return ch
 }

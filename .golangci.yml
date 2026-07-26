@@ -34,7 +34,7 @@ issues:
   max-issues-per-linter: 0
   max-same-issues: 0
   exclude-rules:
-    # Stuby cvičení záměrně panikují a nic nedělají.
+    # Stuby cvičení záměrně vrací zero/TODO hodnoty a nic nedělají.
     - path: lessons/lesson-\d+/exercise/exercise\.go
       linters:
         - unused

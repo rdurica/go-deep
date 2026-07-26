@@ -95,7 +95,9 @@ func (p *Pool) Submit(job Job) error {
 // Results vrací kanál výsledků. Zavře se, až doběhnou všechny úlohy přijaté před Close.
 func (p *Pool) Results() <-chan Result {
 	// TODO: úkol B
-	return nil
+	ch := make(chan Result)
+	close(ch)
+	return ch
 }
 
 // Close oznámí poolu, že další úlohy nepřijdou. Je bezpečné ho volat opakovaně.

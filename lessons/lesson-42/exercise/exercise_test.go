@@ -28,6 +28,7 @@ func TestTrySend(t *testing.T) {
 	buf := make(chan int, 1)
 	if !exercise.TrySend(buf, 1) {
 		t.Error("TrySend do prázdného bufferu = false, chci true")
+		return
 	}
 	if exercise.TrySend(buf, 2) {
 		t.Error("TrySend do plného bufferu = true, chci false")

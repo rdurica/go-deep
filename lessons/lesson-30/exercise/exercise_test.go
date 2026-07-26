@@ -382,7 +382,11 @@ func TestRunServerGracefulShutdown(t *testing.T) {
 		reqDone <- result{body: string(body), err: err}
 	}()
 
-	<-started
+	select {
+	case <-started:
+	case <-time.After(2 * time.Second):
+		t.Fatal("server se nespustil — RunServer musí obsluhovat listener")
+	}
 	cancel() // shutdown uprostřed rozpracovaného požadavku
 
 	select {

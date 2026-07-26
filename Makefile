@@ -65,7 +65,7 @@ check:
 	@echo "==> stuby cvičení musí padat"
 	@failed=0; \
 	for d in lessons/lesson-*/exercise; do \
-	  if (cd "$$d" && go test -count=1 . >/dev/null 2>&1); then \
+	  if (cd "$$d" && go test -count=1 -timeout 5s . >/dev/null 2>&1); then \
 	    echo "$$d prochází, ale má padat na nedokončeném TODO"; failed=1; \
 	  fi; \
 	done; \

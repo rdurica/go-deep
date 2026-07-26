@@ -113,5 +113,8 @@ func Process(ctx context.Context, cfg Config, items []Item) ([]Outcome, Stats, e
 // v režimu FailFast.
 func ProcessStream(ctx context.Context, cfg Config, in <-chan Item, out chan<- Outcome) (Stats, error) {
 	// TODO: úkol C
+	for range in {
+	}
+	close(out)
 	return *new(Stats), nil
 }

@@ -138,6 +138,8 @@ Správně vypadá cvičení tak, že student musí použít přesně tu konstruk
   (`""`, `0`, `nil`, `*new(T)` u pojmenovaných typů). Void funkce mají jen komentář;
   funkce s `t *testing.T` volají `t.Fatal("TODO: …")`. Typy, konstanty a signatury
   jsou předvyplněné, aby se balíček zkompiloval a `go test` padal přes `t.Error`/`t.Fatal`.
+  Stuby vracející `<-chan` mají vracet zavřený prázdný kanál, ne `nil` — jinak testy
+  visí na čtení z nil kanálu.
 - Řešení v `solutions/` musí být idiomatické — je to zároveň ukázka stylu.
 
 ## Testy

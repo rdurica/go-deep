@@ -435,7 +435,11 @@ func TestProcessStreamBackpressure(t *testing.T) {
 	}()
 
 	src <- exercise.Item{ID: 1}
-	<-busy // worker opravdu pracuje
+	select {
+	case <-busy: // worker opravdu pracuje
+	case <-time.After(2 * time.Second):
+		t.Fatal("worker nezačal zpracovávat úlohu — ProcessStream musí spustit handler")
+	}
 	src <- exercise.Item{ID: 2}
 
 	// Třetí odeslání nemá kam jít, musí blokovat.

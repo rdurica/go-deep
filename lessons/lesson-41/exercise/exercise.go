@@ -4,7 +4,7 @@ package exercise
 // Generate pošle všechna čísla do vráceného kanálu a kanál sám zavře.
 func Generate(nums ...int) <-chan int {
 	// TODO: úkol A
-	return nil
+	return closedInt()
 }
 
 // Collect přečte kanál až do zavření a vrátí hodnoty v pořadí, v jakém dorazily.
@@ -17,7 +17,7 @@ func Collect(ch <-chan int) []int {
 // až po zavření všech vstupů.
 func Merge(chs ...<-chan int) <-chan int {
 	// TODO: úkol B
-	return nil
+	return closedInt()
 }
 
 // Split rozdělí hodnoty ze vstupního kanálu mezi n výstupních kanálů. Každá
@@ -44,7 +44,9 @@ func NewBroker(buffer int) *Broker {
 // Close vrací už zavřený kanál.
 func (b *Broker) Subscribe() <-chan string {
 	// TODO: úkol C
-	return nil
+	ch := make(chan string)
+	close(ch)
+	return ch
 }
 
 // Publish rozešle zprávu všem odběratelům. Odběratele, který nestíhá, nesmí
@@ -63,4 +65,11 @@ func (b *Broker) Dropped() int {
 // je bezpečné, Publish po zavření nic nedělá.
 func (b *Broker) Close() {
 	// TODO: úkol C
+}
+
+// closedInt je fail-fast stub: nil kanál by v testech visel navždy.
+func closedInt() <-chan int {
+	ch := make(chan int)
+	close(ch)
+	return ch
 }

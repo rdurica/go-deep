@@ -42,7 +42,7 @@ jobs:
       - name: Stuby cvičení musí padat
         run: |
           for d in lessons/lesson-*/exercise; do
-            if go test -count=1 "./$d/" >/dev/null 2>&1; then
+            if go test -count=1 -timeout 5s "./$d/" >/dev/null 2>&1; then
               echo "$d prochází, ale má padat na nedokončeném TODO"
               exit 1
             fi
