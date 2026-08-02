@@ -32,6 +32,7 @@ type Middleware func(http.Handler) http.Handler
 // Prázdný struct nic nealokuje a nikdo mimo tenhle balíček ho nevyrobí.
 type userKey struct{}
 
+// --- Stupeň: jednoduchý ---
 // WriteJSON zapíše v jako JSON odpověď se status kódem status.
 // Hotové z lekce 24.
 func WriteJSON(w http.ResponseWriter, status int, v any) error {
@@ -51,6 +52,7 @@ func UserFrom(ctx context.Context) (User, bool) {
 	return u, ok
 }
 
+// --- Stupeň: střední ---
 // unauthorized odešle 401 s výzvou k autentizaci.
 func unauthorized(w http.ResponseWriter, msg string) {
 	w.Header().Set("WWW-Authenticate", "Bearer")
@@ -58,6 +60,8 @@ func unauthorized(w http.ResponseWriter, msg string) {
 }
 
 // Authenticate vrací middleware, který ověří Bearer token a vloží uživatele do kontextu.
+// Chybějící/špatné schéma/prázdný token/neznámý token → 401 + WWW-Authenticate: Bearer.
+// Schéma Bearer porovnej case-insensitive; token za schématem exact match.
 func Authenticate(users map[string]User) Middleware {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -91,6 +95,7 @@ func WhoAmI() http.Handler {
 	})
 }
 
+// --- Stupeň: obtížný ---
 // FetchWithTimeout zavolá fn s kontextem omezeným na d a respektuje deadline.
 func FetchWithTimeout(ctx context.Context, fn func(context.Context) (string, error), d time.Duration) (string, error) {
 	ctx, cancel := context.WithTimeout(ctx, d)

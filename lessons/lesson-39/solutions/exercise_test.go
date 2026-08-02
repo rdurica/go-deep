@@ -109,9 +109,9 @@ func TestNewDateRange(t *testing.T) {
 		to      string
 		wantErr error
 	}{
-		{"konec před začátkem", "2024-05-20", "2024-05-17", exercise.ErrInvalidRange},
-		{"stejný den", "2024-05-17", "2024-05-17", exercise.ErrInvalidRange},
-		{"příliš dlouhý", "2024-05-01", "2024-06-05", exercise.ErrRangeTooLong},
+		{"end before start", "2024-05-20", "2024-05-17", exercise.ErrInvalidRange},
+		{"same day", "2024-05-17", "2024-05-17", exercise.ErrInvalidRange},
+		{"too long", "2024-05-01", "2024-06-05", exercise.ErrRangeTooLong},
 	}
 	for _, tt := range bad {
 		t.Run(tt.name, func(t *testing.T) {
@@ -134,12 +134,12 @@ func TestDateRangeOverlaps(t *testing.T) {
 		bFrom, bTo   string
 		wantOverlaps bool
 	}{
-		{"úplný překryv", "2024-05-17", "2024-05-20", "2024-05-17", "2024-05-20", true},
-		{"částečný překryv", "2024-05-17", "2024-05-20", "2024-05-19", "2024-05-22", true},
-		{"obsažený", "2024-05-17", "2024-05-25", "2024-05-19", "2024-05-20", true},
+		{"full overlap", "2024-05-17", "2024-05-20", "2024-05-17", "2024-05-20", true},
+		{"partial overlap", "2024-05-17", "2024-05-20", "2024-05-19", "2024-05-22", true},
+		{"contained", "2024-05-17", "2024-05-25", "2024-05-19", "2024-05-20", true},
 		{"navazuje hned", "2024-05-17", "2024-05-20", "2024-05-20", "2024-05-22", false},
-		{"navazuje před", "2024-05-20", "2024-05-22", "2024-05-17", "2024-05-20", false},
-		{"úplně jinde", "2024-05-17", "2024-05-20", "2024-06-01", "2024-06-03", false},
+		{"adjacent before", "2024-05-20", "2024-05-22", "2024-05-17", "2024-05-20", false},
+		{"completely elsewhere", "2024-05-17", "2024-05-20", "2024-06-01", "2024-06-03", false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -172,7 +172,7 @@ func TestValidateOK(t *testing.T) {
 	}
 }
 
-func TestValidateSbiraVsechnyChyby(t *testing.T) {
+func TestValidateCollectsAllErrors(t *testing.T) {
 	req := exercise.CreateBookingRequest{}
 	err := req.Validate()
 	if err == nil {
@@ -194,24 +194,24 @@ func TestValidateSbiraVsechnyChyby(t *testing.T) {
 	}
 }
 
-func TestValidateJednotliveChyby(t *testing.T) {
+func TestValidateIndividualErrors(t *testing.T) {
 	tests := []struct {
 		name     string
 		mutate   func(*exercise.CreateBookingRequest)
 		field    string
 		wantCode string
 	}{
-		{"chybí reference", func(r *exercise.CreateBookingRequest) { r.Ref = "  " }, "ref", exercise.CodeRequired},
-		{"chybí pokoj", func(r *exercise.CreateBookingRequest) { r.Room = "" }, "room", exercise.CodeRequired},
-		{"pokažený pokoj", func(r *exercise.CreateBookingRequest) { r.Room = "AA-1" }, "room", exercise.CodeFormat},
-		{"chybí host", func(r *exercise.CreateBookingRequest) { r.Guest = "" }, "guest", exercise.CodeRequired},
-		{"krátký host", func(r *exercise.CreateBookingRequest) { r.Guest = "R" }, "guest", exercise.CodeFormat},
-		{"chybí datum", func(r *exercise.CreateBookingRequest) { r.From = "" }, "from", exercise.CodeRequired},
-		{"pokažené datum", func(r *exercise.CreateBookingRequest) { r.To = "17.5.2024" }, "to", exercise.CodeFormat},
-		{"obrácený termín", func(r *exercise.CreateBookingRequest) { r.To = "2024-05-16" }, "to", exercise.CodeRange},
-		{"dlouhý pobyt", func(r *exercise.CreateBookingRequest) { r.To = "2024-07-17" }, "to", exercise.CodeRange},
-		{"nulová cena", func(r *exercise.CreateBookingRequest) { r.NightlyRate = 0 }, "nightly_rate", exercise.CodeRange},
-		{"záporná cena", func(r *exercise.CreateBookingRequest) { r.NightlyRate = -1 }, "nightly_rate", exercise.CodeRange},
+		{"missing reference", func(r *exercise.CreateBookingRequest) { r.Ref = "  " }, "ref", exercise.CodeRequired},
+		{"missing room", func(r *exercise.CreateBookingRequest) { r.Room = "" }, "room", exercise.CodeRequired},
+		{"bad room", func(r *exercise.CreateBookingRequest) { r.Room = "AA-1" }, "room", exercise.CodeFormat},
+		{"missing guest", func(r *exercise.CreateBookingRequest) { r.Guest = "" }, "guest", exercise.CodeRequired},
+		{"short guest", func(r *exercise.CreateBookingRequest) { r.Guest = "R" }, "guest", exercise.CodeFormat},
+		{"missing date", func(r *exercise.CreateBookingRequest) { r.From = "" }, "from", exercise.CodeRequired},
+		{"bad date", func(r *exercise.CreateBookingRequest) { r.To = "17.5.2024" }, "to", exercise.CodeFormat},
+		{"reversed dates", func(r *exercise.CreateBookingRequest) { r.To = "2024-05-16" }, "to", exercise.CodeRange},
+		{"long stay", func(r *exercise.CreateBookingRequest) { r.To = "2024-07-17" }, "to", exercise.CodeRange},
+		{"zero price", func(r *exercise.CreateBookingRequest) { r.NightlyRate = 0 }, "nightly_rate", exercise.CodeRange},
+		{"negative price", func(r *exercise.CreateBookingRequest) { r.NightlyRate = -1 }, "nightly_rate", exercise.CodeRange},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -289,7 +289,7 @@ func TestMemoryRepo(t *testing.T) {
 	}
 }
 
-func TestMemoryRepoRadi(t *testing.T) {
+func TestMemoryRepoOrders(t *testing.T) {
 	ctx := context.Background()
 	repo := exercise.NewMemoryRepo()
 
@@ -318,7 +318,7 @@ func TestMemoryRepoRadi(t *testing.T) {
 	}
 }
 
-func TestMemoryRepoZrusenyKontext(t *testing.T) {
+func TestMemoryRepoCanceledContext(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 
@@ -331,7 +331,7 @@ func TestMemoryRepoZrusenyKontext(t *testing.T) {
 	}
 }
 
-func TestMetricsNulovaHodnotaAObeh(t *testing.T) {
+func TestMetricsZeroValueAndRoundTrip(t *testing.T) {
 	var m exercise.Metrics
 	if len(m.Snapshot()) != 0 {
 		t.Error("nulová hodnota Metrics má být prázdná, ne panika")
@@ -349,7 +349,7 @@ func TestMetricsNulovaHodnotaAObeh(t *testing.T) {
 	}
 }
 
-func TestMetricsSoubezne(t *testing.T) {
+func TestMetricsConcurrent(t *testing.T) {
 	var m exercise.Metrics
 	const n = 200
 	var wg sync.WaitGroup
@@ -390,7 +390,7 @@ func TestServiceBook(t *testing.T) {
 	}
 }
 
-func TestServiceBookObsazenyPokoj(t *testing.T) {
+func TestServiceBookOccupiedRoom(t *testing.T) {
 	ctx := context.Background()
 	svc := exercise.NewService(exercise.NewMemoryRepo(), nil)
 	if _, err := svc.Book(ctx, validRequest()); err != nil {
@@ -431,7 +431,7 @@ func TestServiceBookObsazenyPokoj(t *testing.T) {
 	}
 }
 
-func TestServiceBookNeplatnaData(t *testing.T) {
+func TestServiceBookInvalidData(t *testing.T) {
 	ctx := context.Background()
 	svc := exercise.NewService(exercise.NewMemoryRepo(), nil)
 
@@ -451,7 +451,7 @@ func TestServiceBookNeplatnaData(t *testing.T) {
 	}
 }
 
-func TestServiceBookDuplicitniReference(t *testing.T) {
+func TestServiceBookDuplicateReference(t *testing.T) {
 	ctx := context.Background()
 	svc := exercise.NewService(exercise.NewMemoryRepo(), nil)
 	if _, err := svc.Book(ctx, validRequest()); err != nil {
@@ -490,7 +490,7 @@ func post(t *testing.T, srv *httptest.Server, path, body string) (*http.Response
 
 const validBody = `{"ref":"BK-1","room":"A-101","guest":"Radek","from":"2024-05-17","to":"2024-05-20","nightly_rate":1500}`
 
-func TestHandlerVytvoreni(t *testing.T) {
+func TestHandlerCreation(t *testing.T) {
 	srv, _ := newServer(t)
 	resp, body := post(t, srv, "/bookings", validBody)
 
@@ -511,8 +511,8 @@ func TestHandlerVytvoreni(t *testing.T) {
 	}
 }
 
-func TestHandlerChyboveStavy(t *testing.T) {
-	t.Run("rozbité tělo", func(t *testing.T) {
+func TestHandlerErrorStates(t *testing.T) {
+	t.Run("broken body", func(t *testing.T) {
 		srv, _ := newServer(t)
 		resp, _ := post(t, srv, "/bookings", `{"ref":`)
 		if resp.StatusCode != http.StatusBadRequest {
@@ -523,7 +523,7 @@ func TestHandlerChyboveStavy(t *testing.T) {
 		}
 	})
 
-	t.Run("neznámé pole", func(t *testing.T) {
+	t.Run("unknown field", func(t *testing.T) {
 		srv, _ := newServer(t)
 		resp, _ := post(t, srv, "/bookings", `{"ref":"BK-1","sleva":10}`)
 		if resp.StatusCode != http.StatusBadRequest {
@@ -531,7 +531,7 @@ func TestHandlerChyboveStavy(t *testing.T) {
 		}
 	})
 
-	t.Run("neplatná data", func(t *testing.T) {
+	t.Run("invalid data", func(t *testing.T) {
 		srv, _ := newServer(t)
 		resp, body := post(t, srv, "/bookings", `{"ref":"","room":"xx","guest":"","from":"","to":"","nightly_rate":0}`)
 		if resp.StatusCode != http.StatusUnprocessableEntity {
@@ -549,7 +549,7 @@ func TestHandlerChyboveStavy(t *testing.T) {
 		}
 	})
 
-	t.Run("obsazený pokoj", func(t *testing.T) {
+	t.Run("occupied room", func(t *testing.T) {
 		srv, _ := newServer(t)
 		if resp, _ := post(t, srv, "/bookings", validBody); resp.StatusCode != http.StatusCreated {
 			t.Fatal("příprava selhala")
@@ -561,7 +561,7 @@ func TestHandlerChyboveStavy(t *testing.T) {
 		}
 	})
 
-	t.Run("duplicitní reference", func(t *testing.T) {
+	t.Run("duplicate reference", func(t *testing.T) {
 		srv, _ := newServer(t)
 		if resp, _ := post(t, srv, "/bookings", validBody); resp.StatusCode != http.StatusCreated {
 			t.Fatal("příprava selhala")
@@ -574,7 +574,7 @@ func TestHandlerChyboveStavy(t *testing.T) {
 	})
 }
 
-func TestHandlerMetriky(t *testing.T) {
+func TestHandlerMetrics(t *testing.T) {
 	srv, _ := newServer(t)
 	if resp, _ := post(t, srv, "/bookings", validBody); resp.StatusCode != http.StatusCreated {
 		t.Fatal("příprava selhala")

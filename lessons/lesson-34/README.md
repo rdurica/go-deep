@@ -13,51 +13,6 @@
   `type UserID string` není kosmetika.
 - Rozdělit částku mezi n příjemců beze ztráty jediného haléře a doložit to testem.
 
-## PHP → Go most
-
-V Symfony aplikaci vypadá cena typicky takhle:
-
-```php
-final class Order
-{
-    public float $total = 0.0;          // nebo string kvůli Doctrine DECIMAL
-
-    public function addItem(float $price): void
-    {
-        $this->total += $price;         // mutace, žádná kontrola měny
-    }
-}
-
-$order->addItem(0.1);
-$order->addItem(0.2);
-var_dump($order->total === 0.3);        // bool(false)
-```
-
-Kdo to má rozmyšlené, sáhne po `moneyphp/money` — knihovně, která dělá přesně to,
-co za chvíli napíšeš sám. Její jádro je celočíselná částka plus měna a metody, které
-vracejí nový objekt.
-
-Go protějšek:
-
-```go
-type Money struct {
-	cents    int64
-	currency Currency
-}
-
-func (m Money) Add(o Money) (Money, error) { /* vrací novou hodnotu */ }
-```
-
-Dvě věci se v uvažování mění. Za prvé: `Money` je **hodnota**, ne objekt. Kopíruje
-se při přiřazení i při předání do funkce, takže „sdílená mutovatelná cena" ani
-neexistuje. Za druhé: nepotřebuješ knihovnu. Struct se dvěma poli a devět metod je
-padesát řádků, které si celé přečteš.
-
-Návyk k opuštění: **přestaň hledat balíček.** V PHP je `composer require` levnější
-než napsat vlastní typ, protože každá třída s magií kolem sebe je práce. V Go je
-vlastní doménový typ nejlevnější a nejčitelnější řešení a přidaná závislost je
-naopak drahá.
-
 ## Teorie
 
 ### Proč `float64` na peníze nikdy
@@ -203,6 +158,51 @@ deterministické a otestované. Právě proto test v tomhle cvičení nekontrolu
 pár konkrétních čísel, ale na dvou tisících generovaných vstupech ověřuje invariant
 „součet dílů je přesně originál".
 
+## Rozdíly proti PHP
+
+V Symfony aplikaci vypadá cena typicky takhle:
+
+```php
+final class Order
+{
+    public float $total = 0.0;          // nebo string kvůli Doctrine DECIMAL
+
+    public function addItem(float $price): void
+    {
+        $this->total += $price;         // mutace, žádná kontrola měny
+    }
+}
+
+$order->addItem(0.1);
+$order->addItem(0.2);
+var_dump($order->total === 0.3);        // bool(false)
+```
+
+Kdo to má rozmyšlené, sáhne po `moneyphp/money` — knihovně, která dělá přesně to,
+co za chvíli napíšeš sám. Její jádro je celočíselná částka plus měna a metody, které
+vracejí nový objekt.
+
+Go protějšek:
+
+```go
+type Money struct {
+	cents    int64
+	currency Currency
+}
+
+func (m Money) Add(o Money) (Money, error) { /* vrací novou hodnotu */ }
+```
+
+Dvě věci se v uvažování mění. Za prvé: `Money` je **hodnota**, ne objekt. Kopíruje
+se při přiřazení i při předání do funkce, takže „sdílená mutovatelná cena" ani
+neexistuje. Za druhé: nepotřebuješ knihovnu. Struct se dvěma poli a devět metod je
+padesát řádků, které si celé přečteš.
+
+Návyk k opuštění: **přestaň hledat balíček.** V PHP je `composer require` levnější
+než napsat vlastní typ, protože každá třída s magií kolem sebe je práce. V Go je
+vlastní doménový typ nejlevnější a nejčitelnější řešení a přidaná závislost je
+naopak drahá.
+
 ## Časté chyby
 
 | Chyba | Proč vzniká | Jak to udělat správně |
@@ -214,70 +214,52 @@ pár konkrétních čísel, ale na dvou tisících generovaných vstupech ověř
 | Slice nebo mapa uvnitř value objektu | „ať to unese víc" | jen porovnatelná pole, jinak přijdeš o `==` |
 | `string` místo `type UserID string` | primitive obsession z PHP | pojmenovaný typ, záměna je chyba kompilace |
 
+## AI kvíz
+
+Po přečtení teorie spusť v Cursoru **`/go-deep-quiz 34`**. AI tě ~5 minut prověří mentální model (ne hotové cvičení). Slabiny si uloží do [`GAPS.md`](../../GAPS.md).
+
 ## Úkol
 
-Pracuj v `exercise/`. Postupuj A → B → C, po každé části spusť test.
+Pracuj v `exercise/`. Po doplnění spouštěj testy:
 
-Pomocníky `validCurrency`, `formatAmount` a `moneyRe` máš předpřipravené — použij je.
+Stupně jdou od jednodušších ke složitějším — po každém stupni spusť review, než jdeš dál.
 
-### A — rozcvička (~15 min)
+### Jednoduchý
 
-1. `NewMoney(cents int64, c Currency) (Money, error)` — měna musí mít přesně tři
-   velká písmena A–Z, jinak `ErrInvalidCurrency` a nulová `Money`. Záporná částka
-   je legální (dobropis).
-2. `(Money).Cents()` a `(Money).Currency()` — přístup k neexportovaným polím.
-3. `(Money).String()` — `"19.99 EUR"`, `"0.05 EUR"`, `"-19.99 EUR"`, `"1.00 EUR"`.
-   Nulová hodnota `Money{}` nemá měnu a vypíše se jako `"0.00"` bez mezery na konci.
-
-např. `NewMoney(1999, "EUR").String()` → `"19.99 EUR"`
-
-### B — jádro (~35 min)
-
-Všechny metody mají **hodnotový receiver** a vracejí novou hodnotu.
-
-1. `Add(o Money) (Money, error)` a `Sub(o Money) (Money, error)` — různé měny vrací
-   `ErrCurrencyMismatch` a nulovou `Money`. Pozor: nulová hodnota bez měny se
-   s `EUR` také neshoduje.
-2. `Mul(n int64) Money` — násobení celým číslem nemůže selhat, proto bez chyby.
-3. `IsZero() bool` — měna se neposuzuje.
-4. `Neg() Money` — opačné znaménko, `m.Neg().Neg() == m`.
-5. `Compare(o Money) (int, error)` — `-1`, `0`, `1`; různé měny `ErrCurrencyMismatch`.
-
-Test kontroluje i to, že po operacích zůstaly operandy nedotčené, a že `Money`
-funguje jako klíč mapy.
-
-např. `Money(1999 EUR).Add(250 EUR)` → `2249` centů
-
-### C — rozšíření (~25 min)
-
-1. `Allocate(n int) ([]Money, error)` — rozdělí částku na `n` dílů tak, aby jejich
-   součet byl **přesně** originál. `n <= 0` je `ErrInvalidSplit`. Zbylé jednotky
-   rozdej po jedné od začátku: `100` na tři díly dá `34, 33, 33`, `3` na pět dílů
-   dá `1, 1, 1, 0, 0`, `-100` na tři díly dá `-34, -33, -33`. Žádné dva díly se
-   nesmí lišit o víc než jednu jednotku.
-2. `AllocateRatio(ratios []int) ([]Money, error)` — totéž v poměrech. Prázdný slice,
-   záporný poměr i nulový součet poměrů jsou `ErrInvalidRatios`. `5` v poměru
-   `3 : 7` dá `2, 3`.
-3. `ParseMoney(s string) (Money, error)` — čte tvar `"19.99 EUR"`: volitelné mínus,
-   celá část, tečka, **přesně dvě** desetinná místa, mezera, kód měny. Okolní
-   bílé znaky se ignorují. Cokoli jiného (`"19.9 EUR"`, `"19,99 EUR"`, `"+19.99 EUR"`,
-   `"19.99 EUR extra"`) je `ErrInvalidFormat`. Musí platit
-`ParseMoney(m.String()) == m` pro každou platnou částku — test to ověřuje na tisíci
-generovaných hodnotách.
-
-např. `Allocate(3)` na `100 EUR` → `[34, 33, 33]`
+Funkce: `NewMoney`, `Cents`, `Currency`, `String`
 
 ```bash
-make lesson L=34
+make lesson L=34 PART=1
 ```
 
-Až budeš hotový, porovnej se `solutions/` (spoiler).
+Pak **`/go-deep-review 34 easy`**.
 
-## Ověření
+### Střední
 
-Po dokončení úkolů spusť v Cursoru **`/go-deep-review`** a zadej třeba jen `34`. AI tě postupně projde body níže, doptá se a ověří pochopení — nestačí jen zelené testy.
+Funkce: `Add`, `Sub`, `Mul`, `IsZero`
 
-- [ ] `make lesson L=34` prochází
+```bash
+make lesson L=34 PART=2
+```
+
+Pak **`/go-deep-review 34 medium`**.
+
+### Obtížný
+
+Funkce: `Neg`, `Compare`, `Allocate`, `AllocateRatio`, `ParseMoney`
+
+```bash
+make lesson L=34 PART=3
+```
+
+Pak **`/go-deep-review 34 hard`**.
+
+Až budou stupně hotové, porovnej se `solutions/` (spoiler).
+
+## Závěrečné otázky
+
+Spusť **`/go-deep-review 34 final`**. AI projde body níže, doptá se a ověří pochopení. Celé cvičení ověří `make lesson L=34` (+ `make race L=34`, pokud to lekce vyžaduje).
+
 - [ ] Umíš na příkladu ukázat, kde `float64` u peněz selže, a odhadnout velikost chyby
 - [ ] Umíš vyjmenovat čtyři vlastnosti, které dělají typ value objektem v Go
 - [ ] Umíš vysvětlit, proč `Money` funguje jako klíč mapy a co by to rozbilo

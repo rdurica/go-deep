@@ -47,11 +47,18 @@ func TestRuneLen(t *testing.T) {
 	}
 }
 
-func TestByteLenARuneLenSeLisi(t *testing.T) {
+func TestByteLenWithDiacritics(t *testing.T) {
+	// U diakritiky je bajtů víc než run — ByteLen musí vrátit 13, ne 9.
 	const s = "žluťoučký"
-	b, r := exercise.ByteLen(s), exercise.RuneLen(s)
-	if b <= r {
-		t.Errorf("ByteLen(%q) = %d, RuneLen = %d — u diakritiky musí být bajtů víc", s, b, r)
+	if got := exercise.ByteLen(s); got != 13 {
+		t.Errorf("ByteLen(%q) = %d, chci 13 (počítáš runy místo bajtů?)", s, got)
+	}
+}
+
+func TestRuneLenWithDiacritics(t *testing.T) {
+	const s = "žluťoučký"
+	if got := exercise.RuneLen(s); got != 9 {
+		t.Errorf("RuneLen(%q) = %d, chci 9 (počítáš bajty místo run?)", s, got)
 	}
 }
 
@@ -61,13 +68,13 @@ func TestReverseRunes(t *testing.T) {
 		in   string
 		want string
 	}{
-		{"prázdný", "", ""},
-		{"jeden znak", "a", "a"},
+		{"empty", "", ""},
+		{"one character", "a", "a"},
 		{"ascii", "gopher", "rehpog"},
-		{"čeština", "kůň", "ňůk"},
-		{"celá věta", "příliš žluťoučký kůň", "ňůk ýkčuoťulž šilířp"},
-		{"emoji uprostřed", "a🐹b", "b🐹a"},
-		{"jen emoji", "🐹🐢", "🐢🐹"},
+		{"czech", "kůň", "ňůk"},
+		{"full sentence", "příliš žluťoučký kůň", "ňůk ýkčuoťulž šilířp"},
+		{"emoji in middle", "a🐹b", "b🐹a"},
+		{"emoji only", "🐹🐢", "🐢🐹"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -78,7 +85,7 @@ func TestReverseRunes(t *testing.T) {
 	}
 }
 
-func TestReverseRunesNerozbijeUTF8(t *testing.T) {
+func TestReverseRunesDoesNotBreakUTF8(t *testing.T) {
 	// Otočení po bajtech by vyrobilo neplatné UTF-8 sekvence.
 	const s = "příliš žluťoučký kůň úpěl ďábelské ódy"
 	got := exercise.ReverseRunes(s)
@@ -101,13 +108,13 @@ func TestTruncate(t *testing.T) {
 		maxRunes int
 		want     string
 	}{
-		{"kratší než limit", "kůň", 10, "kůň"},
-		{"přesně na limit", "příliš", 6, "příliš"},
+		{"shorter than limit", "kůň", 10, "kůň"},
+		{"exactly at limit", "příliš", 6, "příliš"},
 		{"zkracuje", "příliš", 4, "pří…"},
-		{"zkracuje na jednu runu", "příliš", 1, "…"},
+		{"truncates to one rune", "příliš", 1, "…"},
 		{"limit nula", "příliš", 0, ""},
-		{"záporný limit", "příliš", -3, ""},
-		{"prázdný vstup", "", 5, ""},
+		{"negative limit", "příliš", -3, ""},
+		{"empty input", "", 5, ""},
 		{"ascii", "gopher", 3, "go…"},
 		{"emoji", "a🐹bcd", 3, "a🐹…"},
 	}
@@ -124,7 +131,7 @@ func TestTruncate(t *testing.T) {
 	}
 }
 
-func TestTruncateNikdyNeprekrociLimit(t *testing.T) {
+func TestTruncateNeverExceedsLimit(t *testing.T) {
 	const s = "žluťoučký kůň úpěl ďábelské ódy"
 	for maxRunes := 1; maxRunes <= 40; maxRunes++ {
 		got := exercise.Truncate(s, maxRunes)
@@ -143,14 +150,14 @@ func TestInitials(t *testing.T) {
 		in   string
 		want string
 	}{
-		{"dvě slova s diakritikou", "Radek Ďurica", "RĎ"},
-		{"malá písmena", "jan novák", "JN"},
-		{"tři slova", "Jan Amos Komenský", "JAK"},
-		{"vícenásobné mezery", "  jan   novák ", "JN"},
-		{"tabulátory a nový řádek", "jan\t\tnovák\n", "JN"},
-		{"jedno slovo", "Ďurica", "Ď"},
-		{"prázdný vstup", "", ""},
-		{"jen bílé znaky", "   \t ", ""},
+		{"two words with diacritics", "Radek Ďurica", "RĎ"},
+		{"lowercase", "jan novák", "JN"},
+		{"three words", "Jan Amos Komenský", "JAK"},
+		{"multiple spaces", "  jan   novák ", "JN"},
+		{"tabs and newline", "jan\t\tnovák\n", "JN"},
+		{"one word", "Ďurica", "Ď"},
+		{"empty input", "", ""},
+		{"whitespace only", "   \t ", ""},
 		{"emoji jako slovo", "🐹 gopher", "🐹G"},
 	}
 	for _, tt := range tests {
@@ -170,13 +177,13 @@ func TestJoin(t *testing.T) {
 		want  string
 	}{
 		{"nil", nil, ",", ""},
-		{"prázdný slice", []string{}, ",", ""},
-		{"jeden prvek", []string{"go"}, ",", "go"},
+		{"empty slice", []string{}, ",", ""},
+		{"one element", []string{"go"}, ",", "go"},
 		{"dva prvky", []string{"go", "php"}, ", ", "go, php"},
-		{"prázdný oddělovač", []string{"a", "b", "c"}, "", "abc"},
-		{"prázdné prvky", []string{"", "", ""}, "-", "--"},
-		{"diakritika", []string{"kůň", "žluť"}, " a ", "kůň a žluť"},
-		{"vícebajtový oddělovač", []string{"a", "b"}, "→", "a→b"},
+		{"empty separator", []string{"a", "b", "c"}, "", "abc"},
+		{"empty elements", []string{"", "", ""}, "-", "--"},
+		{"diacritics", []string{"kůň", "žluť"}, " a ", "kůň a žluť"},
+		{"multibyte separator", []string{"a", "b"}, "→", "a→b"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -187,7 +194,7 @@ func TestJoin(t *testing.T) {
 	}
 }
 
-func TestJoinOdpovidaStringsJoin(t *testing.T) {
+func TestJoinMatchesStringsJoin(t *testing.T) {
 	// Referenční chování bereme ze stdlib, ale implementovat ho musíš sám.
 	parts := []string{"příliš", "žluťoučký", "kůň", "", "úpěl"}
 	for _, sep := range []string{"", ",", ", ", "→", "\n"} {
@@ -198,7 +205,7 @@ func TestJoinOdpovidaStringsJoin(t *testing.T) {
 	}
 }
 
-func TestJoinPredalokuje(t *testing.T) {
+func TestJoinPreallocates(t *testing.T) {
 	// S Grow na přesnou délku stačí Builderu jediná alokace.
 	parts := make([]string, 200)
 	for i := range parts {
@@ -219,10 +226,10 @@ func TestCountRunes(t *testing.T) {
 		in   string
 		want map[rune]int
 	}{
-		{"prázdný", "", map[rune]int{}},
-		{"bez opakování", "go", map[rune]int{'g': 1, 'o': 1}},
-		{"s opakováním", "gopher go", map[rune]int{'g': 2, 'o': 2, 'p': 1, 'h': 1, 'e': 1, 'r': 1, ' ': 1}},
-		{"diakritika", "ůů", map[rune]int{'ů': 2}},
+		{"empty", "", map[rune]int{}},
+		{"no repeats", "go", map[rune]int{'g': 1, 'o': 1}},
+		{"with repeats", "gopher go", map[rune]int{'g': 2, 'o': 2, 'p': 1, 'h': 1, 'e': 1, 'r': 1, ' ': 1}},
+		{"diacritics", "ůů", map[rune]int{'ů': 2}},
 		{"emoji", "🐹a🐹", map[rune]int{'🐹': 2, 'a': 1}},
 	}
 	for _, tt := range tests {
@@ -238,7 +245,7 @@ func TestCountRunes(t *testing.T) {
 	}
 }
 
-func TestCountRunesPocitaRunyNeBajty(t *testing.T) {
+func TestCountRunesCountsRunesNotBytes(t *testing.T) {
 	// "kůň" má 4 bajty, ale 3 různé runy po jednom výskytu.
 	got := exercise.CountRunes("kůň")
 	if len(got) != 3 {

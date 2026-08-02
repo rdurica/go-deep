@@ -24,6 +24,7 @@ var secretKeys = map[string]bool{
 	"api_key":  true,
 }
 
+// --- Stupeň: jednoduchý ---
 // NewLogger vrátí logger s JSON handlerem, který píše do w a filtruje podle level.
 func NewLogger(w io.Writer, level slog.Level) *slog.Logger {
 	return slog.New(slog.NewJSONHandler(w, &slog.HandlerOptions{Level: level}))
@@ -49,6 +50,7 @@ func NewService(logger *slog.Logger) *Service {
 	return &Service{log: logger.With("component", "service")}
 }
 
+// --- Stupeň: střední ---
 // Process zpracuje záznam s daným id. Prázdné id je chyba.
 func (s *Service) Process(id string) error {
 	if id == "" {
@@ -66,6 +68,7 @@ type RedactingHandler struct {
 }
 
 // NewRedactingHandler vytvoří handler maskující atributy s citlivými klíči.
+// Maskuj password, token, api_key (case-insensitive) konstantou Redacted.
 func NewRedactingHandler(next slog.Handler) *RedactingHandler {
 	return &RedactingHandler{next: next}
 }
@@ -75,6 +78,7 @@ func (h *RedactingHandler) Enabled(ctx context.Context, level slog.Level) bool {
 	return h.next.Enabled(ctx, level)
 }
 
+// --- Stupeň: obtížný ---
 // Handle implementuje slog.Handler.
 func (h *RedactingHandler) Handle(ctx context.Context, r slog.Record) error {
 	out := slog.NewRecord(r.Time, r.Level, r.Message, r.PC)
@@ -86,6 +90,8 @@ func (h *RedactingHandler) Handle(ctx context.Context, r slog.Record) error {
 }
 
 // WithAttrs implementuje slog.Handler.
+// Vrací nový handler; nemutuje původní.
+// Attrs před předáním dál zaredactuj; výsledek zůstane RedactingHandler (maskování platí dál).
 func (h *RedactingHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
 	safe := make([]slog.Attr, len(attrs))
 	for i, a := range attrs {
@@ -95,6 +101,7 @@ func (h *RedactingHandler) WithAttrs(attrs []slog.Attr) slog.Handler {
 }
 
 // WithGroup implementuje slog.Handler.
+// Deleguje WithGroup na next, ale výsledek znovu zabal — maskování platí i ve skupině.
 func (h *RedactingHandler) WithGroup(name string) slog.Handler {
 	return &RedactingHandler{next: h.next.WithGroup(name)}
 }

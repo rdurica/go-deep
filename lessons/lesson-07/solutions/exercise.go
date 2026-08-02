@@ -1,6 +1,7 @@
 // Package solutions obsahuje referenční řešení lekce 07.
 package solutions
 
+// --- Stupeň: jednoduchý ---
 // Sum vrací součet prvků. Prázdný i nil vstup dá 0.
 func Sum(nums []int) int {
 	total := 0
@@ -17,6 +18,7 @@ func Reverse(nums []int) {
 	}
 }
 
+// --- Stupeň: střední ---
 // Grow zajistí, že výsledek má cap >= n, a zachová len i obsah.
 // Pokud už cap(s) >= n, vrací s beze změny.
 func Grow(s []int, n int) []int {
@@ -48,6 +50,7 @@ func RemoveFast(s []int, i int) []int {
 	return s[:last]
 }
 
+// --- Stupeň: obtížný ---
 // Clone vrací nezávislou kopii s. Nil vstup vrací nil.
 func Clone(s []int) []int {
 	if s == nil {

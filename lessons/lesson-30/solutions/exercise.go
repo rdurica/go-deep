@@ -34,6 +34,7 @@ type StatusError struct {
 	Status     string
 }
 
+// --- Stupeň: jednoduchý ---
 // Error implementuje error.
 func (e *StatusError) Error() string {
 	return fmt.Sprintf("unexpected status %s", e.Status)
@@ -49,6 +50,7 @@ func (e *PermanentError) Error() string {
 	return "permanent: " + e.Err.Error()
 }
 
+// --- Stupeň: střední ---
 // Unwrap zpřístupní obalenou chybu pro errors.Is a errors.As.
 func (e *PermanentError) Unwrap() error {
 	return e.Err
@@ -59,6 +61,7 @@ func Permanent(err error) error {
 	return &PermanentError{Err: err}
 }
 
+// --- Stupeň: obtížný ---
 // NewHTTPClient vrátí klienta s timeoutem a vlastním transportem.
 func NewHTTPClient(timeout time.Duration) *http.Client {
 	transport := &http.Transport{

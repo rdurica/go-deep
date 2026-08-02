@@ -27,6 +27,7 @@ type bucket struct {
 	seen   time.Time
 }
 
+// --- Stupeň: jednoduchý ---
 // NewRateLimiter vytvoří omezovač s kapacitou capacity a doplňováním jednoho tokenu
 // za refill. Hodiny se předávají jako závislost; nil znamená time.Now.
 func NewRateLimiter(capacity int, refill time.Duration, now func() time.Time) *RateLimiter {
@@ -76,6 +77,7 @@ func (rl *RateLimiter) Allow(key string) bool {
 	return true
 }
 
+// --- Stupeň: střední ---
 // Cleanup zahodí kbelíky, které se nepoužily aspoň idle, a vrátí jejich počet.
 func (rl *RateLimiter) Cleanup(idle time.Duration) int {
 	rl.mu.Lock()
@@ -115,6 +117,7 @@ var SecurityHeaders = map[string]string{
 	"Content-Security-Policy": "default-src 'none'",
 }
 
+// --- Stupeň: obtížný ---
 // Harden složí produkční middleware chain: recovery, bezpečnostní hlavičky,
 // rate limiting, limit velikosti těla a timeout.
 func Harden(h http.Handler, opts HardenOptions) http.Handler {

@@ -37,88 +37,102 @@ type Money struct {
 	currency Currency
 }
 
-// NewMoney vytvoří částku. Měna musí mít tvar přesně tří velkých písmen A–Z.
+// --- Stupeň: jednoduchý ---
+// NewMoney vytvoří částku v minoritních jednotkách a zadané měně.
+// Měna musí mít přesně tři velká písmena A–Z, jinak ErrInvalidCurrency a nulová Money.
+// Záporná částka (dobropis) je legální.
 func NewMoney(cents int64, c Currency) (Money, error) {
-	// TODO: úkol A
+	// TODO
 	return *new(Money), nil
 }
 
-// Cents vrací částku v minoritních jednotkách.
+// Cents vrací částku v minoritních jednotkách (centech, haléřích).
+// Hodnotový receiver — kopie Money se nemění.
 func (m Money) Cents() int64 {
-	// TODO: úkol A
+	// TODO
 	return 0
 }
 
-// Currency vrací měnu částky.
+// Currency vrací kód měny částky jako pojmenovaný typ Currency.
+// U nulové Money{} může být prázdný string.
 func (m Money) Currency() Currency {
-	// TODO: úkol A
+	// TODO
 	return *new(Currency)
 }
 
-// String implementuje fmt.Stringer, například "19.99 EUR" nebo "-0.05 EUR".
-// Nulová hodnota Money nemá měnu a vypíše se jako "0.00".
+// String implementuje fmt.Stringer: "19.99 EUR", "-0.05 EUR", "1.00 EUR".
+// Nulová Money{} nemá měnu a vypíše se jako "0.00" bez mezery na konci.
+// Formát odpovídá ParseMoney — musí platit round-trip.
 func (m Money) String() string {
-	// TODO: úkol A
+	// TODO
 	return ""
 }
 
-// Add vrací novou částku m+o. Různé měny jsou ErrCurrencyMismatch.
+// --- Stupeň: střední ---
+// Add vrací novou částku m+o. Různé měny → ErrCurrencyMismatch a nulová Money.
+// Nulová hodnota bez měny se s EUR také neshoduje. Operand m zůstane nedotčen.
 func (m Money) Add(o Money) (Money, error) {
-	// TODO: úkol B
+	// TODO
 	return *new(Money), nil
 }
 
-// Sub vrací novou částku m-o. Různé měny jsou ErrCurrencyMismatch.
+// Sub vrací novou částku m-o. Různé měny → ErrCurrencyMismatch a nulová Money.
+// Nulová hodnota bez měny se s EUR také neshoduje. Operand m zůstane nedotčen.
 func (m Money) Sub(o Money) (Money, error) {
-	// TODO: úkol B
+	// TODO
 	return *new(Money), nil
 }
 
-// Mul vrací novou částku vynásobenou celým číslem. Měna se nemění,
-// takže tahle operace nemůže selhat.
+// Mul vrací novou částku vynásobenou celým číslem. Měna se nemění, bez chyby.
+// Hodnotový receiver — původní Money se nemění.
 func (m Money) Mul(n int64) Money {
-	// TODO: úkol B
+	// TODO
 	return *new(Money)
 }
 
 // IsZero hlásí, jestli je částka nulová. Měna se neposuzuje.
+// Money{0, "EUR"} i Money{} jsou obě nulové.
 func (m Money) IsZero() bool {
-	// TODO: úkol B
+	// TODO
 	return false
 }
 
-// Neg vrací částku s opačným znaménkem.
+// Neg vrací částku s opačným znaménkem; m.Neg().Neg() == m.
+// Měna zůstává stejná.
 func (m Money) Neg() Money {
-	// TODO: úkol B
+	// TODO
 	return *new(Money)
 }
 
-// Compare vrací -1, 0 nebo 1 podle toho, jestli je m menší, stejná nebo větší
-// než o. Různé měny jsou ErrCurrencyMismatch.
+// --- Stupeň: obtížný ---
+// Compare vrací -1, 0 nebo 1 podle velikosti částek ve stejné měně.
+// Různé měny → ErrCurrencyMismatch. Nulová Money bez měny se s EUR neshoduje.
 func (m Money) Compare(o Money) (int, error) {
-	// TODO: úkol B
+	// TODO
 	return 0, nil
 }
 
-// Allocate rozdělí částku na n dílů tak, že jejich součet je přesně m.
-// Zbylé minoritní jednotky rozdá po jedné od začátku: 100 centů na tři díly
-// dá 34, 33, 33.
+// Allocate rozdělí částku na n dílů; součet dílů je přesně originál.
+// n <= 0 → ErrInvalidSplit. Zbytek rozdá od začátku: 100 na 3 → 34,33,33;
+// -100 na 3 → -34,-33,-33. Žádné dva díly se nesmí lišit o víc než 1.
 func (m Money) Allocate(n int) ([]Money, error) {
-	// TODO: úkol C
+	// TODO
 	return nil, nil
 }
 
-// AllocateRatio rozdělí částku v zadaných poměrech. Součet dílů je přesně m.
-// Poměry musí být nezáporné a jejich součet kladný.
+// AllocateRatio rozdělí částku v poměrech; součet dílů je přesně m.
+// Prázdný slice, záporný poměr nebo nulový součet → ErrInvalidRatios.
+// 5 v poměru 3:7 → 2, 3. Zbytek rozdá od začátku jako u Allocate.
 func (m Money) AllocateRatio(ratios []int) ([]Money, error) {
-	// TODO: úkol C
+	// TODO
 	return nil, nil
 }
 
-// ParseMoney přečte částku ve tvaru "19.99 EUR" — přesně dvě desetinná místa
-// a mezera před kódem měny.
+// ParseMoney přečte "19.99 EUR": volitelné mínus, tečka, přesně dvě desetinná
+// místa, mezera, měna. Okolní bílé znaky ignoruj. Jiný tvar → ErrInvalidFormat.
+// ParseMoney(m.String()) == m pro každou platnou částku.
 func ParseMoney(s string) (Money, error) {
-	// TODO: úkol C
+	// TODO
 	return *new(Money), nil
 }
 

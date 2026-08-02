@@ -2,9 +2,9 @@
 
 package exercise
 
-// Backend vrací jméno úložiště zapečeného do buildu.
-// Tahle varianta se přeloží ve výchozím buildu.
+// Backend vrací jméno úložiště zapečeného do výchozího buildu.
+// Bez build tagu integration (!integration) vrací "memory".
 func Backend() string {
-	// TODO: úkol C
+	// TODO
 	return ""
 }

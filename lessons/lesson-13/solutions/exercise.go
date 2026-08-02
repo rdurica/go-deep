@@ -22,6 +22,7 @@ type CountingWriter struct {
 	lines int
 }
 
+// --- Stupeň: jednoduchý ---
 // WriteReport zapíše číslovaný seznam řádků a souhrn na konci.
 func WriteReport(w io.Writer, lines []string) error {
 	for i, line := range lines {
@@ -66,6 +67,7 @@ func (u upperReader) Read(p []byte) (int, error) {
 	return n, err
 }
 
+// --- Stupeň: střední ---
 // NewUpperReader vrací Reader, který za běhu převádí ASCII písmena na velká.
 func NewUpperReader(r io.Reader) io.Reader {
 	return upperReader{r: r}
@@ -113,6 +115,8 @@ func (cw *CountingWriter) Bytes() int64 {
 func (cw *CountingWriter) Lines() int {
 	return cw.lines
 }
+
+// --- Stupeň: obtížný ---
 
 // Pipeline přečte src po řádcích, na každý řádek zavolá transform
 // a výsledek zapíše do dst. Vrací počet zpracovaných řádků.

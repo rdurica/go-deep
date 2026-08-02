@@ -10,36 +10,6 @@
 - Zkombinovat chybu z hlavní práce a z úklidu přes named return, `defer` a `errors.Join`.
 - Poznat v code review špatný error na první pohled a říct proč.
 
-## PHP → Go most
-
-V Symfony je výjimka objekt s vlastní třídou a zprávou pro člověka. Kontext přidáváš tím,
-že výjimku zabalíš do jiné třídy:
-
-```php
-try {
-    $this->loadConfig($path);
-} catch (IOException $e) {
-    throw new ConfigurationException(
-        sprintf('Failed to load configuration from "%s".', $path), 0, $e
-    );
-}
-```
-
-V Go je chyba **hodnota** a text chyby je stavební kámen, ne celá věta. Skládá se zleva
-doprava jako cesta:
-
-```go
-cfg, err := loadConfig(path)
-if err != nil {
-	return fmt.Errorf("load config %q: %w", path, err)
-}
-// výsledek na nejvyšší úrovni:
-// serve: load config "/etc/app.yaml": open /etc/app.yaml: no such file or directory
-```
-
-Návyk k opuštění: **přestaň psát celé věty s velkým písmenem a tečkou.** Tvoje chyba
-skoro nikdy není konec řetězu — někdo ji obalí a tvoje tečka skončí uprostřed.
-
 ## Teorie
 
 ### Text chyby je API
@@ -171,6 +141,36 @@ nesmí ztratit.** Buď má goroutina kanál, kudy ji pošle, nebo běží pod `e
 Nástroj, který tohle hlídá strojově, je `errcheck` (součást `golangci-lint`). Než ho
 pustíš, nauč se to vidět sám — jinak jen umlčíš linter komentářem.
 
+## Rozdíly proti PHP
+
+V Symfony je výjimka objekt s vlastní třídou a zprávou pro člověka. Kontext přidáváš tím,
+že výjimku zabalíš do jiné třídy:
+
+```php
+try {
+    $this->loadConfig($path);
+} catch (IOException $e) {
+    throw new ConfigurationException(
+        sprintf('Failed to load configuration from "%s".', $path), 0, $e
+    );
+}
+```
+
+V Go je chyba **hodnota** a text chyby je stavební kámen, ne celá věta. Skládá se zleva
+doprava jako cesta:
+
+```go
+cfg, err := loadConfig(path)
+if err != nil {
+	return fmt.Errorf("load config %q: %w", path, err)
+}
+// výsledek na nejvyšší úrovni:
+// serve: load config "/etc/app.yaml": open /etc/app.yaml: no such file or directory
+```
+
+Návyk k opuštění: **přestaň psát celé věty s velkým písmenem a tečkou.** Tvoje chyba
+skoro nikdy není konec řetězu — někdo ji obalí a tvoje tečka skončí uprostřed.
+
 ## Časté chyby
 
 | Chyba | Proč vzniká | Jak to udělat správně |
@@ -183,99 +183,52 @@ pustíš, nauč se to vidět sám — jinak jen umlčíš linter komentářem.
 | Panika při chybě vstupu | reflex `throw` | `error` v návratové hodnotě |
 | Vlastní typ chyby pro každý případ | „výjimka je třída" | sentinel `var ErrX = errors.New(...)` |
 
+## AI kvíz
+
+Po přečtení teorie spusť v Cursoru **`/go-deep-quiz 21`**. AI tě ~5 minut prověří mentální model (ne hotové cvičení). Slabiny si uloží do [`GAPS.md`](../../GAPS.md).
+
 ## Úkol
 
-Pracuj v `exercise/`. Postupuj A → B → C, po každé části spusť test.
+Pracuj v `exercise/`. Po doplnění spouštěj testy:
 
-Testy v téhle lekci kontrolují **přesné znění** chyb. Není to formalita — text chyby je
-tady předmětem výuky, tak jako je jinde předmětem návratová hodnota.
+Stupně jdou od jednodušších ke složitějším — po každém stupni spusť review, než jdeš dál.
 
-### A — rozcvička (~20 min)
+### Jednoduchý
 
-`ReadConfig(r io.Reader) (Config, error)` čte řádky `key=value`.
-
-- Prázdné řádky a řádky začínající `#` (po oříznutí bílých znaků) se přeskakují.
-- Klíč i hodnota se ořezávají o bílé znaky. Klíče jsou **case sensitive**:
-  `name`, `port`, `debug`. Poslední výskyt klíče vyhrává.
-- `port` je celé číslo 1–65535, `debug` se parsuje `strconv.ParseBool`.
-- Chybí-li `debug`, zůstává `false`.
-
-Přesné texty chyb (`n` je číslo řádku od 1, počítají se **všechny** řádky):
-
-| Situace | Text |
-|---|---|
-| řádek bez `=` | `line 3: malformed line: "foo"` |
-| neznámý klíč | `line 2: unknown key: "colour"` |
-| neplatný port | `line 2: invalid port: "abc"` |
-| neplatný bool | `line 3: invalid bool: "yes"` |
-| chybí `name` | `missing key: "name"` |
-| chybí `port` | `missing key: "port"` |
-| selhalo čtení | `read config: disk on fire` |
-
-Sentinely (`ErrMalformedLine`, `ErrUnknownKey`, `ErrInvalidPort`, `ErrInvalidBool`,
-`ErrMissingKey`) jsou v `exercise.go` a musí být dohledatelné přes `errors.Is`.
-Chybějící `name` se hlásí dřív než chybějící `port`. Při jakékoli chybě vrať `Config{}`.
-
-např. `ReadConfig("name=api\nport=8080\ndebug=true")` → `{Name:"api", Port:8080, Debug:true}`
-
-### B — jádro (~30 min)
-
-`Pipeline` skládá pojmenované kroky a staví z jejich chyb řetěz kontextu.
-
-- `NewPipeline(steps ...Step) *Pipeline`.
-- `Run(input string) (string, error)` pouští kroky v pořadí, výstup jednoho je vstupem
-  dalšího. Prázdná pipeline vrací vstup beze změny.
-- Když krok vrátí chybu, `Run` **okamžitě** skončí, vrátí `""` a chybu
-  `fmt.Errorf("step %q: %w", step.Name, err)`. Další kroky se nespustí.
-- Krok s `Fn == nil` dá chybu obalující `ErrNilStep` se stejným prefixem.
-
-Test skládá pipeline do pipeline, takže výsledek musí vypadat takhle:
-
-```text
-step "inner": step "boom": boom
-```
-
-Tři úrovně, tři fakty, žádné „failed to". Tohle je celý smysl řetězení kontextu.
-
-např. `Run("  ahoj  ")` → `AHOJ!`
-
-### C — rozšíření (~25 min)
-
-Dvě funkce, které v produkčním kódu potkáš pořád.
-
-`CloseAll(closers []io.Closer) error`:
-
-- zavře **všechny** closery, i když některý selže (žádný early return!);
-- `nil` prvky přeskočí, `nil` slice vrátí `nil`;
-- chybu i-tého closeru obalí `fmt.Errorf("close %d: %w", i, err)` (index do původního slice);
-- výsledek spojí přes `errors.Join`, takže `errors.Is` najde každou příčinu;
-- když nic neselhalo, vrátí `nil`.
-
-`WithCleanup(f func() error, cleanup func() error) (err error)`:
-
-- `f == nil` → vrátí `ErrNilFunc` a cleanup se **nevolá**;
-- jinak zavolá `f` a přes `defer` **vždycky** i `cleanup` (i když `f` selhalo);
-- `cleanup == nil` se chová jako prázdná operace;
-- selže-li jen `f`, vrací se jeho chyba **beze změny** (`err.Error() == "work failed"`);
-- selže-li jen `cleanup`, vrací se `cleanup: <text>`;
-- selže-li obojí, vrací se `errors.Join` obou, přičemž chyba z cleanupu je obalená
-  prefixem `cleanup: `.
-
-Bez named returnu (`(err error)`) tuhle funkci nenapíšeš. Přesně proto tu je.
-
-např. `WithCleanup(nil, cleanup)` → `ErrNilFunc` (cleanup se nevolá)
+Funkce: `ReadConfig`
 
 ```bash
-make lesson L=21
+make lesson L=21 PART=1
 ```
 
-Až budeš hotový, porovnej se `solutions/` (spoiler).
+Pak **`/go-deep-review 21 easy`**.
 
-## Ověření
+### Střední
 
-Po dokončení úkolů spusť v Cursoru **`/go-deep-review`** a zadej třeba jen `21`. AI tě postupně projde body níže, doptá se a ověří pochopení — nestačí jen zelené testy.
+Funkce: `NewPipeline`, `Run`
 
-- [ ] `make lesson L=21` prochází
+```bash
+make lesson L=21 PART=2
+```
+
+Pak **`/go-deep-review 21 medium`**.
+
+### Obtížný
+
+Funkce: `CloseAll`, `WithCleanup`
+
+```bash
+make lesson L=21 PART=3
+```
+
+Pak **`/go-deep-review 21 hard`**.
+
+Až budou stupně hotové, porovnej se `solutions/` (spoiler).
+
+## Závěrečné otázky
+
+Spusť **`/go-deep-review 21 final`**. AI projde body níže, doptá se a ověří pochopení. Celé cvičení ověří `make lesson L=21` (+ `make race L=21`, pokud to lekce vyžaduje).
+
 - [ ] V žádné své chybě nemáš velké počáteční písmeno, tečku ani „failed to"
 - [ ] Nikde v tvém řešení není `_ = err`
 - [ ] Umíš vysvětlit, proč `WithCleanup` potřebuje named return

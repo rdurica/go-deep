@@ -13,31 +13,6 @@ vrátit, než se pustíš do fáze 2.
 - Přijmout `io.Reader` na vstupu a `fmt.Stringer` na výstupu, místo abys pracoval s řetězci a `os.Stdout`.
 - Odhadnout podle vlastního skóre, které lekce fáze 1 si máš zopakovat.
 
-## PHP → Go most
-
-Za fází 1 stojí jedna jediná myšlenka, kterou stojí za to shrnout do jedné dvojice ukázek.
-V PHP je objekt reference, chyba je výjimka a viditelnost je vlastnost třídy:
-
-```php
-final class Ledger {
-    /** @throws ValidationException */
-    public function add(Transaction $t): void { /* ... */ }
-}
-```
-
-V Go je hodnota hodnota, chyba je návratová hodnota a hranicí viditelnosti je balíček:
-
-```go
-type Ledger struct{ txs []Transaction }
-
-func (l *Ledger) Add(t Transaction) error { /* ... */ }
-```
-
-Co se mění v uvažování: **v Go je všechno, co PHP schovává, součástí signatury.** Kopíruje
-se? Pozná se z toho, jestli je receiver pointer. Může to selhat? Pozná se z `error`. Je to
-veřejné? Pozná se z prvního písmene. Fáze 1 byla o tom naučit se tyhle signály číst — a
-psát je tak, aby je četl i někdo jiný.
-
 ## Recap
 
 ### Otázky a odpovědi
@@ -119,6 +94,31 @@ var buf bytes.Buffer
 sorted := slices.Clone(in)
 ```
 
+## Rozdíly proti PHP
+
+Za fází 1 stojí jedna jediná myšlenka, kterou stojí za to shrnout do jedné dvojice ukázek.
+V PHP je objekt reference, chyba je výjimka a viditelnost je vlastnost třídy:
+
+```php
+final class Ledger {
+    /** @throws ValidationException */
+    public function add(Transaction $t): void { /* ... */ }
+}
+```
+
+V Go je hodnota hodnota, chyba je návratová hodnota a hranicí viditelnosti je balíček:
+
+```go
+type Ledger struct{ txs []Transaction }
+
+func (l *Ledger) Add(t Transaction) error { /* ... */ }
+```
+
+Co se mění v uvažování: **v Go je všechno, co PHP schovává, součástí signatury.** Kopíruje
+se? Pozná se z toho, jestli je receiver pointer. Může to selhat? Pozná se z `error`. Je to
+veřejné? Pozná se z prvního písmene. Fáze 1 byla o tom naučit se tyhle signály číst — a
+psát je tak, aby je četl i někdo jiný.
+
 ## Časté chyby
 
 | Chyba | Proč vzniká | Jak to udělat správně |
@@ -130,67 +130,47 @@ sorted := slices.Clone(in)
 | Agregace přes slice a lineární hledání | pole v PHP dělá obojí | mapa `map[K]V` a jeden průchod |
 | Zkopírované `Map`/`Filter` pro každý typ | před generikami to jinak nešlo | typový parametr |
 
+## AI kvíz
+
+Po přečtení teorie spusť v Cursoru **`/go-deep-quiz 18`**. AI tě ~5 minut prověří mentální model (ne hotové cvičení). Slabiny si uloží do [`GAPS.md`](../../GAPS.md).
+
 ## Úkol
 
-Jedna kumulativní úloha místo tří nezávislých. Postav v `exercise/` malý balíček
-`ledger`, který kombinuje **JSON, vlastní chybový typ, mapovou agregaci, generiku,
-`io.Reader` a `fmt.Stringer`**. Typy a signatury jsou předvyplněné.
+Pracuj v `exercise/`. Po doplnění spouštěj testy:
 
-Formát částky: `Money` je `int64` v **celých centech**, aby se nic neztratilo
-v plovoucí čárce. V JSON přichází jako celé číslo (`12050` = 120,50).
+Stupně jdou od jednodušších ke složitějším — po každém stupni spusť review, než jdeš dál.
 
-### A — rozcvička (~10 min)
+### Jednoduchý
 
-1. `func (m Money) String() string` — desetinné číslo vždy se dvěma místy:
-   `1999` → `"19.99"`, `5` → `"0.05"`, `0` → `"0.00"`, `-250` → `"-2.50"`.
-   Receiver musí být **hodnotový**, ať `Money` splňuje `fmt.Stringer`.
-2. `func (e *ValidationError) Error() string` — text musí obsahovat index transakce,
-   jméno pole a důvod, například `transakce 2: pole "amount": nesmí být nula`.
-
-např. `Money(1999).String()` → `"19.99"`
-
-### B — jádro (~35 min)
-
-1. `ParseTransactions(r io.Reader) ([]Transaction, error)` — dekóduj z `io.Reader`
-   **pole** transakcí (`json.Decoder`, ne `Unmarshal` nad načteným řetězcem).
-   Každou transakci ověř v pořadí polí `id`, `payee`, `category`, `amount`:
-   první tři nesmí být prázdné ani po oříznutí bílých znaků, `amount` nesmí být nula
-   (záporné částky jsou platné). První neplatná transakce ukončí parsování chybou, která
-   **obaluje** `*ValidationError` — musí jít vytáhnout přes `errors.As`. Prázdné pole
-   `[]` je platný vstup s prázdným výsledkem, rozbitý JSON je chyba.
-2. `TotalsByCategory(txs []Transaction) map[string]Money` — součty po kategoriích.
-   Prázdný vstup dá prázdnou, ale **nenilovou** mapu.
-
-např. `TotalsByCategory(txs)["food"]` → `32075`
-
-### C — rozšíření (~25 min)
-
-1. `GroupBy[T any, K comparable](items []T, key func(T) K) map[K][]T` — seskupení podle
-   klíče. Pořadí prvků uvnitř skupiny odpovídá vstupu, prázdný vstup dá prázdnou mapu.
-2. `func (r Report) String() string` ve tvaru
-   `transakcí: 4, celkem: 370.75, top kategorie: food`. Prázdná `Top` se vypíše jako `-`.
-3. `BuildReport(r io.Reader) (Report, error)` — poskládej celý řetěz: načti transakce,
-   spočítej jejich počet a celkovou částku a najdi kategorii s nejvyšším součtem
-   (při shodě rozhoduje abeceda). Kniha bez transakcí vrací `ErrEmptyLedger`
-   (ověřitelné přes `errors.Is`), chyba validace se skrz `BuildReport` propíše beze změny.
-
-např. `BuildReport(sample)` → `{Count: 4, Total: 37075, Top: "food"}`
+Funkce: `String`, `Error`
 
 ```bash
-make lesson L=18
+make lesson L=18 PART=1
 ```
 
-Až budeš hotový, porovnej se `solutions/` (spoiler).
+Pak **`/go-deep-review 18 easy`**.
 
-## Ověření
+### Střední
 
-Po dokončení úkolů spusť v Cursoru **`/go-deep-review`** a zadej třeba jen `18`. AI tě postupně projde body níže, doptá se a ověří pochopení — nestačí jen zelené testy.
+Funkce: `ParseTransactions`, `TotalsByCategory`
 
-- [ ] `make lesson L=18` prochází
-- [ ] Umíš vysvětlit, proč `Money` drží centy a ne `float64`
-- [ ] Umíš vysvětlit, proč `ParseTransactions` bere `io.Reader` a ne `string`
-- [ ] Umíš vysvětlit rozdíl mezi `errors.Is` a `errors.As` na vlastním kódu
-- [ ] Umíš vysvětlit, proč je `GroupBy` generická, ale `TotalsByCategory` ne
+```bash
+make lesson L=18 PART=2
+```
+
+Pak **`/go-deep-review 18 medium`**.
+
+### Obtížný
+
+Funkce: `String`, `BuildReport`
+
+```bash
+make lesson L=18 PART=3
+```
+
+Pak **`/go-deep-review 18 hard`**.
+
+Až budou stupně hotové, porovnej se `solutions/` (spoiler).
 
 ## Sebehodnocení
 
@@ -225,10 +205,20 @@ Nezapomeň, že součástí fáze 1 je i projekt
 [P01 — csvstats](../../projects/p01-csv-cli/ACCEPTANCE.md). Pokud jsi ho nedokončil,
 udělej ho teď: je to nejlepší kontrola, jestli témata fáze umíš složit dohromady.
 
+## Závěrečné otázky
+
+Spusť **`/go-deep-review 18 final`**. AI projde body níže, doptá se a ověří pochopení. Celé cvičení ověří `make lesson L=18` (+ `make race L=18`, pokud to lekce vyžaduje).
+
+- [ ] Umíš vysvětlit, proč `Money` drží centy a ne `float64`
+- [ ] Umíš vysvětlit, proč `ParseTransactions` bere `io.Reader` a ne `string`
+- [ ] Umíš vysvětlit rozdíl mezi `errors.Is` a `errors.As` na vlastním kódu
+- [ ] Umíš vysvětlit, proč je `GroupBy` generická, ale `TotalsByCategory` ne
+
 ## AI režim
 
 `ZAKÁZÁNO` — viz [docs/ai-playbook.md](../../docs/ai-playbook.md).
 
+Mentor, kvíz i review (dialog) jsou vždy OK; v tomto režimu AI nesmí psát kód cvičení.
 ## Další čtení
 
 1. [Effective Go](https://go.dev/doc/effective_go)

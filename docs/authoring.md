@@ -1,7 +1,7 @@
 # Jak se v tomhle repozitáři píše lekce
 
 Závazná pravidla pro autory (včetně AI agentů). Etalon kvality:
-[lessons/lesson-03](../lessons/lesson-03/README.md).
+[lessons/lesson-08](../lessons/lesson-08/README.md) (sekce Úkol + stuby v `exercise/`).
 
 ## Cílová skupina
 
@@ -15,16 +15,17 @@ zažité, a kde ho jeho reflexy zradí.
 |---|---|
 | Čas na lekci | 60–90 minut včetně cvičení |
 | Teorie | 1200–2000 slov |
-| Cvičení | 3 části (A rozcvička ~10 min, B jádro ~35 min, C rozšíření ~20–25 min) |
-| Funkcí k implementaci | 5–9 napříč A/B/C |
+| Cvičení | stuby v `exercise/` od jednodušších ke složitějším, 3 stupně |
+| Funkcí k implementaci | typicky 5–9 |
 
 ## Struktura souborů
 
 ```
 lessons/lesson-NN/
   README.md
+  tiers.txt              # 1:Test…|Test…  / 2:… / 3:…  pro make lesson PART=
   exercise/
-    exercise.go          # package exercise, stuby s // TODO: úkol X + zero return
+    exercise.go          # package exercise, stuby s // TODO; // --- Stupeň: … ---
     exercise_test.go     # package exercise_test, JEDINÝ zdroj testů
   solutions/
     exercise.go          # package solutions, kompletní řešení
@@ -60,33 +61,44 @@ referenční řešení je ověřované přesně tím, co dostane student.
 Kostra je v [templates/lesson-README.md](../templates/lesson-README.md). Sekce jsou povinné
 a v tomto pořadí.
 
-**Co budeš umět** — 3–5 odrážek, každá je schopnost („vysvětlit, proč…", „rozhodnout
-mezi…"), ne téma („slices").
-
-**PHP → Go most** — konkrétní kód v PHP a jeho Go protějšek vedle sebe, plus věta o tom,
-který návyk je potřeba opustit. Ne tabulka pojmů.
+**Co budeš umět** — 3–5 odrážek, každá je schopnost („vysvětlit, proč…"), ne téma.
 
 **Teorie** — 2–5 podsekcí s vlastním nadpisem `###`. Každý blok kódu musí být skutečný Go,
 který se zkompiluje. Ukazuj i chybné varianty, ale označ je komentářem.
 
+**Rozdíly proti PHP** — konkrétní kód v PHP a Go protějšek vedle sebe, plus věta o tom,
+který návyk je potřeba opustit. Ne tabulka pojmů. (Dřívější název: PHP → Go most.)
+
 **Časté chyby** — tabulka `Chyba | Proč vzniká | Jak to udělat správně`, 4–6 řádků.
 Aspoň dvě z nich musí vycházet z PHP reflexů.
 
-**Úkol** — části A, B, C s odhadem času. Popiš, co má funkce dělat, včetně hraničních
-případů. Nepíšeš řešení, ale zadání musí být jednoznačné, aby ho testy nemohly překvapit.
-Každá část A/B/C končí **jedním** krátkým řádkem `např. \`…\` → \`…\`` (vstup → výstup,
-hodnoty ze testů). Ne blok s více odrážkami. U checklistových částí stačí jedna konkrétní
-očekávaná akce nebo výsledek.
+**AI kvíz** — výzva spustit **`/go-deep-quiz NN`** (~5 min). Otázky generuje skill
+z Teorie; v README nehardcoduj sadu otázek. Odkaz na [`GAPS.md`](../GAPS.md).
 
-**Ověření** — checklist: `make lesson L=NN` plus 3–5 otázek k sebehodnocení
-(„umíš vysvětlit…"). Hned pod nadpis `## Ověření` patří výzva spustit
-Cursor skill **`/go-deep-review`** s číslem lekce (viz šablona) — AI postupně
-projde body a ověří pochopení.
+**Úkol** — tři podsekce **Jednoduchý / Střední / Obtížný**. U každé: seznam identifikátorů
+(jen jména funkcí/metod pro navigaci), `make lesson L=NN PART=1|2|3`, výzva
+`/go-deep-review NN easy|medium|hard`. Kontrakt zůstává v komentáři nad metodou ve stubu.
+Žádné labely A/B/C, žádné `např.` / `Příklady:`.
 
-**AI režim** — jeden ze štítků podle fáze (viz níže) a odkaz na `docs/ai-playbook.md`.
+**Závěrečné otázky** — koncepční checklist (bez „make … prochází“ — to řeší final review
+příkazem). Výzva **`/go-deep-review NN final`**.
+
+**AI režim** — štítek podle fáze + odkaz na `docs/ai-playbook.md`. Mentor/kvíz/review
+(dialog) vždy OK; `ZAKÁZÁNO` = zákaz codegen cvičení.
 
 **Další čtení** — 2–4 skutečné odkazy na go.dev, pkg.go.dev nebo blog.golang.org.
-Nevymýšlej URL.
+
+## tiers.txt
+
+Tři řádky, regex pro `go test -run` (jména `Test…` funkcí, oddělená `|`):
+
+```
+1:TestWordCount|TestNewSet|TestSetAdd
+2:TestSetRemove|TestSetSorted|TestSetUnion|TestSetIntersect
+3:TestAddStock|TestGroupBy
+```
+
+`make lesson L=NN PART=1` spustí jen odpovídající testy.
 
 ## AI režimy podle lekcí
 
@@ -133,34 +145,62 @@ Správně vypadá cvičení tak, že student musí použít přesně tu konstruk
 - Pouze standardní knihovna. Žádné závislosti navíc, `go.mod` zůstává bez `require`.
 - Cílová verze Go 1.26.
 - Všechno projde `gofmt -l` (nic nevypíše) a `go vet ./...`.
+- **Identifikátory v kódu jsou vždy anglicky** — funkce, typy, pole, proměnné,
+  `func Test…`, názvy v `t.Run("…")`, klíče v `tiers.txt`. Čeština patří jen do
+  výukového materiálu: README, stub doc komentáře, hlášky `t.Error`/`t.Fatal`.
+- V české próze mluv o konceptu podle typu v kódu (`Node` → nod), ne o doslovném
+  překladu parametru (`head` není „hlava“).
 - Exportované identifikátory mají doc comment začínající jménem identifikátoru.
-- Stuby v `exercise/` nepanikují — mají `// TODO: úkol B` a vrací zero value
+  Ve stubách je komentář nad metodou **zdroj pravdy** pro zadání: 2–5 řádků česky
+  (chování + hraniční případy), bez hotového řešení. Pořadí funkcí od jednodušších
+  ke složitějším; skupiny odděl komentáři `// --- Stupeň: jednoduchý|střední|obtížný ---`.
+- Stuby v `exercise/` nepanikují — mají `// TODO` a vrací zero value
   (`""`, `0`, `nil`, `*new(T)` u pojmenovaných typů). Void funkce mají jen komentář;
-  funkce s `t *testing.T` volají `t.Fatal("TODO: …")`. Typy, konstanty a signatury
+  funkce s `t *testing.T` volají `t.Fatal("TODO")`. Typy, konstanty a signatury
   jsou předvyplněné, aby se balíček zkompiloval a `go test` padal přes `t.Error`/`t.Fatal`.
   Stuby vracející `<-chan` mají vracet zavřený prázdný kanál, ne `nil` — jinak testy
   visí na čtení z nil kanálu.
 - Řešení v `solutions/` musí být idiomatické — je to zároveň ukázka stylu.
+  V `solutions/` nepoužívej `// TODO`. Stejné `// --- Stupeň: … ---` komentáře jako ve stubu.
 
 ## Testy
 
-- Table-driven, kde to dává smysl; podtesty přes `t.Run`.
+- Table-driven, kde to dává smysl; podtesty přes `t.Run` s **anglickým** názvem.
+- Jména `Test…` a položky v `tiers.txt` anglicky (CamelCase), bez českých kořenů.
 - Hlášky česky, formát: `t.Errorf("Foo(%q) = %q, chci %q", in, got, want)`.
 - Pokrytí hraničních případů: prázdný vstup, `nil`, nula, přetečení, duplicity.
 - U souběžného kódu vždy varianta ověřitelná `-race` a kontrola, že goroutiny skončily.
 - Test nesmí být splnitelný napevno zadrátovanou hodnotou — kde hrozí, přidej náhodná
   nebo generovaná data.
+- Jména testů musí jít rozdělit do `tiers.txt` (prefixy `Test…` odpovídající stupňům).
+
+### Izolace stubů
+
+Test funkce/metody **X** smí volat jen **X** (+ stdlib / lokální helpery v `_test.go`).
+Nedokončený stub B nesmí shodit test A.
+
+- **Assert** nikdy nevolá jiný studentský stub (`Len`, `Has`, `Sorted`, `Cents`, …).
+  Stav ověř přímo: `len(mapa)`, comma-ok, exportovaná pole, návratová hodnota FUT,
+  HTTP body, `errors.As` na exportovaná pole chyby.
+- **Fixture** preferuj literály / zero value / přímý zápis do exportovaného stavu
+  (`Set{"a": {}}`, `&Node{Val: 1, Next: …}`), ne `NewX`/`Add`, pokud to typ dovolí.
+- PART N nesmí v assertu volat stub z PART > N.
+- **Výjimky:**
+  - Oracle páry (Encode↔Decode, Slow↔Fast) — záměr lekce.
+  - Lifecycle ADT ve **stejném PART** (např. Push+Pop), kde API nemá jiný
+    pozorovatelný výstup — stále bez assertu přes metodu z pozdějšího PART.
+- Opaque typ (unexported pole): assert jen přes návratovou hodnotu FUT / exportovaná
+  pole výsledku, nebo whitebox `package exercise` (ne `exercise_test`). Whitebox
+  jen když unexported stav jinak nejde izolovat; `mirror_tests.sh` přepíše
+  `package exercise` → `package solutions`. **Ne** číst stav přes cizí TODO getter.
 
 ## Checkpointové lekce
 
 Lekce 18, 23, 31, 39, 50, 55 a 60 jsou checkpointy. Liší se takto:
 
-- Nemají novou teorii. Místo sekce **Teorie** mají **Recap** — hutné shrnutí fáze
-  formou otázek a odpovědí a tabulky „co si musíš pamatovat".
-- Cvičení je **kumulativní**: jedna větší úloha, která kombinuje aspoň čtyři témata
-  z celé fáze.
-- Navíc mají sekci **Sebehodnocení** s bodovanou rubrikou a doporučením, které lekce
-  zopakovat při nízkém skóre.
+- Nemají novou teorii. Místo sekce **Teorie** mají **Recap** — hutné shrnutí fáze.
+- Cvičení je **kumulativní**; stupně mohou být 2+3 nebo jen obtížný, pokud split nedává smysl.
+- Mají **AI kvíz**, **Závěrečné otázky** a **Sebehodnocení** s bodovanou rubrikou.
 - Checkpointy 31, 50 a 60 zároveň zadávají a ověřují projekt (P02, P04, P05).
 
 ## Než odevzdáš lekci
@@ -170,5 +210,6 @@ gofmt -l lessons/lesson-NN
 ./scripts/mirror_tests.sh NN
 (cd lessons/lesson-NN/solutions && go test -count=1 .)   # musí projít
 (cd lessons/lesson-NN/exercise  && go test -count=1 .)   # musí spadnout (neúplné stuby)
+make lesson L=NN PART=1   # regex z tiers.txt musí sedět
 go vet ./lessons/lesson-NN/...
 ```

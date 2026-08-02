@@ -1,8 +1,7 @@
 # Mapa lekcí
 
-Kurz má **60 lekcí**, z nichž každá je plnohodnotná **60–90 minut**: teorie s funkčními
-příklady, PHP → Go most, tři stupňované úkoly (rozcvička → jádro → rozšíření) a otázky
-k sebehodnocení.
+Kurz má **60 lekcí**, z nichž každá je plnohodnotná **60–90 minut**: teorie, rozdíly
+proti PHP, AI kvíz, tři stupně úkolu s AI review mezi nimi a závěrečné otázky.
 
 Sedm lekcí jsou **checkpointy**: nemají novou látku, ale kumulativní cvičení přes celou
 fázi a sebehodnotící rubriku.
@@ -94,9 +93,10 @@ fázi a sebehodnotící rubriku.
 Každá lekce má stejnou kostru — viz [templates/lesson-README.md](../templates/lesson-README.md):
 
 1. **Co budeš umět** — 3–4 konkrétní schopnosti, ne témata
-2. **PHP → Go most** — stejný problém v obou jazycích vedle sebe
-3. **Teorie** — 2–5 podsekcí, každý příklad spustitelný
+2. **Teorie** — 2–5 podsekcí, každý příklad spustitelný (checkpointy: Recap)
+3. **Rozdíly proti PHP** — stejný problém v obou jazycích vedle sebe
 4. **Časté chyby** — tabulka chyba / proč / správně
-5. **Úkol A/B/C** — rozcvička ~10 min, jádro ~35 min, rozšíření ~20–25 min
-6. **Ověření** — checklist a otázky k sebehodnocení
-7. **AI režim** a **Další čtení**
+5. **AI kvíz** — `/go-deep-quiz` (~5 min)
+6. **Úkol** — jednoduchý → review → střední → review → obtížný
+7. **Závěrečné otázky** — `/go-deep-review … final`
+8. **AI režim** a **Další čtení**

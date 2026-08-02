@@ -10,39 +10,6 @@
 - Rozpoznat pseudo-verzi, přečíst z ní čas commitu a revizi, a vysvětlit, proč má `v2+` sufix v cestě.
 - Použít `govulncheck` a vysvětlit, čím se liší od `composer audit`.
 
-## PHP → Go most
-
-V Composeru napíšeš rozsah a solver dopočítá, co se nainstaluje:
-
-```json
-{ "require": { "symfony/http-kernel": "^6.3", "psr/log": "^3.0" } }
-```
-
-Výsledek závisí na tom, **kdy** jsi spustil `composer update`. Proto existuje `composer.lock`:
-bez něj by dva vývojáři dostali jiné verze. Solver navíc řeší backtracking — může selhat
-hláškou o nekompatibilních rozsazích a hodinu ti hledat, kde je konflikt.
-
-V Go napíšeš přesnou minimální verzi:
-
-```go.mod
-module example.com/shop
-
-go 1.26
-
-require (
-	example.com/pay v1.4.0
-	example.com/log v0.3.1
-)
-```
-
-Žádné `^`, žádné `~`, žádný solver. `v1.4.0` neznamená „aspoň 1.4.0, klidně 1.9",
-ale „tenhle build použije přesně 1.4.0, pokud někdo jiný nepožaduje víc".
-
-Co se mění v uvažování: **build je deterministický z definice, ne z lock souboru.**
-Ze stejného `go.mod` dostaneš dnes i za rok stejné verze. Upgrade není vedlejší efekt
-instalace, ale samostatný, viditelný commit, který mění `go.mod`. Přestaň čekat, že
-`go get` bez argumentu „aktualizuje závislosti" — takový příkaz v Go prostě neexistuje.
-
 ## Teorie
 
 ### `go.mod` a jeho direktivy
@@ -183,6 +150,39 @@ v reportu jen zranitelnosti, jejichž zranitelný symbol tvůj kód skutečně v
 tedy „máš tu verzi" od „ta díra je pro tebe dosažitelná". Nález, který projde tímhle
 filtrem, znamená práci teď hned; ostatní jsou položka do plánovaného upgradu.
 
+## Rozdíly proti PHP
+
+V Composeru napíšeš rozsah a solver dopočítá, co se nainstaluje:
+
+```json
+{ "require": { "symfony/http-kernel": "^6.3", "psr/log": "^3.0" } }
+```
+
+Výsledek závisí na tom, **kdy** jsi spustil `composer update`. Proto existuje `composer.lock`:
+bez něj by dva vývojáři dostali jiné verze. Solver navíc řeší backtracking — může selhat
+hláškou o nekompatibilních rozsazích a hodinu ti hledat, kde je konflikt.
+
+V Go napíšeš přesnou minimální verzi:
+
+```go.mod
+module example.com/shop
+
+go 1.26
+
+require (
+	example.com/pay v1.4.0
+	example.com/log v0.3.1
+)
+```
+
+Žádné `^`, žádné `~`, žádný solver. `v1.4.0` neznamená „aspoň 1.4.0, klidně 1.9",
+ale „tenhle build použije přesně 1.4.0, pokud někdo jiný nepožaduje víc".
+
+Co se mění v uvažování: **build je deterministický z definice, ne z lock souboru.**
+Ze stejného `go.mod` dostaneš dnes i za rok stejné verze. Upgrade není vedlejší efekt
+instalace, ale samostatný, viditelný commit, který mění `go.mod`. Přestaň čekat, že
+`go get` bez argumentu „aktualizuje závislosti" — takový příkaz v Go prostě neexistuje.
+
 ## Časté chyby
 
 | Chyba | Proč vzniká | Jak to udělat správně |
@@ -194,68 +194,52 @@ filtrem, znamená práci teď hned; ostatní jsou položka do plánovaného upgr
 | Ruční mazání „nepotřebných" `// indirect` | vypadá to jako smetí | vždy jen `go mod tidy` |
 | Ignorování `govulncheck`, protože „to hlásí i Composer" | zvyk na šum z auditu | tady je nález dosažitelný voláním, ne jen shoda verzí |
 
+## AI kvíz
+
+Po přečtení teorie spusť v Cursoru **`/go-deep-quiz 51`**. AI tě ~5 minut prověří mentální model (ne hotové cvičení). Slabiny si uloží do [`GAPS.md`](../../GAPS.md).
+
 ## Úkol
 
-Pracuj v `exercise/`. Postavíš malou část toho, co dělá `cmd/go` interně: parser semver,
-parser pseudo-verzí a výběr verzí. Postupuj A → B → C, po každé části spusť test.
+Pracuj v `exercise/`. Po doplnění spouštěj testy:
 
-### A — rozcvička (~10 min)
+Stupně jdou od jednodušších ke složitějším — po každém stupni spusť review, než jdeš dál.
 
-1. `ParseSemver(s string) (Version, error)` — prefix `v` je volitelný. Verze má právě tři
-   číselné složky bez vedoucích nul (`v01.2.3` je chyba) a volitelnou prerelease část za
-   první pomlčkou. Prerelease je neprázdná posloupnost identifikátorů oddělených tečkou;
-   identifikátor smí obsahovat `[0-9A-Za-z-]`, nesmí být prázdný a čistě číselný nesmí mít
-   vedoucí nulu. Každá chyba obaluje `ErrSyntax` (ověřitelné přes `errors.Is`).
-2. `Compare(a, b Version) int` — vrací `-1`, `0`, `1`. Po složkách major, minor, patch;
-   při shodě rozhoduje prerelease: **verze bez prerelease je vyšší** než s ním
-   (`v1.0.0-rc.1 < v1.0.0`). Prerelease se porovnává po identifikátorech: dva číselné
-   číselně (`rc.2 < rc.10`), číselný je menší než textový, dva textové podle ASCII;
-   při shodném prefixu je kratší menší (`rc < rc.1`).
+### Jednoduchý
 
-např. `Compare(v1.0.0-rc.1, v1.0.0)` → `-1`
-
-### B — jádro (~35 min)
-
-1. `ParsePseudoVersion(s string) (base string, ts time.Time, rev string, err error)` —
-   podporuj všechny tři tvary z tabulky výše. Revize je přesně 12 znaků malého hexa,
-   razítko přesně 14 číslic parsovaných jako UTC. `base` vrať jako kanonický řetězec bez
-   pseudo-části: `v0.0.0-2023…-abc…` → `"v0.0.0"`, `v1.2.4-0.2023…-abc…` → `"v1.2.4"`,
-   `v1.2.4-rc.1.0.2023…-abc…` → `"v1.2.4-rc.1"`. Cokoli jiného je chyba obalující `ErrSyntax`.
-2. `IsPseudo(s string) bool` — postav na předchozí funkci, neduplikuj logiku.
-3. `MajorSuffix(modulePath string) (int, error)` — z cesty vytáhni major verzi.
-   `example.com/m` → `1`, `example.com/m/v2` → `2`, `example.com/m/v17` → `17`.
-   Poslední prvek, který nevypadá jako `v<číslice>`, znamená major 1 (`example.com/m/v2x`
-   i `example.com/v2/sub` → `1`). Sufix `/v0`, `/v1` a `/v02` je chyba obalující
-   `ErrMajorSuffix`, stejně jako prázdná cesta nebo cesta končící lomítkem.
-
-např. `MajorSuffix("example.com/m/v2")` → `2`
-
-### C — rozšíření (~25 min)
-
-1. `SelectVersions(reqs map[string][]string) (map[string]string, error)` — minimal version
-   selection. Klíč je cesta modulu, hodnota seznam požadovaných minim od různých modulů.
-   Pro každý modul vrať nejvyšší z nich v kanonickém tvaru. Prázdná vstupní mapa dá
-   prázdnou, ale **nenilovou** mapu; modul s prázdným seznamem je `ErrNoVersions`;
-   nerozparsovatelná verze propaguje `ErrSyntax` s cestou modulu v kontextu.
-2. `CheckCompat(importPath, moduleVersion string) error` — ověř import compatibility rule.
-   Major z cesty musí odpovídat major verzi modulu, přičemž `v0.x` i `v1.x` patří k cestě
-   bez sufixu. Nesoulad je chyba obalující `ErrIncompatible`; rozbitý vstup propaguje
-   `ErrSyntax`, respektive `ErrMajorSuffix`.
-
-např. `SelectVersions({"example.com/a": ["v1.2.0", "v1.4.1", "v1.3.9"]})` → `"v1.4.1"`
+Funkce: `String`, `ParseSemver`
 
 ```bash
-make lesson L=51
+make lesson L=51 PART=1
 ```
 
-Až budeš hotový, porovnej se `solutions/` (spoiler). Pak si na tomhle repozitáři pusť
-`go mod graph`, `go mod why -m` a `govulncheck ./...` a podívej se, co ti odpoví.
+Pak **`/go-deep-review 51 easy`**.
 
-## Ověření
+### Střední
 
-Po dokončení úkolů spusť v Cursoru **`/go-deep-review`** a zadej třeba jen `51`. AI tě postupně projde body níže, doptá se a ověří pochopení — nestačí jen zelené testy.
+Funkce: `Compare`, `ParsePseudoVersion`, `IsPseudo`
 
-- [ ] `make lesson L=51` prochází
+```bash
+make lesson L=51 PART=2
+```
+
+Pak **`/go-deep-review 51 medium`**.
+
+### Obtížný
+
+Funkce: `MajorSuffix`, `SelectVersions`, `CheckCompat`
+
+```bash
+make lesson L=51 PART=3
+```
+
+Pak **`/go-deep-review 51 hard`**.
+
+Až budou stupně hotové, porovnej se `solutions/` (spoiler).
+
+## Závěrečné otázky
+
+Spusť **`/go-deep-review 51 final`**. AI projde body níže, doptá se a ověří pochopení. Celé cvičení ověří `make lesson L=51` (+ `make race L=51`, pokud to lekce vyžaduje).
+
 - [ ] Umíš vysvětlit, proč Go nepotřebuje lock soubor pro determinismus verzí
 - [ ] Umíš na papíře spočítat výsledek minimal version selection pro tři moduly
 - [ ] Umíš vysvětlit, proč má `v2` sufix v import path a `v1` ne

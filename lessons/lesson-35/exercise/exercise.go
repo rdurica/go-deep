@@ -53,41 +53,47 @@ type UserRepo interface {
 	List(ctx context.Context) ([]User, error)
 }
 
-// MemoryRepo je in-memory adaptér portu UserRepo. Je bezpečný pro souběžné
-// použití a chová se stejně jako SQL adaptér — včetně převodu "nenalezeno"
-// na ErrNotFound.
+// MemoryRepo je in-memory adaptér portu UserRepo. Bezpečný pro souběžné použití
+// (RWMutex); chová se jako SQL adaptér včetně ErrNotFound.
 type MemoryRepo struct {
 	mu    sync.RWMutex
 	users map[string]User
 }
 
-// NewMemoryRepo vytvoří prázdný in-memory repozitář.
+// --- Stupeň: jednoduchý ---
+// NewMemoryRepo vytvoří prázdný in-memory repozitář s inicializovanou mapou.
 func NewMemoryRepo() *MemoryRepo {
-	// TODO: úkol A
+	// TODO
 	return nil
 }
 
-// Get vrátí uživatele podle ID. Neznámé ID je chyba obalující ErrNotFound.
+// Get vrátí uživatele podle ID. Neznámé ID → chyba obalující ErrNotFound.
+// Nejdřív zkontroluj ctx.Err(); zrušený kontext → context.Canceled.
 func (r *MemoryRepo) Get(ctx context.Context, id string) (User, error) {
-	// TODO: úkol A
+	// TODO
 	return *new(User), nil
 }
 
-// Save uloží uživatele (upsert). Prázdné ID nebo prázdný e-mail je ErrInvalidUser.
+// Save uloží uživatele (upsert). Prázdné ID nebo prázdný e-mail (po trim)
+// → ErrInvalidUser. Respektuj ctx.Err().
 func (r *MemoryRepo) Save(ctx context.Context, u User) error {
-	// TODO: úkol A
+	// TODO
 	return nil
 }
 
-// Delete smaže uživatele. Neznámé ID je chyba obalující ErrNotFound.
+// --- Stupeň: střední ---
+// Delete smaže uživatele. Neznámé ID → chyba obalující ErrNotFound.
+// Nejdřív zkontroluj ctx.Err(); zrušený kontext → context.Canceled.
 func (r *MemoryRepo) Delete(ctx context.Context, id string) error {
-	// TODO: úkol A
+	// TODO
 	return nil
 }
 
+// --- Stupeň: obtížný ---
 // List vrátí všechny uživatele seřazené vzestupně podle ID.
+// Respektuj ctx.Err() jako u Get. Prázdný repo → prázdný slice a nil chyba.
 func (r *MemoryRepo) List(ctx context.Context) ([]User, error) {
-	// TODO: úkol A
+	// TODO
 	return nil, nil
 }
 
@@ -100,15 +106,11 @@ var schema = map[string][]string{
 }
 
 // BuildSelect sestaví bezpečný SELECT.
-//
-// Jména tabulky a sloupců se ověřují proti whitelistu, hodnoty filtru jdou
-// výhradně do placeholderů. Filtry se řadí abecedně podle sloupce, aby byl
-// dotaz deterministický.
-//
-//	BuildSelect("users", []string{"id", "email"}, map[string]any{"active": true})
-//	-> "SELECT id, email FROM users WHERE active = $1", []any{true}, nil
+// Tabulka a sloupce jen z whitelistu; hodnoty filtru výhradně do args.
+// Filtry seřazené abecedně podle sloupce (deterministický dotaz).
+// Při chybě prázdný dotaz a nil args.
 func BuildSelect(table string, cols []string, filters map[string]any) (query string, args []any, err error) {
-	// TODO: úkol B
+	// TODO
 	return
 }
 
@@ -119,13 +121,12 @@ type Migration struct {
 	Up      string
 }
 
-// Plan spočítá, které migrace ještě dobíhají.
-//
-// Vrací je seřazené vzestupně podle verze. Duplicitní verze v seznamu je
-// ErrDuplicateVersion, aplikovaná verze chybějící v seznamu je ErrDrift
-// (někdo smazal migraci, která už na produkci proběhla).
+// Plan spočítá migrace k doběhnutí, seřazené vzestupně podle verze.
+// Nejdřív ověř all: kladná verze, neprázdné jméno, žádné duplicity.
+// Applied verze chybějící v all → ErrDrift; duplicita v applied se ignoruje.
+// Nic k doběhnutí → prázdný plán, ne chyba. Při chybě nil plán.
 func Plan(applied []int, all []Migration) ([]Migration, error) {
-	// TODO: úkol C
+	// TODO
 	return nil, nil
 }
 

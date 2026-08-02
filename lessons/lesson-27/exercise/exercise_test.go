@@ -19,7 +19,7 @@ var testUsers = map[string]exercise.User{
 	"tok-eva":   {ID: "2", Name: "Eva"},
 }
 
-func TestWithUserAUserFrom(t *testing.T) {
+func TestWithUserAndUserFrom(t *testing.T) {
 	want := exercise.User{ID: "42", Name: "Kdosi"}
 
 	ctx := exercise.WithUser(context.Background(), want)
@@ -33,7 +33,7 @@ func TestWithUserAUserFrom(t *testing.T) {
 	}
 }
 
-func TestUserFromPrazdnyKontext(t *testing.T) {
+func TestUserFromEmptyContext(t *testing.T) {
 	got, ok := exercise.UserFrom(context.Background())
 	if ok {
 		t.Errorf("UserFrom(Background()) = (%+v, true), chci (User{}, false)", got)
@@ -43,7 +43,7 @@ func TestUserFromPrazdnyKontext(t *testing.T) {
 	}
 }
 
-func TestWithUserNemenPuvodniKontext(t *testing.T) {
+func TestWithUserDoesNotMutateOriginalContext(t *testing.T) {
 	parent := context.Background()
 
 	_ = exercise.WithUser(parent, exercise.User{ID: "1", Name: "Radek"})
@@ -53,7 +53,7 @@ func TestWithUserNemenPuvodniKontext(t *testing.T) {
 	}
 }
 
-func TestWithUserJdeVnorit(t *testing.T) {
+func TestWithUserCanNest(t *testing.T) {
 	ctx := exercise.WithUser(context.Background(), exercise.User{ID: "1", Name: "Radek"})
 	ctx = exercise.WithUser(ctx, exercise.User{ID: "2", Name: "Eva"})
 
@@ -63,7 +63,7 @@ func TestWithUserJdeVnorit(t *testing.T) {
 	}
 }
 
-func TestWhoAmIBezUzivateleVKontextu(t *testing.T) {
+func TestWhoAmIWithoutUserInContext(t *testing.T) {
 	rec := httptest.NewRecorder()
 
 	exercise.WhoAmI().ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/me", nil))
@@ -73,18 +73,18 @@ func TestWhoAmIBezUzivateleVKontextu(t *testing.T) {
 	}
 }
 
-func TestAuthenticateOdmita(t *testing.T) {
+func TestAuthenticateRejects(t *testing.T) {
 	handler := exercise.Authenticate(testUsers)(exercise.WhoAmI())
 
 	tests := []struct {
 		name   string
 		header string
 	}{
-		{"chybějící hlavička", ""},
-		{"jiné schéma", "Basic cmFkZWs6aGVzbG8="},
-		{"prázdný token", "Bearer "},
-		{"neznámý token", "Bearer tok-nikdo"},
-		{"jen token bez schématu", "tok-radek"},
+		{"missing header", ""},
+		{"other scheme", "Basic cmFkZWs6aGVzbG8="},
+		{"empty token", "Bearer "},
+		{"unknown token", "Bearer tok-nikdo"},
+		{"token without scheme", "tok-radek"},
 	}
 
 	for _, tt := range tests {
@@ -115,7 +115,7 @@ func TestAuthenticateOdmita(t *testing.T) {
 	}
 }
 
-func TestAuthenticatePropustiAVlaziUzivatele(t *testing.T) {
+func TestAuthenticateAllowsAndInjectsUser(t *testing.T) {
 	srv := httptest.NewServer(exercise.Authenticate(testUsers)(exercise.WhoAmI()))
 	defer srv.Close()
 
@@ -124,9 +124,9 @@ func TestAuthenticatePropustiAVlaziUzivatele(t *testing.T) {
 		header string
 		want   exercise.User
 	}{
-		{"platný token", "Bearer tok-radek", exercise.User{ID: "1", Name: "Radek"}},
-		{"druhý uživatel", "Bearer tok-eva", exercise.User{ID: "2", Name: "Eva"}},
-		{"schéma je case-insensitive", "bearer tok-radek", exercise.User{ID: "1", Name: "Radek"}},
+		{"valid token", "Bearer tok-radek", exercise.User{ID: "1", Name: "Radek"}},
+		{"second user", "Bearer tok-eva", exercise.User{ID: "2", Name: "Eva"}},
+		{"scheme is case-insensitive", "bearer tok-radek", exercise.User{ID: "1", Name: "Radek"}},
 	}
 
 	for _, tt := range tests {
@@ -159,7 +159,7 @@ func TestAuthenticatePropustiAVlaziUzivatele(t *testing.T) {
 	}
 }
 
-func TestFetchWithTimeoutUspech(t *testing.T) {
+func TestFetchWithTimeoutSuccess(t *testing.T) {
 	got, err := exercise.FetchWithTimeout(context.Background(), func(ctx context.Context) (string, error) {
 		return "hotovo", nil
 	}, time.Second)
@@ -172,7 +172,7 @@ func TestFetchWithTimeoutUspech(t *testing.T) {
 	}
 }
 
-func TestFetchWithTimeoutPredaChybu(t *testing.T) {
+func TestFetchWithTimeoutForwardsError(t *testing.T) {
 	wantErr := errors.New("selhalo to")
 
 	got, err := exercise.FetchWithTimeout(context.Background(), func(ctx context.Context) (string, error) {
@@ -221,7 +221,7 @@ func TestFetchWithTimeoutDeadline(t *testing.T) {
 	}
 }
 
-func TestFetchWithTimeoutZrusenyRodic(t *testing.T) {
+func TestFetchWithTimeoutCanceledParent(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
 
@@ -235,7 +235,7 @@ func TestFetchWithTimeoutZrusenyRodic(t *testing.T) {
 	}
 }
 
-func TestSlowHandlerDokonciPraci(t *testing.T) {
+func TestSlowHandlerCompletesWork(t *testing.T) {
 	rec := httptest.NewRecorder()
 
 	exercise.SlowHandler(20*time.Millisecond).
@@ -254,7 +254,7 @@ func TestSlowHandlerDokonciPraci(t *testing.T) {
 	}
 }
 
-func TestSlowHandlerSkonciPriOdpojeniKlienta(t *testing.T) {
+func TestSlowHandlerStopsOnClientDisconnect(t *testing.T) {
 	exited := make(chan error, 1)
 
 	handler := exercise.SlowHandlerWithHook(10*time.Second, func(err error) {
@@ -282,7 +282,7 @@ func TestSlowHandlerSkonciPriOdpojeniKlienta(t *testing.T) {
 	}
 }
 
-func TestSlowHandlerHookPriUspechu(t *testing.T) {
+func TestSlowHandlerHookOnSuccess(t *testing.T) {
 	exited := make(chan error, 1)
 
 	handler := exercise.SlowHandlerWithHook(20*time.Millisecond, func(err error) {

@@ -22,11 +22,11 @@ var (
 )
 
 // Total spočítá cenu košíku v centech.
-//
-// Každý produkt musí projít catalog.Validate, množství musí být kladné
-// a součet se nesmí přetéct. Prázdný nebo nil vstup dává 0 bez chyby.
+// Prázdný nebo nil košík → 0, nil. Každý produkt projde catalog.Validate;
+// nekladné množství → ErrInvalidQty. Řádková cena Cents*Qty, součet nesmí
+// přetéct int64 — vrať ErrOverflow, nikdy tiše přetečenou hodnotu.
 func Total(items []catalog.Item) (money int64, err error) {
-	// TODO: úkol B
+	// TODO
 	return
 }
 

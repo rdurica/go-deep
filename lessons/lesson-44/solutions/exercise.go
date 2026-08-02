@@ -15,6 +15,7 @@ const (
 	StressIterations = 100
 )
 
+// --- Stupeň: jednoduchý ---
 // SafeIncrement spustí n goroutin, z nichž každá zvýší společný čítač o jedna,
 // a vrátí jeho výslednou hodnotu.
 func SafeIncrement(n int) int {
@@ -63,6 +64,7 @@ func (r *Registry) Get(key string) (int, bool) {
 	return v, ok
 }
 
+// --- Stupeň: střední ---
 // Len vrací počet uložených klíčů.
 func (r *Registry) Len() int {
 	r.init()
@@ -130,6 +132,7 @@ func NewSnapshot(endpoint string, timeout int) Snapshot {
 	}
 }
 
+// --- Stupeň: obtížný ---
 // Consistent hlásí, jestli snapshot dává smysl jako celek.
 func (s Snapshot) Consistent() bool {
 	return s.Checksum == len(s.Endpoint)+s.Timeout

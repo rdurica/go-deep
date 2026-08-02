@@ -10,36 +10,6 @@
 - Napsat in-memory store s indexem, který je bezpečný pro souběžné použití a nesdílí vnitřní data.
 - Navrhnout stránkované hledání se stabilním řazením a cursorem, který se nerozbije při zápisu.
 
-## PHP → Go most
-
-Capstone v Symfony bys složil z hotových dílů: entity s Doctrine anotacemi, repository
-s `findBy`, validaci přes atributy, paginátor z bundle.
-
-```php
-#[Assert\Url]
-private string $url;
-
-$paginator = $this->repo->findBy(['tag' => $tag], ['createdAt' => 'DESC'], 20, $offset);
-```
-
-V Go žádný z těch dílů nedostaneš — a to je smysl capstone. Napíšeš si validaci jako
-funkci, index jako mapu, stránkování jako slice s cursorem, a poznáš, kolik z toho, co ti
-framework dělal, jsou vlastně tři řádky:
-
-```go
-func (b Bookmark) Validate() error {
-	if strings.TrimSpace(b.ID) == "" {
-		return ErrEmptyID
-	}
-	// ...
-}
-```
-
-Změna v uvažování: **offset paginace je v Go stejně špatný nápad jako v PHP, jen ti to
-tady nikdo nezakryje.** Když mezi dvěma stránkami někdo přidá záložku, offset ti položku
-zopakuje nebo přeskočí. Cursor tenhle problém nemá, protože se neptá „kolikátý", ale
-„po kterém".
-
 ## Teorie
 
 ### Spec, ze které jde odvodit test
@@ -150,6 +120,36 @@ A validace dotazu: záporný limit, limit nad strop, neznámé řazení a neplat
 `ErrInvalidQuery`. Limit `0` znamená „nezadáno" a nahradí se výchozím. Tohle je hranice
 systému, i když zrovna nemá HTTP — pravidlo z lekce 36 platí i mezi balíčky.
 
+## Rozdíly proti PHP
+
+Capstone v Symfony bys složil z hotových dílů: entity s Doctrine anotacemi, repository
+s `findBy`, validaci přes atributy, paginátor z bundle.
+
+```php
+#[Assert\Url]
+private string $url;
+
+$paginator = $this->repo->findBy(['tag' => $tag], ['createdAt' => 'DESC'], 20, $offset);
+```
+
+V Go žádný z těch dílů nedostaneš — a to je smysl capstone. Napíšeš si validaci jako
+funkci, index jako mapu, stránkování jako slice s cursorem, a poznáš, kolik z toho, co ti
+framework dělal, jsou vlastně tři řádky:
+
+```go
+func (b Bookmark) Validate() error {
+	if strings.TrimSpace(b.ID) == "" {
+		return ErrEmptyID
+	}
+	// ...
+}
+```
+
+Změna v uvažování: **offset paginace je v Go stejně špatný nápad jako v PHP, jen ti to
+tady nikdo nezakryje.** Když mezi dvěma stránkami někdo přidá záložku, offset ti položku
+zopakuje nebo přeskočí. Cursor tenhle problém nemá, protože se neptá „kolikátý", ale
+„po kterém".
+
 ## Časté chyby
 
 | Chyba | Proč vzniká | Jak to udělat správně |
@@ -161,83 +161,52 @@ systému, i když zrovna nemá HTTP — pravidlo z lekce 36 platí i mezi balí�
 | Offset paginace | zvyk z `findBy($c, $o, $limit, $offset)` | cursor = ID poslední položky |
 | `RWMutex` jako záruka bezpečí | zámek vypadá jako řešení všeho | zámek chrání mapu, ne data za pointery |
 
+## AI kvíz
+
+Po přečtení teorie spusť v Cursoru **`/go-deep-quiz 59`**. AI tě ~5 minut prověří mentální model (ne hotové cvičení). Slabiny si uloží do [`GAPS.md`](../../GAPS.md).
+
 ## Úkol
 
-Pracuj v `exercise/`. Postupuj A → B → C, po každé části spusť test.
+Pracuj v `exercise/`. Po doplnění spouštěj testy:
 
-Píšeš jádro capstone v malém: doménu, store a hledání. Stejné rozhraní pak najdeš
-v `projects/p05-capstone/`.
+Stupně jdou od jednodušších ke složitějším — po každém stupni spusť review, než jdeš dál.
 
-### A — rozcvička (~15 min)
+### Jednoduchý
 
-1. `NormalizeURL(raw string) (string, error)` — pravidla přesně podle teorie výše:
-   trim, povolené jen `http`/`https` (jinak `ErrInvalidURL`), malý host, odstranění
-   výchozího portu, prázdný host je chyba, pryč s fragmentem, pryč s parametry `utm_*`
-   (case-insensitive), zbytek query seřazený podle klíče, useknuté koncové lomítko.
-   Funkce musí být **idempotentní**: `NormalizeURL(NormalizeURL(x)) == NormalizeURL(x)`.
-2. `NormalizeTags(tags []string) ([]string, error)` — trim, malá písmena, zahození
-   prázdných, deduplikace, abecední řazení. Tag smí obsahovat jen `a–z`, `0–9` a `-`,
-   jinak `ErrInvalidTag`. Víc než `MaxTags` (po deduplikaci) je `ErrTooManyTags`.
-3. `(Bookmark).Validate() error` — hodnotový receiver, nic nemění. Kontroluje: neprázdné
-   `ID` (`ErrEmptyID`), URL **v normalizovaném tvaru** (`ErrInvalidURL`), neprázdný
-   titulek (`ErrEmptyTitle`) do `MaxTitleLen` **run** (`ErrTitleTooLong`), tagy platné
-   (`ErrInvalidTag`), bez duplicit (`ErrDuplicateTag`) a nanejvýš `MaxTags`
-   (`ErrTooManyTags`).
-4. `New(...) (Bookmark, error)` — normalizuje ID (trim), URL, titulek (trim) a tagy,
-   pak zavolá `Validate`.
-
-např. `NormalizeURL("HTTPS://Example.com/a/?utm_source=x")` → `"https://example.com/a"`
-
-### B — jádro (~35 min)
-
-In-memory store bezpečný pro souběžné použití, s indexem podle tagu.
-
-- `NewStore() *Store` — připravené mapy.
-- `Add(b Bookmark) error` — nejdřív `Validate` (neplatná záložka se **neuloží**), pak
-  `ErrDuplicateID` při kolizi ID, jinak uložení a aktualizace indexu.
-- `Get(id string) (Bookmark, error)` — kopie záložky, `ErrNotFound` pro neznámé ID.
-- `Delete(id string) error` — smaže položku i všechny její záznamy v indexu (prázdný klíč
-  z indexu zmizí), `ErrNotFound` pro neznámé ID.
-- `Len() int`.
-- `ByTag(tag string) []Bookmark` — tag se normalizuje stejně jako při ukládání
-  (trim, malá písmena), výsledek je seřazený od nejnovější, při shodě času podle ID.
-  Neznámý tag vrací prázdný výsledek, ne `nil` dereference.
-
-Store nesmí sdílet `Tags` s volajícím ani na vstupu, ani na výstupu. Test to zkouší
-a běží s `-race`.
-
-např. `ByTag("go")` po Add b1…b3 → `[b2, b1]` (od nejnovější)
-
-### C — rozšíření (~25 min)
-
-`Search(q Query) (Page, error)`:
-
-- **Validace:** `Limit < 0` nebo `> MaxLimit` → `ErrInvalidQuery`; neznámé `Sort` →
-  `ErrInvalidQuery`; tag, který neprojde `NormalizeTags`, → `ErrInvalidQuery`;
-  `Limit == 0` znamená `DefaultLimit`.
-- **Filtr:** prázdné `Tags` znamená „bez omezení". `MatchAll == false` je OR,
-  `MatchAll == true` je AND. `Text` je case-insensitive podřetězec v titulku.
-- **Řazení:** `SortNewest` = `CreatedAt` sestupně, tiebreak `ID` vzestupně;
-  `SortTitle` = titulek vzestupně (case-insensitive), tiebreak `ID`.
-- **Stránkování:** `Cursor` je ID poslední položky předchozí stránky; když ve výsledku
-  není, vrať `ErrInvalidCursor`. `NextCursor` je ID poslední vrácené položky, pokud ještě
-  něco zbývá, jinak prázdný řetězec. `Total` je počet položek **před** stránkováním.
-
-např. `Search({Tags:["http"]})` → IDs `[b4, b2]`
+Funkce: `NormalizeURL`, `NormalizeTags`, `Validate`
 
 ```bash
-make lesson L=59
+make lesson L=59 PART=1
 ```
 
-Až budeš hotový, porovnej se `solutions/` (spoiler). Pak si projdi
-`projects/p05-capstone/SPEC.md` a `ACCEPTANCE.md` — capstone je tenhle model plus HTTP
-vrstva, konfigurace a provoz.
+Pak **`/go-deep-review 59 easy`**.
 
-## Ověření
+### Střední
 
-Po dokončení úkolů spusť v Cursoru **`/go-deep-review`** a zadej třeba jen `59`. AI tě postupně projde body níže, doptá se a ověří pochopení — nestačí jen zelené testy.
+Funkce: `New`, `NewStore`, `Add`, `Get`
 
-- [ ] `make lesson L=59` prochází, včetně `make race L=59`
+```bash
+make lesson L=59 PART=2
+```
+
+Pak **`/go-deep-review 59 medium`**.
+
+### Obtížný
+
+Funkce: `Delete`, `Len`, `ByTag`, `Search`
+
+```bash
+make lesson L=59 PART=3
+```
+
+Pak **`/go-deep-review 59 hard`**.
+
+Až budou stupně hotové, porovnej se `solutions/` (spoiler).
+
+## Závěrečné otázky
+
+Spusť **`/go-deep-review 59 final`**. AI projde body níže, doptá se a ověří pochopení. Celé cvičení ověří `make lesson L=59` (+ `make race L=59`, pokud to lekce vyžaduje).
+
 - [ ] Umíš vysvětlit, proč `Validate` nemá měnit data
 - [ ] Umíš ukázat, kde by bez hluboké kopie vzniklo sdílení dat se store
 - [ ] Umíš vysvětlit, proč řazení potřebuje tiebreak a co se stane bez něj

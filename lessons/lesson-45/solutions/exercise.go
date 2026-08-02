@@ -23,6 +23,7 @@ type Result struct {
 	Err   error
 }
 
+// --- Stupeň: jednoduchý ---
 // Gen pošle čísla do kanálu a zavře ho.
 func Gen(ctx context.Context, nums ...int) <-chan int {
 	out := make(chan int)
@@ -39,6 +40,7 @@ func Gen(ctx context.Context, nums ...int) <-chan int {
 	return out
 }
 
+// --- Stupeň: střední ---
 // Square umocní každou hodnotu ze vstupu.
 func Square(ctx context.Context, in <-chan int) <-chan int {
 	out := make(chan int)
@@ -127,6 +129,7 @@ func Take[T any](ctx context.Context, in <-chan T, n int) <-chan T {
 	return out
 }
 
+// --- Stupeň: obtížný ---
 // Pipeline složí tři stupně a vrátí kanál výsledků.
 func Pipeline(ctx context.Context, in <-chan string) <-chan Result {
 	const workers = 4

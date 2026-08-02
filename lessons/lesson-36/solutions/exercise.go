@@ -48,6 +48,7 @@ type Email struct {
 	value string
 }
 
+// --- Stupeň: jednoduchý ---
 // ParseEmail normalizuje a ověří e-mailovou adresu.
 func ParseEmail(s string) (Email, error) {
 	s = strings.ToLower(strings.TrimSpace(s))
@@ -82,6 +83,7 @@ func (e Email) String() string { return e.value }
 // IsZero vrací true pro nulovou hodnotu, tedy pro Email vyrobený bez ParseEmail.
 func (e Email) IsZero() bool { return e.value == "" }
 
+// --- Stupeň: střední ---
 // Username je ověřené uživatelské jméno.
 type Username struct {
 	value string
@@ -167,6 +169,7 @@ const (
 	maxAge = 150
 )
 
+// --- Stupeň: obtížný ---
 // Validate ověří všechna pole najednou a vrátí ValidationErrors,
 // nebo nil, pokud je požadavek v pořádku.
 func (r CreateUserRequest) Validate() error {

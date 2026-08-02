@@ -10,40 +10,6 @@
 - Napsat handler, který skutečně skončí, když se klient odpojí.
 - Vysvětlit, proč zrušení v Go není přerušení, ale dohoda.
 
-## PHP → Go most
-
-V Symfony si „co se teď děje" vytáhneš odkudkoli — `RequestStack` je služba, kterou si
-necháš injektovat i deset vrstev hluboko, a ona ti aktuální request najde.
-
-```php
-final class AuditLogger
-{
-    public function __construct(private RequestStack $requestStack) {}
-
-    public function log(string $action): void
-    {
-        $request = $this->requestStack->getCurrentRequest(); // odkudkoli, kdykoli
-        $user = $request?->attributes->get('user');
-        // ...
-    }
-}
-```
-
-V Go žádný ambientní stav neexistuje. Request-scoped informace musí projít **explicitně
-skrz všechny signatury** jako první parametr:
-
-```go
-func (a *AuditLogger) Log(ctx context.Context, action string) error {
-	user, ok := UserFrom(ctx) // hodnota přišla s kontextem, ne z kontejneru
-	// ...
-}
-```
-
-Co se mění v uvažování: kontext se **předává**, nikdy se nehledá. Vypadá to jako otravný
-boilerplate — dokud nezjistíš, že díky němu jde z libovolného místa v kódu zrušit celý
-strom volání jedním `cancel()`, a že u každé funkce hned vidíš, jestli může trvat dlouho.
-`RequestStack` ti nikdy neřekne, že se klient odpojil. Kontext ano.
-
 ## Teorie
 
 ### K čemu context je a k čemu není
@@ -217,6 +183,40 @@ func slow(w http.ResponseWriter, r *http.Request) {
 Poslední detail: po zrušení už do `w` **nepiš**. Spojení je zavřené a zápis stejně nikam
 nedojde; u `http.TimeoutHandler` bys navíc zapisoval do writeru, který už odeslal 503.
 
+## Rozdíly proti PHP
+
+V Symfony si „co se teď děje" vytáhneš odkudkoli — `RequestStack` je služba, kterou si
+necháš injektovat i deset vrstev hluboko, a ona ti aktuální request najde.
+
+```php
+final class AuditLogger
+{
+    public function __construct(private RequestStack $requestStack) {}
+
+    public function log(string $action): void
+    {
+        $request = $this->requestStack->getCurrentRequest(); // odkudkoli, kdykoli
+        $user = $request?->attributes->get('user');
+        // ...
+    }
+}
+```
+
+V Go žádný ambientní stav neexistuje. Request-scoped informace musí projít **explicitně
+skrz všechny signatury** jako první parametr:
+
+```go
+func (a *AuditLogger) Log(ctx context.Context, action string) error {
+	user, ok := UserFrom(ctx) // hodnota přišla s kontextem, ne z kontejneru
+	// ...
+}
+```
+
+Co se mění v uvažování: kontext se **předává**, nikdy se nehledá. Vypadá to jako otravný
+boilerplate — dokud nezjistíš, že díky němu jde z libovolného místa v kódu zrušit celý
+strom volání jedním `cancel()`, a že u každé funkce hned vidíš, jestli může trvat dlouho.
+`RequestStack` ti nikdy neřekne, že se klient odpojil. Kontext ano.
+
 ## Časté chyby
 
 | Chyba | Proč vzniká | Jak to udělat správně |
@@ -228,61 +228,52 @@ nedojde; u `http.TimeoutHandler` bys navíc zapisoval do writeru, který už ode
 | `time.Sleep` v handleru | zvyk z PHP, kde request nejde zrušit | `select` nad `ctx.Done()` a tickerem |
 | Zápis do `w` po `ctx.Done()` | „ještě to zkusím doručit" | po zrušení jen `return` |
 
+## AI kvíz
+
+Po přečtení teorie spusť v Cursoru **`/go-deep-quiz 27`**. AI tě ~5 minut prověří mentální model (ne hotové cvičení). Slabiny si uloží do [`GAPS.md`](../../GAPS.md).
+
 ## Úkol
 
-Pracuj v `exercise/`. `User`, `ErrorResponse`, `StatusResponse`, typ `Middleware`,
-`WriteJSON` i prázdný typ `userKey` jsou připravené.
+Pracuj v `exercise/`. Po doplnění spouštěj testy:
 
-### A — rozcvička (~10 min)
+Stupně jdou od jednodušších ke složitějším — po každém stupni spusť review, než jdeš dál.
 
-1. `WithUser(ctx context.Context, u User) context.Context` — vrátí **kopii** kontextu
-   s uživatelem uloženým pod klíčem `userKey{}`. Rodičovský kontext zůstane beze změny.
-2. `UserFrom(ctx context.Context) (User, bool)` — typově bezpečné čtení. Bez uloženého
-   uživatele vrací zero value a `false`.
+### Jednoduchý
 
-např. `UserFrom(WithUser(ctx, {ID:"42", Name:"Kdosi"}))` → `{ID:"42", Name:"Kdosi"}, true`
-
-### B — jádro (~35 min)
-
-1. `Authenticate(users map[string]User) Middleware`:
-   - přečte hlavičku `Authorization` a rozdělí ji na schéma a token,
-   - chybějící hlavička, jiné schéma než `Bearer` (porovnávej case-insensitive) nebo
-     prázdný token → **401** s `ErrorResponse` a hlavičkou `WWW-Authenticate: Bearer`,
-   - token, který v mapě není → **401**,
-   - jinak vloží uživatele do kontextu a zavolá další handler.
-2. `WhoAmI() http.Handler` — přečte uživatele z kontextu a vrátí ho jako JSON se
-   statusem **200**. Když v kontextu není (middleware chybí), vrátí **500** —
-   je to chyba wiringu, ne klienta.
-
-např. `Authorization: Bearer tok-radek` + `WhoAmI()` → `200` + `{ID:"1", Name:"Radek"}`
-
-### C — rozšíření (~25 min)
-
-1. `FetchWithTimeout(ctx context.Context, fn func(context.Context) (string, error), d time.Duration) (string, error)`:
-   odvodí kontext s timeoutem `d`, spustí `fn` v goroutině a vrátí buď její výsledek,
-   nebo `("", ctx.Err())`, když deadline vyprší dřív. Kanál na výsledek musí mít
-   **buffer 1**, jinak goroutina po timeoutu navždy uvízne na zápisu.
-   Už zrušený rodičovský kontext dá `context.Canceled`.
-2. `SlowHandlerWithHook(work time.Duration, onExit func(error)) http.Handler` — pracuje
-   po malých krocích (ticker ~5 ms) až do uplynutí `work`. Při dokončení pošle **200**
-   a `StatusResponse{Status: "done"}` a zavolá `onExit(nil)`. Při zrušení kontextu
-   okamžitě skončí bez zápisu do `w` a zavolá `onExit(ctx.Err())`.
-   `onExit` může být `nil`.
-3. `SlowHandler(work time.Duration) http.Handler` — totéž bez hooku.
-
-např. `FetchWithTimeout(..., fn → "hotovo")` → `"hotovo", nil`
+Funkce: `WriteJSON`, `WithUser`
 
 ```bash
-make lesson L=27
+make lesson L=27 PART=1
 ```
 
-Až budeš hotový, porovnej se `solutions/` (spoiler).
+Pak **`/go-deep-review 27 easy`**.
 
-## Ověření
+### Střední
 
-Po dokončení úkolů spusť v Cursoru **`/go-deep-review`** a zadej třeba jen `27`. AI tě postupně projde body níže, doptá se a ověří pochopení — nestačí jen zelené testy.
+Funkce: `UserFrom`, `Authenticate`, `WhoAmI`
 
-- [ ] `make lesson L=27` prochází
+```bash
+make lesson L=27 PART=2
+```
+
+Pak **`/go-deep-review 27 medium`**.
+
+### Obtížný
+
+Funkce: `FetchWithTimeout`, `SlowHandler`, `SlowHandlerWithHook`
+
+```bash
+make lesson L=27 PART=3
+```
+
+Pak **`/go-deep-review 27 hard`**.
+
+Až budou stupně hotové, porovnej se `solutions/` (spoiler).
+
+## Závěrečné otázky
+
+Spusť **`/go-deep-review 27 final`**. AI projde body níže, doptá se a ověří pochopení. Celé cvičení ověří `make lesson L=27` (+ `make race L=27`, pokud to lekce vyžaduje).
+
 - [ ] Umíš vysvětlit, co do kontextu patří a co ne, a máš na to jednovětý test
 - [ ] Umíš vysvětlit, proč klíč do `WithValue` nesmí být `string`
 - [ ] Umíš vysvětlit, proč `defer cancel()` není volitelný

@@ -21,41 +21,48 @@ type Result struct {
 	Err   error
 }
 
-// Gen pošle čísla do kanálu a zavře ho. Při zrušení kontextu skončí dřív.
+// --- Stupeň: jednoduchý ---
+// Gen pošle nums do kanálu a zavře ho. Při zrušení kontextu skonči dřív (bez leaku).
 func Gen(ctx context.Context, nums ...int) <-chan int {
-	// TODO: úkol A
+	// TODO
 	return closed[int]()
 }
 
-// Square umocní každou hodnotu ze vstupu. Výstup zavírá, vstup nikdy.
+// --- Stupeň: střední ---
+// Square umocní každou hodnotu ze vstupu. Zavírej jen svůj výstup; vstup nech otevřený.
+// Zápis i čtení musí mít cestu ven přes ctx.Done() — po zrušení uprostřed nesmí zůstat goroutina.
 func Square(ctx context.Context, in <-chan int) <-chan int {
-	// TODO: úkol A
+	// TODO
 	return closed[int]()
 }
 
-// Stage je obecný stupeň pipeline: na každý prvek použije f.
+// Stage je obecný stupeň pipeline: na každý prvek aplikuje f. Zavírá jen výstup.
+// Vstup nikdy nezavírej. select s ctx.Done() u zápisu.
 func Stage[T, U any](ctx context.Context, in <-chan T, f func(T) U) <-chan U {
-	// TODO: úkol B
+	// TODO
 	return closed[U]()
 }
 
-// FanIn sloučí několik kanálů do jednoho. Výstup se zavře po vyčerpání všech
-// vstupů nebo po zrušení kontextu.
+// FanIn sloučí kanály do jednoho. Výstup zavři právě jednou po vyčerpání všech vstupů
+// (nebo zrušení ctx). Bez vstupů → rovnou zavřený kanál.
 func FanIn[T any](ctx context.Context, chs ...<-chan T) <-chan T {
-	// TODO: úkol B
+	// TODO
 	return closed[T]()
 }
 
-// Take propustí nejvýše n prvků a pak výstup zavře.
+// Take propustí nejvýše n prvků a výstup zavře. Vstup vyčerpán dřív → méně prvků.
+// n <= 0 → rovnou zavřený kanál. Po Take + cancel nesmí zbýt goroutina.
 func Take[T any](ctx context.Context, in <-chan T, n int) <-chan T {
-	// TODO: úkol B
+	// TODO
 	return closed[T]()
 }
 
-// Pipeline složí tři stupně (normalizace, obohacení s fan-outem, formátování)
-// a vrátí kanál výsledků. Chyby se nesou uvnitř Result.
+// --- Stupeň: obtížný ---
+// Pipeline: TrimSpace (prázdný → ErrEmpty), fan-out 4× obohacení (číslice → ErrDigits,
+// jinak upper), formát prefixem "ok:". Result.Input = původní vstup před ořezáním.
+// Chybný Result další stupně jen propouští. Pořadí není zaručené. Po cancel žádná goroutina.
 func Pipeline(ctx context.Context, in <-chan string) <-chan Result {
-	// TODO: úkol C
+	// TODO
 	return closed[Result]()
 }
 

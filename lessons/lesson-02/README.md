@@ -10,54 +10,6 @@
 - Vysvětlit, proč se v Go místo DI kontejneru píše wiring ručně v `main` a proč to není krok zpět.
 - Přečíst signaturu Go funkce a poznat z ní, jestli se předává hodnota nebo se něco sdílí.
 
-## PHP → Go most
-
-Typický Symfony návrh: služba, konstruktor se závislostmi, výjimka při chybě.
-
-```php
-final class PriceCalculator
-{
-    public function __construct(
-        private readonly DiscountPolicy $policy,
-        private readonly LoggerInterface $logger,
-    ) {}
-
-    public function total(array $items): int
-    {
-        if ($items === []) {
-            throw new EmptyCartException();
-        }
-        // ...
-    }
-}
-```
-
-Stejná úloha v Go:
-
-```go
-// TotalCents je jen funkce — nemá stav, nepotřebuje objekt.
-func TotalCents(items []Item) int {
-	total := 0
-	for _, it := range items {
-		total += it.PriceCents * it.Qty
-	}
-	return total
-}
-
-// Kde je „nic k vrácení", vrátí se druhá hodnota bool místo výjimky.
-func Cheapest(items []Item) (Item, bool) {
-	if len(items) == 0 {
-		return Item{}, false
-	}
-	// ...
-}
-```
-
-Co se mění v uvažování: v PHP je třída výchozí jednotka kódu a všechno ostatní je odchylka.
-V Go je výchozí jednotka **balíček** a v něm **funkce**. Typ se strukturou a metodami zavádíš
-až ve chvíli, kdy máš skutečný stav, který k sobě patří. `PriceCalculator` bez stavu je v Go
-zbytečná vrstva — je to jen jmenný prostor navíc.
-
 ## Teorie
 
 ### Kompilovaný a staticky typovaný — co to mění v praxi
@@ -211,6 +163,54 @@ Důsledek pro návrh je zásadní: v Go je normální vracet struct **hodnotou**
 plyne, že příjemce dostal svoji kopii a nikdo mu ji zvenčí nezmění. Ve světě PHP by ses na
 to spolehnout nemohl, a proto se tam píšou obranné klony a `readonly`. V Go to dostaneš zdarma.
 
+## Rozdíly proti PHP
+
+Typický Symfony návrh: služba, konstruktor se závislostmi, výjimka při chybě.
+
+```php
+final class PriceCalculator
+{
+    public function __construct(
+        private readonly DiscountPolicy $policy,
+        private readonly LoggerInterface $logger,
+    ) {}
+
+    public function total(array $items): int
+    {
+        if ($items === []) {
+            throw new EmptyCartException();
+        }
+        // ...
+    }
+}
+```
+
+Stejná úloha v Go:
+
+```go
+// TotalCents je jen funkce — nemá stav, nepotřebuje objekt.
+func TotalCents(items []Item) int {
+	total := 0
+	for _, it := range items {
+		total += it.PriceCents * it.Qty
+	}
+	return total
+}
+
+// Kde je „nic k vrácení", vrátí se druhá hodnota bool místo výjimky.
+func Cheapest(items []Item) (Item, bool) {
+	if len(items) == 0 {
+		return Item{}, false
+	}
+	// ...
+}
+```
+
+Co se mění v uvažování: v PHP je třída výchozí jednotka kódu a všechno ostatní je odchylka.
+V Go je výchozí jednotka **balíček** a v něm **funkce**. Typ se strukturou a metodami zavádíš
+až ve chvíli, kdy máš skutečný stav, který k sobě patří. `PriceCalculator` bez stavu je v Go
+zbytečná vrstva — je to jen jmenný prostor navíc.
+
 ## Časté chyby
 
 | Chyba | Proč vzniká | Jak to udělat správně |
@@ -222,73 +222,52 @@ to spolehnout nemohl, a proto se tam píšou obranné klony a `readonly`. V Go t
 | Hledání DI kontejneru pro Go | autowiring jako samozřejmost | ruční wiring v `main` |
 | Interface „pro každou službu" | zvyk na mockování všeho | interface až u konzumenta, když ho potřebuješ |
 
+## AI kvíz
+
+Po přečtení teorie spusť v Cursoru **`/go-deep-quiz 02`**. AI tě ~5 minut prověří mentální model (ne hotové cvičení). Slabiny si uloží do [`GAPS.md`](../../GAPS.md).
+
 ## Úkol
 
-Pracuj v `exercise/`. Postupuj A → B → C, po každé části spusť test.
+Pracuj v `exercise/`. Po doplnění spouštěj testy:
 
-Doména je záměrně ta, kterou znáš: ceník a objednávka. Cena je vždy v **celých centech**
-(`int`), nikdy ve `float64` — peníze se v žádném jazyce nepočítají jako desetinné číslo.
+Stupně jdou od jednodušších ke složitějším — po každém stupni spusť review, než jdeš dál.
 
-### A — rozcvička (~10 min)
+### Jednoduchý
 
-`ApplyDiscount(priceCents int, percent int) int` vrátí cenu po slevě.
-
-- Sleva `percent` je v procentech. Hodnoty mimo rozsah `0–100` **ořízni** (clamp): záporné
-  na `0`, nad sto na `100`. Nepanikař a nevracej chybu.
-- Výsledek zaokrouhli na celé centy, půlku nahoru (`5` centů se slevou 50 % je `3`).
-- `priceCents` menší nebo rovno nule vrací `0`.
-
-např. `ApplyDiscount(5, 50)` → `3`
-
-### B — jádro (~35 min)
-
-Struktura `Item` je předpřipravená: `Name string`, `PriceCents int`, `Qty int`.
-
-1. `TotalCents(items []Item) int` — součet `PriceCents * Qty` přes všechny položky. Položky
-   s `Qty` menším nebo rovným nule se přeskočí. `nil` i prázdný slice dají `0`. Funkce
-   **nesmí měnit vstup**.
-2. `Cheapest(items []Item) (Item, bool)` — vrátí celou položku s nejnižší **jednotkovou**
-   cenou (`PriceCents`, na `Qty` se nehledí) a `true`. Při shodě ceny vyhrává první výskyt.
-   Pro prázdný nebo `nil` vstup vrať `Item{}` a `false` — tohle je comma-ok idiom, tvoje
-   náhrada za `null`.
-
-Všimni si, že vracíš `Item` hodnotou. Test ověřuje, že když volající vrácenou položku změní,
-původní slice se nezmění.
-
-např. `TotalCents([{kava, 4500, 2}])` → `9000`
-
-### C — rozšíření (~25 min)
-
-Postav malý „service", který má skutečný stav — ceník. Typ `Catalog` je předpřipravený a má
-**neexportované** pole `items`.
-
-- `NewCatalog(items []Item) *Catalog` — konstruktor. Vstupní slice si **okopíruj**, aby
-  pozdější změna slice u volajícího ceník neovlivnila. (Slice je jediná věc, která se sice
-  předává hodnotou, ale ukazuje na sdílené pole — to je téma lekce 07.)
-- `func (c *Catalog) Price(name string) (int, bool)` — jednotková cena podle jména, comma-ok.
-  Nenalezeno → `0, false`.
-- `func (c *Catalog) Checkout(names []string, percent int) (int, bool)` — sečti ceny položek
-  podle jmen (opakované jméno se počítá vícekrát), na součet aplikuj `ApplyDiscount` a vrať
-  `true`. Pokud kterékoli jméno v ceníku není, vrať `0, false`. Prázdný seznam jmen je
-  platná objednávka za `0`.
-
-Až budeš hotový, podívej se na `Checkout`: složil jsi ji z funkce a metody, které už
-existovaly, bez kontejneru, bez interface a bez dědičnosti. Tohle je v Go běžný způsob, jak
-vzniká „služba".
-
-např. ceník s `kava=4500`, `Checkout(["kava", "kava"], 0)` → `9000, true`
+Funkce: `ApplyDiscount`, `TotalCents`
 
 ```bash
-make lesson L=02
+make lesson L=02 PART=1
 ```
 
-Až budeš hotový, porovnej se `solutions/` (spoiler).
+Pak **`/go-deep-review 02 easy`**.
 
-## Ověření
+### Střední
 
-Po dokončení úkolů spusť v Cursoru **`/go-deep-review`** a zadej třeba jen `02`. AI tě postupně projde body níže, doptá se a ověří pochopení — nestačí jen zelené testy.
+Funkce: `Cheapest`, `NewCatalog`
 
-- [ ] `make lesson L=02` prochází
+```bash
+make lesson L=02 PART=2
+```
+
+Pak **`/go-deep-review 02 medium`**.
+
+### Obtížný
+
+Funkce: `Price`, `Checkout`
+
+```bash
+make lesson L=02 PART=3
+```
+
+Pak **`/go-deep-review 02 hard`**.
+
+Až budou stupně hotové, porovnej se `solutions/` (spoiler).
+
+## Závěrečné otázky
+
+Spusť **`/go-deep-review 02 final`**. AI projde body níže, doptá se a ověří pochopení. Celé cvičení ověří `make lesson L=02` (+ `make race L=02`, pokud to lekce vyžaduje).
+
 - [ ] Umíš vysvětlit, proč `Cheapest` vrací `(Item, bool)` a ne `*Item`
 - [ ] Umíš vysvětlit, co je v Go jednotka zapouzdření a jak se pozná exportovaný identifikátor
 - [ ] Umíš vysvětlit, čím nahradíš `AbstractHandler` z Symfony
@@ -299,6 +278,7 @@ Po dokončení úkolů spusť v Cursoru **`/go-deep-review`** a zadej třeba jen
 
 `ZAKÁZÁNO` — viz [docs/ai-playbook.md](../../docs/ai-playbook.md).
 
+Mentor, kvíz i review (dialog) jsou vždy OK; v tomto režimu AI nesmí psát kód cvičení.
 ## Další čtení
 
 1. [Effective Go — Introduction a Names](https://go.dev/doc/effective_go)

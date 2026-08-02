@@ -1,70 +1,75 @@
 // Package exercise obsahuje cvičení lekce 41.
 package exercise
 
-// Generate pošle všechna čísla do vráceného kanálu a kanál sám zavře.
+// --- Stupeň: jednoduchý ---
+// Generate pošle všechna čísla do kanálu v goroutině a kanál sám zavře.
+// Bez Collect nesmí blokovat volajícího.
 func Generate(nums ...int) <-chan int {
-	// TODO: úkol A
+	// TODO
 	return closedInt()
 }
 
-// Collect přečte kanál až do zavření a vrátí hodnoty v pořadí, v jakém dorazily.
+// Collect přečte kanál do zavření a vrátí hodnoty v pořadí doručení.
+// Prázdný nebo nil kanál → prázdný slice, ne panika.
 func Collect(ch <-chan int) []int {
-	// TODO: úkol A
+	// TODO
 	return nil
 }
 
-// Merge sloučí několik vstupních kanálů do jednoho (fan-in). Výstup se zavře
-// až po zavření všech vstupů.
+// Merge sloučí vstupní kanály (fan-in). Výstup zavře jednou po zavření všech vstupů.
+// Bez argumentů → rovnou zavřený kanál.
 func Merge(chs ...<-chan int) <-chan int {
-	// TODO: úkol B
+	// TODO
 	return closedInt()
 }
 
-// Split rozdělí hodnoty ze vstupního kanálu mezi n výstupních kanálů. Každá
-// hodnota skončí právě v jednom z nich. Po zavření vstupu se zavřou i výstupy.
+// --- Stupeň: střední ---
+// Split rozdělí vstup mezi n kanálů; každá hodnota jen v jednom. Po vstupu
+// zavře všechny výstupy. n < 1 se chová jako 1.
 func Split(ch <-chan int, n int) []<-chan int {
-	// TODO: úkol B
+	// TODO
 	return nil
 }
 
-// Broker je jednoduchý publish/subscribe nad kanály.
+// Broker je publish/subscribe nad kanály s drop policy pro pomalé odběratele.
 type Broker struct {
-	// TODO: doplň pole. Budeš potřebovat mutex, seznam odběratelů,
-	// velikost bufferu, počítadlo zahozených zpráv a příznak zavření.
+	// TODO
 }
 
-// NewBroker vytvoří brokera, jehož odběratelé mají buffer dané velikosti.
+// NewBroker vytvoří brokera; buffer je velikost kanálu každého odběratele.
 // Záporný buffer se chová jako nula.
 func NewBroker(buffer int) *Broker {
-	// TODO: úkol C
+	// TODO
 	return nil
 }
 
-// Subscribe zaregistruje nového odběratele a vrátí jeho kanál. Po zavolání
-// Close vrací už zavřený kanál.
+// Subscribe zaregistruje odběratele. Po Close vrací rovnou zavřený kanál.
+// Kanál odběratele má kapacitu buffer z NewBroker. Souběžně bezpečné s Publish/Close.
 func (b *Broker) Subscribe() <-chan string {
-	// TODO: úkol C
+	// TODO
 	ch := make(chan string)
 	close(ch)
 	return ch
 }
 
-// Publish rozešle zprávu všem odběratelům. Odběratele, který nestíhá, nesmí
-// zablokovat — zprávu pro něj zahodí a započítá do Dropped.
+// --- Stupeň: obtížný ---
+// Publish rozešle zprávu všem. Pomalý odběratel nesmí blokovat — zahoď a započítej Dropped.
+// Po Close nic nedělá.
 func (b *Broker) Publish(msg string) {
-	// TODO: úkol C
+	// TODO
 }
 
-// Dropped vrací počet zpráv zahozených kvůli pomalým odběratelům.
+// Dropped vrací počet zahozených zpráv.
+// Roste, když Publish najde plný buffer odběratele.
 func (b *Broker) Dropped() int {
-	// TODO: úkol C
+	// TODO
 	return 0
 }
 
-// Close ukončí brokera a zavře kanály všech odběratelů. Opakované volání
-// je bezpečné, Publish po zavření nic nedělá.
+// Close zavře kanály všech odběratelů; opakované volání nepanikuje.
+// Další Subscribe → zavřený kanál; Publish po Close nic nedělá.
 func (b *Broker) Close() {
-	// TODO: úkol C
+	// TODO
 }
 
 // closedInt je fail-fast stub: nil kanál by v testech visel navždy.

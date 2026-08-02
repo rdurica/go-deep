@@ -36,7 +36,9 @@ type Config struct {
 	APIKey      string
 }
 
+// --- Stupeň: jednoduchý ---
 // LookupString vrátí hodnotu klíče key z getenv, nebo def, pokud je prázdná.
+// Chybějící klíč i prázdný string z getenv → def.
 func LookupString(getenv func(string) string, key, def string) string {
 	if v := getenv(key); v != "" {
 		return v
@@ -44,6 +46,7 @@ func LookupString(getenv func(string) string, key, def string) string {
 	return def
 }
 
+// --- Stupeň: střední ---
 // LookupInt vrátí hodnotu klíče key z getenv převedenou na int, nebo def, pokud je prázdná.
 func LookupInt(getenv func(string) string, key string, def int) (int, error) {
 	raw := getenv(key)
@@ -110,6 +113,7 @@ func Load(getenv func(string) string) (Config, error) {
 	return cfg, nil
 }
 
+// --- Stupeň: obtížný ---
 // String implementuje fmt.Stringer a maskuje tajemství.
 func (c Config) String() string {
 	apiKey := ""

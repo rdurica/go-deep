@@ -2,14 +2,15 @@
 
 package exercise
 
-// FeatureName vrací jméno feature buildu.
+// FeatureName vrací jméno feature buildu s tagem fancy.
+// Při buildu s -tags fancy vrací "fancy"; bez tagu se kompiluje feature_off.go.
 func FeatureName() string {
-	// TODO: úkol C
+	// TODO
 	return ""
 }
 
-// Discount vrací slevu z částky (20 % dolů). Nekladný vstup dává 0.
+// Discount vrací 20 % z částky celočíselně dolů; pro nekladný vstup 0.
 func Discount(amount int) int {
-	// TODO: úkol C
+	// TODO
 	return 0
 }

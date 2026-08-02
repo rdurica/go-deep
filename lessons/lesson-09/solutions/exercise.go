@@ -7,6 +7,7 @@ import (
 	"unicode/utf8"
 )
 
+// --- Stupeň: jednoduchý ---
 // ByteLen vrací počet bajtů řetězce.
 func ByteLen(s string) int {
 	return len(s)
@@ -18,6 +19,7 @@ func RuneLen(s string) int {
 	return utf8.RuneCountInString(s)
 }
 
+// --- Stupeň: střední ---
 // ReverseRunes otočí pořadí run. Funguje s diakritikou i emoji.
 func ReverseRunes(s string) string {
 	r := []rune(s)
@@ -39,6 +41,7 @@ func Truncate(s string, maxRunes int) string {
 	return string([]rune(s)[:maxRunes-1]) + "…"
 }
 
+// --- Stupeň: obtížný ---
 // Initials vrací iniciály: první runu každého slova velkým písmenem.
 func Initials(fullName string) string {
 	var sb strings.Builder

@@ -232,7 +232,7 @@ func TestRetryExhausted(t *testing.T) {
 	}
 }
 
-func TestRetryBackoffRoste(t *testing.T) {
+func TestRetryBackoffGrows(t *testing.T) {
 	t.Parallel()
 
 	// Osm pokusů se základem 5 ms nemůže při exponenciálním růstu trvat
@@ -262,7 +262,7 @@ func TestRetryPermanentError(t *testing.T) {
 
 	err := exercise.Retry(context.Background(), 5, time.Millisecond, func(context.Context) error {
 		calls.Add(1)
-		return exercise.Permanent(sentinel)
+		return &exercise.PermanentError{Err: sentinel}
 	})
 	if err == nil {
 		t.Fatal("Retry vrátil nil, chci chybu")

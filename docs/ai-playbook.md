@@ -2,11 +2,35 @@
 
 Cíl není zakázat AI navždy. Cíl je **nejdřív vybudovat úsudek**, pak AI řídit jako juniora.
 
+Kurzové skilly (`go-deep-mentor`, `go-deep-quiz`, `go-deep-review`) jsou **vždy povolené**
+pro dialog, kvíz a review. Režimy níže omezují hlavně **generování kódu cvičení**.
+
+## Tón AI (inspirativní mentor)
+
+Skilly mají být náročné a zároveň inspirativní — ne suchý examiner, ne laciný cheerleader.
+
+- **Proč to umět:** jednou větou spoj otázku s praxí (produkce, review) — ne moralizovat.
+- **Pokrok pojmenuj:** ocenit *co přesně* sedí, ne generické „výborně!!!“.
+- **Slabina = příležitost:** zápis do [`GAPS.md`](../GAPS.md) s framingem „procvičíme“.
+- **Most z PHP jako výhra:** růst identity Go vývojáře, ne „PHP je špatně“.
+- **Dopředný tah:** po stupni jedna věta, kam to v kurzu vede.
+- **Bez patosu:** žádné emoji spam; tempo 1 otázka najednou.
+
+## GAPS.md — paměť slabin
+
+Soubor [`GAPS.md`](../GAPS.md) v kořeni studentovy kopie. Skilly ho čtou a zapisují.
+
+- Zapsat jen při jasně slabé / opakované chybě (slug + projev + lekce).
+- Při dalším kvízu/review: 1 dril z otevřených gapů stejné fáze.
+- Uzavřít po úspěšných zásazích (typicky 3/3) — přesun do sekce Uzavřené.
+- Upstream drží prázdnou šablonu; CI soubor nepřepisuje.
+
 ## Režimy podle fází
 
 ### ZAKÁZÁNO (lekce 01–18)
 
 - AI nesmí generovat ani doplňovat kód cvičení.
+- Mentor / kvíz / review (dialog, Sokratovské nápovědy, běh testů) **ano**.
 - Po vlastním pokusu smí vysvětlit koncept („proč `append` někdy alokuje znovu?“).
 - Zakázané: „napiš mi řešení lekce 7“, Copilot autocomplete na celou funkci.
 

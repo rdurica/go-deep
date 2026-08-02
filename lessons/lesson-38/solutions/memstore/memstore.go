@@ -15,11 +15,13 @@ type Repository struct {
 	orders map[string]order.Order
 }
 
+// --- Stupeň: jednoduchý ---
 // New vytvoří prázdné úložiště.
 func New() *Repository {
 	return &Repository{orders: make(map[string]order.Order)}
 }
 
+// --- Stupeň: střední ---
 // Save uloží nebo přepíše objednávku.
 func (r *Repository) Save(ctx context.Context, o order.Order) error {
 	if err := ctx.Err(); err != nil {
@@ -32,6 +34,7 @@ func (r *Repository) Save(ctx context.Context, o order.Order) error {
 	return nil
 }
 
+// --- Stupeň: obtížný ---
 // Find vrátí objednávku podle ID, jinak chybu obalující order.ErrNotFound.
 func (r *Repository) Find(ctx context.Context, id string) (order.Order, error) {
 	if err := ctx.Err(); err != nil {

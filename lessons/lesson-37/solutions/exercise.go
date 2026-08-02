@@ -36,6 +36,7 @@ const WWWAuthenticate = `Bearer realm="api"`
 // RouteUnknown je náhradní hodnota labelu route, když vzor cesty není známý.
 const RouteUnknown = "unknown"
 
+// --- Stupeň: jednoduchý ---
 // ParseBearer vytáhne token z hodnoty hlavičky Authorization.
 func ParseBearer(header string) (string, error) {
 	// strings.Fields sjednotí libovolné množství mezer i tabulátorů,
@@ -122,6 +123,7 @@ func UserFrom(ctx context.Context) (string, bool) {
 	return user, ok
 }
 
+// --- Stupeň: střední ---
 // Stat je souhrn jedné metrické řady.
 type Stat struct {
 	Count int
@@ -210,7 +212,9 @@ func (m *Metrics) Snapshot() map[string]Stat {
 	return out
 }
 
-// Text serializuje registr do deterministického textového formátu.
+// --- Stupeň: obtížný ---
+// Text serializuje registr do textu — řady seřazené abecedně, deterministický výpis.
+// Každá řada: "<SeriesKey> count=%d sum=%g min=%g max=%g\n".
 func (m *Metrics) Text() string {
 	snapshot := m.Snapshot()
 	keys := make([]string, 0, len(snapshot))

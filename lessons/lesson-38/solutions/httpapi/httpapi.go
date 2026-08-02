@@ -48,6 +48,7 @@ type handler struct {
 	svc *app.Service
 }
 
+// --- Stupeň: jednoduchý ---
 // NewHandler složí router služby nad aplikační vrstvou.
 func NewHandler(svc *app.Service) http.Handler {
 	h := &handler{svc: svc}

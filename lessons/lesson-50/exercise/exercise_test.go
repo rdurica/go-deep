@@ -78,10 +78,10 @@ func TestStatsTotalAndThroughput(t *testing.T) {
 		total int
 		tput  float64
 	}{
-		{"prázdné", exercise.Stats{}, 0, 0},
-		{"bez doby běhu", exercise.Stats{Processed: 10, Elapsed: 0}, 10, 0},
-		{"záporná doba", exercise.Stats{Processed: 10, Elapsed: -time.Second}, 10, 0},
-		{"sto úloh za dvě sekundy", exercise.Stats{Processed: 50, Failed: 50, Elapsed: 2 * time.Second}, 100, 50},
+		{"empty", exercise.Stats{}, 0, 0},
+		{"no runtime", exercise.Stats{Processed: 10, Elapsed: 0}, 10, 0},
+		{"negative duration", exercise.Stats{Processed: 10, Elapsed: -time.Second}, 10, 0},
+		{"hundred jobs in two seconds", exercise.Stats{Processed: 50, Failed: 50, Elapsed: 2 * time.Second}, 100, 50},
 		{"jen chyby", exercise.Stats{Failed: 8, Elapsed: 4 * time.Second}, 8, 2},
 	}
 	for _, tt := range tests {
@@ -132,8 +132,9 @@ func TestMetricsUnderConcurrency(t *testing.T) {
 	if got.Elapsed != 2*time.Second {
 		t.Errorf("Elapsed = %v, chci 2s", got.Elapsed)
 	}
-	if want := float64(workers) / 2; math.Abs(got.Throughput()-want) > 1e-9 {
-		t.Errorf("Throughput() = %v, chci %v", got.Throughput(), want)
+	wantTput := float64(got.Processed+got.Failed) / got.Elapsed.Seconds()
+	if math.Abs(wantTput-float64(workers)/2) > 1e-9 {
+		t.Errorf("průchodnost z polí = %v, chci %v", wantTput, float64(workers)/2)
 	}
 	waitNoLeak(t, before)
 }
@@ -168,8 +169,11 @@ func TestProcessKeepsOrder(t *testing.T) {
 	if stats.Processed != len(in) || stats.Failed != 0 {
 		t.Errorf("Stats = %+v, chci processed=%d a failed=0", stats, len(in))
 	}
-	if stats.Throughput() <= 0 {
-		t.Errorf("Throughput() = %v, chci kladnou průchodnost", stats.Throughput())
+	if stats.Elapsed <= 0 {
+		t.Errorf("Elapsed = %v, chci kladnou dobu běhu", stats.Elapsed)
+	}
+	if tput := float64(stats.Processed+stats.Failed) / stats.Elapsed.Seconds(); tput <= 0 {
+		t.Errorf("průchodnost z polí = %v, chci kladnou", tput)
 	}
 	waitNoLeak(t, before)
 }
@@ -296,8 +300,8 @@ func TestProcessValidationAndEdgeCases(t *testing.T) {
 		cfg  exercise.Config
 		want error
 	}{
-		{"bez workerů", exercise.Config{Handler: upperHandler}, exercise.ErrInvalidWorkers},
-		{"záporná fronta", exercise.Config{Workers: 2, QueueSize: -1, Handler: upperHandler}, exercise.ErrInvalidQueueSize},
+		{"no workers", exercise.Config{Handler: upperHandler}, exercise.ErrInvalidWorkers},
+		{"negative queue", exercise.Config{Workers: 2, QueueSize: -1, Handler: upperHandler}, exercise.ErrInvalidQueueSize},
 		{"bez handleru", exercise.Config{Workers: 2}, exercise.ErrNilHandler},
 	}
 	for _, tt := range tests {
@@ -308,7 +312,7 @@ func TestProcessValidationAndEdgeCases(t *testing.T) {
 		})
 	}
 
-	t.Run("prázdná dávka", func(t *testing.T) {
+	t.Run("empty batch", func(t *testing.T) {
 		got, stats, err := exercise.Process(ctx, exercise.Config{Workers: 2, Handler: upperHandler}, nil)
 		if err != nil {
 			t.Fatalf("Process(nil) = %v, chci nil", err)
@@ -316,12 +320,12 @@ func TestProcessValidationAndEdgeCases(t *testing.T) {
 		if len(got) != 0 {
 			t.Errorf("Process(nil) = %v, chci prázdný výsledek", got)
 		}
-		if stats.Total() != 0 {
+		if stats.Processed+stats.Failed != 0 {
 			t.Errorf("Stats = %+v, chci nuly", stats)
 		}
 	})
 
-	t.Run("už zrušený kontext", func(t *testing.T) {
+	t.Run("already canceled context", func(t *testing.T) {
 		canceledCtx, cancel := context.WithCancel(ctx)
 		cancel()
 		if _, _, err := exercise.Process(canceledCtx, exercise.Config{Workers: 2, Handler: upperHandler}, items(5)); !errors.Is(err, context.Canceled) {
@@ -495,14 +499,14 @@ func TestProcessStreamFailFastAndCancel(t *testing.T) {
 		if !errors.Is(err, errBoom) {
 			t.Errorf("ProcessStream = %v, chci %v", err, errBoom)
 		}
-		if stats.Total() == 0 {
+		if stats.Processed+stats.Failed == 0 {
 			t.Errorf("Stats = %+v, chci nenulový počet dokončených úloh", stats)
 		}
 		for range out { //nolint:revive // kanál musí být zavřený
 		}
 	})
 
-	t.Run("zrušení kontextu", func(t *testing.T) {
+	t.Run("context cancel", func(t *testing.T) {
 		ctx, cancel := context.WithCancel(context.Background())
 		defer cancel()
 		time.AfterFunc(30*time.Millisecond, cancel)
@@ -550,7 +554,7 @@ func TestProcessStreamFailFastAndCancel(t *testing.T) {
 		}
 	})
 
-	t.Run("špatná konfigurace zavře výstup", func(t *testing.T) {
+	t.Run("bad config closes output", func(t *testing.T) {
 		out := make(chan exercise.Outcome)
 		src := make(chan exercise.Item)
 		close(src)

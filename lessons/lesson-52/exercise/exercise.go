@@ -13,34 +13,40 @@ type Record struct {
 	Score int
 }
 
-// Normalize ořízne okrajové bílé znaky, sjednotí vnitřní bílé znaky
-// na jednu mezeru a převede text na malá písmena.
+// --- Stupeň: jednoduchý ---
+// Normalize ořízne okraje, vnitřní bílé znaky (unicode.IsSpace) sjednotí na jednu mezeru
+// a převede na malá písmena. Už normalizovaný vstup vrací beze změny a bez alokace.
 func Normalize(s string) string {
-	// TODO: úkol A
+	// TODO
 	return ""
 }
 
-// Encode zapíše záznamy do textového formátu "id|name|score" po řádcích.
+// --- Stupeň: střední ---
+// Encode zapíše záznamy jako id|name|score po řádcích bez koncového LF.
+// ID a Name escapují \\, \p, \n, \r; prázdný vstup dá prázdný řetězec.
 func Encode(recs []Record) string {
-	// TODO: úkol B
+	// TODO
 	return ""
 }
 
-// Decode přečte formát vyrobený funkcí Encode.
+// Decode je inverze Encode; prázdný vstup vrací prázdný nenilový slice.
+// Chyby obalují ErrFormat; nesmí panikovat na žádném vstupu.
 func Decode(s string) ([]Record, error) {
-	// TODO: úkol B
+	// TODO
 	return nil, nil
 }
 
-// RenderTable vykreslí záznamy jako zarovnanou textovou tabulku.
+// --- Stupeň: obtížný ---
+// RenderTable vykreslí report o pevné šířce sloupců (8|20|5); řádky se neořezávají.
+// Výstup ověřuje golden test proti testdata/table.golden.
 func RenderTable(recs []Record) string {
-	// TODO: úkol C
+	// TODO
 	return ""
 }
 
-// RenderTableFast vrací totéž co RenderTable, ale staví výstup
-// v jediném bufferu s předalokací.
+// RenderTableFast vrací bajt po bajtu stejný výstup jako RenderTable přes strings.Builder,
+// Grow, strconv.AppendInt/AppendFloat a utf8.RuneCountInString pro šířku sloupců.
 func RenderTableFast(recs []Record) string {
-	// TODO: úkol C
+	// TODO
 	return ""
 }

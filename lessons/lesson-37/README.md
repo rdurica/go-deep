@@ -11,37 +11,6 @@
 - Vybrat mezi čítačem, gauge a histogramem a popsat službu metodou RED.
 - Napsat registr metrik bezpečný pro souběžné použití a instrumentovat HTTP vrstvu bez exploze kardinality.
 
-## PHP → Go most
-
-V Symfony je autentizace konfigurace. `security.yaml`, firewall, authenticator, voter —
-framework to poskládá a ty se dozvíš `$this->getUser()`:
-
-```yaml
-security:
-    firewalls:
-        api:
-            pattern: ^/api
-            custom_authenticators: [App\Security\TokenAuthenticator]
-    access_control:
-        - { path: ^/api/orders, roles: ROLE_API }
-```
-
-V Go je autentizace funkce, kterou vidíš:
-
-```go
-mux := http.NewServeMux()
-mux.Handle("POST /orders", createOrder(svc))
-
-var handler http.Handler = mux
-handler = Authenticate(tokens)(handler)   // pořadí je vidět
-handler = Instrument(metrics)(handler)
-```
-
-Co se mění v uvažování: v Symfony hledáš, **kde je to nakonfigurované**. V Go čteš
-`main.go` shora dolů a víš, co se s požadavkem stane. Cenou je, že si musíš pamatovat
-pořadí a nic ti nezakřičí, když middleware zapomeneš. Odměnou je, že žádný `access_control`
-řádek ti tiše nepovolí endpoint, o kterém nevíš.
-
 ## Teorie
 
 ### Autentizace, autorizace a kde která bydlí
@@ -279,6 +248,37 @@ Poslední dva kousky: **request ID** vygenerované na okraji a propsané do logu
 odchozích volání spojí záznamy do jednoho příběhu. A `/healthz` (žiju, nerestartuj mě)
 je něco jiného než `/readyz` (mám spojení do databáze, posílej provoz).
 
+## Rozdíly proti PHP
+
+V Symfony je autentizace konfigurace. `security.yaml`, firewall, authenticator, voter —
+framework to poskládá a ty se dozvíš `$this->getUser()`:
+
+```yaml
+security:
+    firewalls:
+        api:
+            pattern: ^/api
+            custom_authenticators: [App\Security\TokenAuthenticator]
+    access_control:
+        - { path: ^/api/orders, roles: ROLE_API }
+```
+
+V Go je autentizace funkce, kterou vidíš:
+
+```go
+mux := http.NewServeMux()
+mux.Handle("POST /orders", createOrder(svc))
+
+var handler http.Handler = mux
+handler = Authenticate(tokens)(handler)   // pořadí je vidět
+handler = Instrument(metrics)(handler)
+```
+
+Co se mění v uvažování: v Symfony hledáš, **kde je to nakonfigurované**. V Go čteš
+`main.go` shora dolů a víš, co se s požadavkem stane. Cenou je, že si musíš pamatovat
+pořadí a nic ti nezakřičí, když middleware zapomeneš. Odměnou je, že žádný `access_control`
+řádek ti tiše nepovolí endpoint, o kterém nevíš.
+
 ## Časté chyby
 
 | Chyba | Proč vzniká | Jak to udělat správně |
@@ -292,64 +292,52 @@ je něco jiného než `/readyz` (mám spojení do databáze, posílej provoz).
 | Metrika `latency_ms` | zvyk na milisekundy | základní jednotky: `_seconds` |
 | 401 bez `WWW-Authenticate` | klient si poradí | RFC 7235 ji vyžaduje |
 
+## AI kvíz
+
+Po přečtení teorie spusť v Cursoru **`/go-deep-quiz 37`**. AI tě ~5 minut prověří mentální model (ne hotové cvičení). Slabiny si uloží do [`GAPS.md`](../../GAPS.md).
+
 ## Úkol
 
-Pracuj v `exercise/`. Postupuj A → B → C, po každé části spusť test.
+Pracuj v `exercise/`. Po doplnění spouštěj testy:
 
-### A — autentizace (~20 min)
+Stupně jdou od jednodušších ke složitějším — po každém stupni spusť review, než jdeš dál.
 
-1. `ParseBearer(header string) (string, error)` podle pravidel výše: prázdná nebo chybějící
-   hlavička → `ErrMissingAuthorization`; jiné schéma → `ErrUnsupportedScheme`; `Bearer`
-   bez tokenu → `ErrMissingToken`; dvě a více částí za schématem →
-   `ErrMalformedAuthorization`. Schéma porovnávej case-insensitive, okrajové bílé znaky
-   toleruj, při chybě vrať prázdný token.
-2. `HashPassword(password, salt string) string` — hex zápis SHA-256 nad solí a heslem.
-3. `VerifyPassword(hash, password, salt string) bool` — porovnání přes `crypto/subtle`.
+### Jednoduchý
 
-např. `ParseBearer("Bearer abc123")` → `"abc123"`
-
-### B — middleware a registr metrik (~40 min)
-
-1. `Authenticate(tokens map[string]string) Middleware` — naparsuje hlavičku, porovná token
-   v konstantním čase proti **všem** záznamům a jméno uživatele vloží do kontextu.
-   Při jakémkoli selhání odpoví **401**, nastaví `WWW-Authenticate` se schématem `Bearer`
-   a **nesmí** pustit následující handler.
-2. `UserFrom(ctx context.Context) (string, bool)` s neexportovaným typem klíče.
-3. `SeriesKey(name string, labels map[string]string) string` — `name` bez labelů,
-   jinak `name{k="v",k2="v2"}` se **seřazenými** klíči a hodnotami v uvozovkách
-   (`strconv.Quote`).
-4. `NewMetrics`, `Inc`, `Observe`, `Snapshot` a `Text` — registr pod mutexem. `Stat` drží
-   `Count`, `Sum`, `Min` a `Max`; první pozorování nastaví min i max na svoji hodnotu,
-   ne na nulu. `Snapshot` vrací **kopii** mapy, `Text` deterministický výpis se
-   seřazenými řadami. Testy běží pod `-race`.
-
-např. `Authorization: Bearer tok-alice` → `200` + `"alice"`
-
-### C — instrumentace (~25 min)
-
-1. `WithRoute(route string, next http.Handler) http.Handler` a
-   `RouteFrom(ctx context.Context) string` s náhradní hodnotou `RouteUnknown`.
-2. `Instrument(m *Metrics) Middleware` — zvýší `http_requests_total` s labely `method`,
-   `route` a `status` a zaznamená dobu do `http_request_duration_seconds`. Label `route`
-   musí být **vzor cesty**, takže dva požadavky na `/items/1` a `/items/2` dají jedinou
-   řadu; test to hlídá. Handler, který nezavolá `WriteHeader`, se počítá jako 200
-   a middleware nesmí odpověď nijak změnit.
-
-např. `GET /items/1|/items/2|/items/9999` → jedna řada `route="/items/{id}"`, `Count=3`
-
-Testy části C běží s `-race`:
+Funkce: `ParseBearer`, `HashPassword`, `VerifyPassword`, `Authenticate`
 
 ```bash
-make race L=37
+make lesson L=37 PART=1
 ```
 
-Až budeš hotový, porovnej se `solutions/` (spoiler).
+Pak **`/go-deep-review 37 easy`**.
 
-## Ověření
+### Střední
 
-Po dokončení úkolů spusť v Cursoru **`/go-deep-review`** a zadej třeba jen `37`. AI tě postupně projde body níže, doptá se a ověří pochopení — nestačí jen zelené testy.
+Funkce: `UserFrom`, `NewMetrics`, `SeriesKey`, `Inc`, `Observe`
 
-- [ ] `make lesson L=37` a `make race L=37` prochází
+```bash
+make lesson L=37 PART=2
+```
+
+Pak **`/go-deep-review 37 medium`**.
+
+### Obtížný
+
+Funkce: `Snapshot`, `Text`, `WithRoute`, `RouteFrom`, `Instrument`
+
+```bash
+make lesson L=37 PART=3
+```
+
+Pak **`/go-deep-review 37 hard`**.
+
+Až budou stupně hotové, porovnej se `solutions/` (spoiler).
+
+## Závěrečné otázky
+
+Spusť **`/go-deep-review 37 final`**. AI projde body níže, doptá se a ověří pochopení. Celé cvičení ověří `make lesson L=37` (+ `make race L=37`, pokud to lekce vyžaduje).
+
 - [ ] Umíš vysvětlit, proč `==` na tajemství je zranitelnost, a spočítat, o kolik útok zjednoduší
 - [ ] Umíš vysvětlit, proč je SHA-256 na hesla špatná volba a co se používá místo ní
 - [ ] Umíš vysvětlit, které autorizační rozhodnutí middleware udělat nemůže

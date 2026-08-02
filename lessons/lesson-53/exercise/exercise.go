@@ -13,6 +13,7 @@ import (
 // wordRE hledá slova jako souvislé úseky písmen a číslic.
 var wordRE = regexp.MustCompile(`[\p{L}\p{N}]+`)
 
+// --- Stupeň: jednoduchý ---
 // SumDigitsSlow sečte desítkové číslice v řetězci. Referenční, ale pomalá varianta:
 // každou runu převede na string a nechá ji rozparsovat strconv.
 func SumDigitsSlow(s string) int {
@@ -42,38 +43,46 @@ func IsWordRune(r rune) bool {
 	return unicode.IsLetter(r) || unicode.IsNumber(r)
 }
 
-// SumDigits sečte desítkové číslice v řetězci bez jediné alokace.
+// --- Stupeň: střední ---
+// SumDigits sečte desítkové číslice v řetězci bez alokace.
+// Výsledek musí shodovat se SumDigitsSlow; test vyžaduje 0 alokací (AllocsPerRun == 0).
 func SumDigits(s string) int {
-	// TODO: úkol A
+	// TODO
 	return 0
 }
 
-// CountWords spočítá výskyty slov (case-insensitive) s minimem alokací.
+// CountWords spočítá slova (IsWordRune, klíč malými písmeny) s max. 12 alokacemi.
+// Prázdný text dá prázdnou nenilovou mapu. Předalokuj mapu; nekonvertuj celý text na lowercase.
 func CountWords(text string) map[string]int {
-	// TODO: úkol B
+	// TODO
 	return nil
 }
 
-// JoinIDs spojí čísla čárkou do jednoho řetězce.
+// JoinIDs spojí čísla čárkou bez zbytečných alokací.
+// Prázdný vstup prázdný řetězec; max. 2 alokace pro 64 čísel (strings.Builder + Grow).
 func JoinIDs(ids []int) string {
-	// TODO: úkol B
+	// TODO
 	return ""
 }
 
-// CaptureCPUProfile spustí f a zapíše CPU profil jejího běhu do w.
+// --- Stupeň: obtížný ---
+// CaptureCPUProfile spustí CPU profil, zavolá f a profil ukončí i při panice (defer).
+// Chybějící writer nebo f je chyba; chyba StartCPUProfile se obaluje kontextem.
 func CaptureCPUProfile(w io.Writer, f func()) error {
-	// TODO: úkol C
+	// TODO
 	return nil
 }
 
-// CaptureHeapProfile zapíše aktuální heap profil do w.
+// CaptureHeapProfile vynutí GC a zapíše heap profil ve strojovém formátu (debug 0).
+// Chybějící writer je chyba; profil nesmí být prázdný.
 func CaptureHeapProfile(w io.Writer) error {
-	// TODO: úkol C
+	// TODO
 	return nil
 }
 
-// PprofHandler vrátí handler s pprof endpointy na vlastním muxu.
+// PprofHandler vrátí vlastní ServeMux s /debug/pprof/* endpointy, ne DefaultServeMux.
+// /metrics na tomto handleru musí vrátit 404 (test to kontroluje).
 func PprofHandler() http.Handler {
-	// TODO: úkol C
-	return *new(http.Handler)
+	// TODO
+	return nil
 }

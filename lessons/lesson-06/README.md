@@ -10,41 +10,6 @@
 - Vysvětlit, proč `slice` mění data volajícího i bez pointeru a proč `append` musíš vracet.
 - Bezpečně pracovat s `nil` pointerem, včetně `nil` receiveru.
 
-## PHP → Go most
-
-V PHP je proměnná s objektem handle. Předáš ji dál a příjemce mění tvoje data — a ty to
-na signatuře nepoznáš.
-
-```php
-function applyDefaults(Config $c): void
-{
-    $c->host ??= 'localhost';  // mění objekt volajícího
-}
-
-function rename(string $s): void
-{
-    $s = 'jiny';               // nemění nic, string je hodnota
-}
-```
-
-Go dělá totéž, ale explicitně: co se má měnit, se předává pointerem, a je to vidět v typu.
-
-```go
-func ApplyDefaults(c *Config) { // hvězdička = "budu ti do toho sahat"
-	if c.Host == "" {
-		c.Host = "localhost"
-	}
-}
-
-func rename(c Config) { // bez hvězdičky = dostávám kopii
-	c.Host = "jiny" // volajícího to nezmění
-}
-```
-
-Co se mění v uvažování: přestaneš hádat, jestli funkce mutuje vstup. Signatura to říká.
-Zároveň se otočí výchozí volba — v PHP jsou reference zadarmo a všude, v Go začínáš
-hodnotou a pointer si musíš zdůvodnit.
-
 ## Teorie
 
 ### Co je pointer a co s ním jde
@@ -191,6 +156,41 @@ Stejné omezení má návratová hodnota funkce a konstanta. Prvek slice adresov
 (`&s[0]` je v pořádku), protože slice si pole sám nepřesouvá — ale pozor, `append` ho
 přesunout může a starý pointer pak ukazuje do neaktuálních dat.
 
+## Rozdíly proti PHP
+
+V PHP je proměnná s objektem handle. Předáš ji dál a příjemce mění tvoje data — a ty to
+na signatuře nepoznáš.
+
+```php
+function applyDefaults(Config $c): void
+{
+    $c->host ??= 'localhost';  // mění objekt volajícího
+}
+
+function rename(string $s): void
+{
+    $s = 'jiny';               // nemění nic, string je hodnota
+}
+```
+
+Go dělá totéž, ale explicitně: co se má měnit, se předává pointerem, a je to vidět v typu.
+
+```go
+func ApplyDefaults(c *Config) { // hvězdička = "budu ti do toho sahat"
+	if c.Host == "" {
+		c.Host = "localhost"
+	}
+}
+
+func rename(c Config) { // bez hvězdičky = dostávám kopii
+	c.Host = "jiny" // volajícího to nezmění
+}
+```
+
+Co se mění v uvažování: přestaneš hádat, jestli funkce mutuje vstup. Signatura to říká.
+Zároveň se otočí výchozí volba — v PHP jsou reference zadarmo a všude, v Go začínáš
+hodnotou a pointer si musíš zdůvodnit.
+
 ## Časté chyby
 
 | Chyba | Proč vzniká | Jak to udělat správně |
@@ -202,67 +202,52 @@ přesunout může a starý pointer pak ukazuje do neaktuálních dat.
 | Dereference bez kontroly `nil` | zvyk na `?->` a tiché null | ošetři `nil` nebo garantuj neexistenci v API |
 | `*bool` „pro jistotu" | pointer jako univerzální optional | pointer jen tam, kde `false` a „nenastaveno" nejsou totéž |
 
+## AI kvíz
+
+Po přečtení teorie spusť v Cursoru **`/go-deep-quiz 06`**. AI tě ~5 minut prověří mentální model (ne hotové cvičení). Slabiny si uloží do [`GAPS.md`](../../GAPS.md).
+
 ## Úkol
 
-Pracuj v `exercise/`. Postupuj A → B → C, po každé části spusť test.
+Pracuj v `exercise/`. Po doplnění spouštěj testy:
 
-### A — rozcvička (~10 min)
+Stupně jdou od jednodušších ke složitějším — po každém stupni spusť review, než jdeš dál.
 
-`Swap(a, b *int)` prohodí hodnoty, na které pointery ukazují. Když je kterýkoli z nich `nil`,
-funkce **nesmí panikovat** a nemá dělat nic. Volání `Swap(&x, &x)` musí `x` nechat beze změny.
+### Jednoduchý
 
-např. `Swap(&a, &b)` pro `a=1, b=2` → `a=2, b=1`
-
-### B — jádro (~35 min)
-
-1. `ApplyDefaults(c *Config)` doplní do konfigurace výchozí hodnoty:
-   - prázdný `Host` → `"localhost"`,
-   - `Port` rovný nule → `8080`,
-   - `Debug` rovný `nil` → pointer na `false`.
-
-   Už nastavené hodnoty se nesmí přepsat — a to včetně `Debug`, který ukazuje na `false`.
-   Přesně kvůli tomu je pointer: `nil` je „nenastaveno", `&false` je „nastaveno na false".
-   Pokud dostane `nil` místo konfigurace, neudělá nic a nepanikuje.
-
-2. `IncrementAll(nums []int)` zvýší každý prvek o jedna **na místě**, bez pointeru a bez
-   návratové hodnoty. `nil` i prázdný slice projdou bez paniky. Test ověří i to, že změna
-   přes podslice (`nums[1:]`) je vidět v původním slice.
-
-3. `AppendSafe(nums []int, v int) []int` vrátí nový slice s přidaným prvkem a **nesmí sáhnout
-   na podkladové pole volajícího** — ani když má vstupní slice volnou kapacitu. To znamená,
-   že si musíš data zkopírovat, ne jen zavolat `append`. Pro `nil` vstup vrať slice s jedním
-   prvkem.
-
-např. `IncrementAll([]int{1, 2, 3})` → `[2, 3, 4]`
-
-### C — rozšíření (~25 min)
-
-Jednosměrně zřetězený seznam. Typ `Node{Val int; Next *Node}` je předpřipravený, prázdný
-seznam reprezentuje `nil` hlava. Všechny tři funkce musí `nil` hlavu zvládnout.
-
-- `Push(head *Node, v int) *Node` — vloží prvek na **začátek** a vrátí novou hlavu.
-  `Push(nil, 42)` vytvoří jednoprvkový seznam.
-- `Len(head *Node) int` — počet prvků, `nil` hlava dá `0`. Napiš to cyklem, ne rekurzí.
-- `Reverse(head *Node) *Node` — otočí pořadí a vrátí novou hlavu. Zvládni to jedním průchodem
-  s pomocnými pointery (`prev`, `next`), bez pomocného slice. `Reverse(nil)` vrací `nil`.
-
-Až budeš hotový, projdi si `Reverse` po řádcích s tužkou nad papírem a nakresli, kam ukazují
-`prev`, `node` a `next` v každé iteraci. Tenhle jeden obrázek je důvod, proč je v kurzu
-zřetězený seznam, i když bys ho v produkci nikdy nepsal.
-
-např. `Push(nil, 42)` → `&Node{Val: 42}`
+Funkce: `Swap`, `ApplyDefaults`
 
 ```bash
-make lesson L=06
+make lesson L=06 PART=1
 ```
 
-Až budeš hotový, porovnej se `solutions/` (spoiler).
+Pak **`/go-deep-review 06 easy`**.
 
-## Ověření
+### Střední
 
-Po dokončení úkolů spusť v Cursoru **`/go-deep-review`** a zadej třeba jen `06`. AI tě postupně projde body níže, doptá se a ověří pochopení — nestačí jen zelené testy.
+Funkce: `IncrementAll`, `AppendSafe`
 
-- [ ] `make lesson L=06` prochází
+```bash
+make lesson L=06 PART=2
+```
+
+Pak **`/go-deep-review 06 medium`**.
+
+### Obtížný
+
+Funkce: `Push`, `Len`, `Reverse`
+
+```bash
+make lesson L=06 PART=3
+```
+
+Pak **`/go-deep-review 06 hard`**.
+
+Až budou stupně hotové, porovnej se `solutions/` (spoiler).
+
+## Závěrečné otázky
+
+Spusť **`/go-deep-review 06 final`**. AI projde body níže, doptá se a ověří pochopení. Celé cvičení ověří `make lesson L=06` (+ `make race L=06`, pokud to lekce vyžaduje).
+
 - [ ] Umíš vysvětlit, proč `func f(c *Config) { c = &Config{} }` nic neudělá
 - [ ] Umíš vysvětlit, proč `IncrementAll` mění data i bez pointeru, ale `append` uvnitř funkce ne
 - [ ] Umíš uvést tři důvody pro pointer ve struct fieldu
@@ -273,6 +258,7 @@ Po dokončení úkolů spusť v Cursoru **`/go-deep-review`** a zadej třeba jen
 
 `ZAKÁZÁNO` — viz [docs/ai-playbook.md](../../docs/ai-playbook.md).
 
+Mentor, kvíz i review (dialog) jsou vždy OK; v tomto režimu AI nesmí psát kód cvičení.
 ## Další čtení
 
 1. [Tour of Go — Pointers](https://go.dev/tour/moretypes/1)

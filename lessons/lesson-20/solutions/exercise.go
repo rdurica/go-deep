@@ -37,6 +37,7 @@ type Server struct {
 	logger *slog.Logger
 }
 
+// --- Stupeň: jednoduchý ---
 // NewServer ověří povinné závislosti a vrátí připravený server.
 func NewServer(addr string, logger *slog.Logger) (*Server, error) {
 	if addr == "" {
@@ -87,6 +88,7 @@ func WithRetries(n int) Option {
 	return func(c *Client) { c.retries = n }
 }
 
+// --- Stupeň: střední ---
 // WithUserAgent nastaví hlavičku User-Agent.
 func WithUserAgent(ua string) Option {
 	return func(c *Client) { c.userAgent = ua }
@@ -163,6 +165,7 @@ func NewService(store Store) (*Service, error) {
 	return &Service{store: store}, nil
 }
 
+// --- Stupeň: obtížný ---
 // Add uloží nový záznam.
 func (s *Service) Add(id, value string) error {
 	if id == "" {
@@ -174,10 +177,12 @@ func (s *Service) Add(id, value string) error {
 	return nil
 }
 
-// Count vrací počet záznamů ve Store.
+// Count vrací počet záznamů ve Store podle store.All().
+// Prázdný store → 0, ne panika.
 func (s *Service) Count() int { return len(s.store.All()) }
 
-// Values vrací hodnoty všech záznamů v pořadí, v jakém je vrátil Store.
+// Values vrací hodnoty všech záznamů v pořadí store.All(), ne abecedně.
+// Prázdný store → prázdný slice (len 0), ne panika.
 func (s *Service) Values() []string {
 	all := s.store.All()
 	values := make([]string, 0, len(all))
@@ -206,10 +211,12 @@ func (r *Registry) Lookup(key string) (string, bool) {
 	return v, ok
 }
 
-// Len vrací počet uložených klíčů.
+// Len vrací počet uložených klíčů v Registry.
+// Nulová Registry (nil mapa) vrací 0 bez paniky.
 func (r *Registry) Len() int { return len(r.entries) }
 
-// Keys vrací klíče seřazené vzestupně.
+// Keys vrací klíče seřazené vzestupně. Na prázdné i nulové Registry prázdný slice.
+// Funguje bez paniky i na nil mapě. Vrací nový slice (ne sdílený interní stav).
 func (r *Registry) Keys() []string {
 	keys := make([]string, 0, len(r.entries))
 	for k := range r.entries {

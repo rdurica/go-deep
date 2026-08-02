@@ -22,6 +22,7 @@ type Semaphore struct {
 	slots chan struct{}
 }
 
+// --- Stupeň: jednoduchý ---
 // NewSemaphore vrátí semafor s kapacitou n. Pro n <= 0 panikuje.
 func NewSemaphore(n int) *Semaphore {
 	if n <= 0 {
@@ -65,6 +66,7 @@ func (s *Semaphore) Release() {
 	}
 }
 
+// --- Stupeň: střední ---
 // LimitedMap aplikuje f na všechny vstupy, nejvýš limit z nich souběžně,
 // a vrátí výsledky ve stejném pořadí jako vstup.
 // Pro limit <= 0 se použije limit 1, pro f == nil vrací nil.
@@ -166,6 +168,7 @@ func run(job Job) Result {
 	return Result{ID: job.ID, Value: v, Err: err}
 }
 
+// --- Stupeň: obtížný ---
 // Submit předá úlohu poolu. Blokuje, dokud ji nepřevezme worker.
 // Po Close vrací ErrPoolClosed a úlohu zahodí.
 func (p *Pool) Submit(job Job) error {

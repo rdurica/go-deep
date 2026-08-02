@@ -57,13 +57,13 @@ func TestMergeChecklists(t *testing.T) {
 }
 
 func TestMergeChecklistsEdgeCases(t *testing.T) {
-	t.Run("prázdné vstupy", func(t *testing.T) {
+	t.Run("empty inputs", func(t *testing.T) {
 		if got := exercise.MergeChecklists(nil, nil); len(got) != 0 {
 			t.Errorf("MergeChecklists(nil, nil) = %+v, chci prázdný výsledek", got)
 		}
 	})
 
-	t.Run("jen osobní", func(t *testing.T) {
+	t.Run("personal only", func(t *testing.T) {
 		personal := []exercise.CheckItem{{ID: "a", Text: "A"}}
 		got := exercise.MergeChecklists(nil, personal)
 		if !reflect.DeepEqual(got, personal) {
@@ -71,20 +71,20 @@ func TestMergeChecklistsEdgeCases(t *testing.T) {
 		}
 	})
 
-	t.Run("duplicita v základu", func(t *testing.T) {
+	t.Run("duplicate in base", func(t *testing.T) {
 		base := []exercise.CheckItem{
-			{ID: "a", Text: "první"},
+			{ID: "a", Text: "first"},
 			{ID: "a", Text: "druhá"},
 			{ID: "b", Text: "béčko"},
 		}
 		got := exercise.MergeChecklists(base, nil)
-		want := []exercise.CheckItem{{ID: "a", Text: "první"}, {ID: "b", Text: "béčko"}}
+		want := []exercise.CheckItem{{ID: "a", Text: "first"}, {ID: "b", Text: "béčko"}}
 		if !reflect.DeepEqual(got, want) {
 			t.Errorf("MergeChecklists() = %+v, chci %+v", got, want)
 		}
 	})
 
-	t.Run("položka bez ID se zahodí", func(t *testing.T) {
+	t.Run("item without ID is dropped", func(t *testing.T) {
 		got := exercise.MergeChecklists(
 			[]exercise.CheckItem{{ID: "", Text: "bez ID"}, {ID: "a", Text: "A"}},
 			[]exercise.CheckItem{{ID: "", Text: "taky bez ID"}},
@@ -182,9 +182,6 @@ func TestSessionBackwardHandoff(t *testing.T) {
 	if got := s.Current(); got != exercise.RoleTests {
 		t.Errorf("Current() = %v, chci tests", got)
 	}
-	if got := len(s.Timeline()); got != 3 {
-		t.Errorf("Timeline() má %d událostí, chci 3", got)
-	}
 }
 
 func TestSessionInvalidTransitions(t *testing.T) {
@@ -193,10 +190,10 @@ func TestSessionInvalidTransitions(t *testing.T) {
 		from exercise.Role
 		to   exercise.Role
 	}{
-		{"přeskočení testů", exercise.RoleSpec, exercise.RoleImpl},
+		{"skipping tests", exercise.RoleSpec, exercise.RoleImpl},
 		{"skok na konec", exercise.RoleSpec, exercise.RoleReview},
-		{"návrat o dva kroky", exercise.RoleReview, exercise.RoleTests},
-		{"done přes Handoff", exercise.RoleReview, exercise.RoleDone},
+		{"back two steps", exercise.RoleReview, exercise.RoleTests},
+		{"done via Handoff", exercise.RoleReview, exercise.RoleDone},
 		{"na none", exercise.RoleImpl, exercise.RoleNone},
 		{"na sebe", exercise.RoleImpl, exercise.RoleImpl},
 	}
@@ -213,9 +210,6 @@ func TestSessionInvalidTransitions(t *testing.T) {
 			if got := s.Current(); got != tt.from {
 				t.Errorf("neplatný přechod změnil roli na %v, chci %v", got, tt.from)
 			}
-			if got := len(s.Timeline()); got != 1 {
-				t.Errorf("neplatný přechod zapsal událost, Timeline má %d položek", got)
-			}
 		})
 	}
 }
@@ -223,7 +217,7 @@ func TestSessionInvalidTransitions(t *testing.T) {
 func TestSessionErrors(t *testing.T) {
 	clock := fakeClock(time.Unix(0, 0).UTC(), time.Second)
 
-	t.Run("handoff před startem", func(t *testing.T) {
+	t.Run("handoff before start", func(t *testing.T) {
 		s := exercise.NewSession(clock)
 		if err := s.Handoff(exercise.RoleTests, "důvod"); !errors.Is(err, exercise.ErrNotStarted) {
 			t.Errorf("Handoff() bez startu = %v, chci ErrNotStarted", err)
@@ -233,7 +227,7 @@ func TestSessionErrors(t *testing.T) {
 		}
 	})
 
-	t.Run("dvojí start", func(t *testing.T) {
+	t.Run("double start", func(t *testing.T) {
 		s := exercise.NewSession(clock)
 		if err := s.Start(exercise.RoleSpec); err != nil {
 			t.Fatalf("Start() = %v", err)
@@ -243,7 +237,7 @@ func TestSessionErrors(t *testing.T) {
 		}
 	})
 
-	t.Run("start v neplatné roli", func(t *testing.T) {
+	t.Run("start in invalid role", func(t *testing.T) {
 		for _, r := range []exercise.Role{exercise.RoleNone, exercise.RoleDone, exercise.Role(99)} {
 			s := exercise.NewSession(clock)
 			if err := s.Start(r); !errors.Is(err, exercise.ErrInvalidRole) {
@@ -252,7 +246,7 @@ func TestSessionErrors(t *testing.T) {
 		}
 	})
 
-	t.Run("předání bez důvodu", func(t *testing.T) {
+	t.Run("handoff without reason", func(t *testing.T) {
 		s := exercise.NewSession(clock)
 		if err := s.Start(exercise.RoleSpec); err != nil {
 			t.Fatalf("Start() = %v", err)
@@ -272,7 +266,7 @@ func TestSessionErrors(t *testing.T) {
 		}
 	})
 
-	t.Run("po skončení už nic", func(t *testing.T) {
+	t.Run("nothing after finished", func(t *testing.T) {
 		s := exercise.NewSession(clock)
 		if err := s.Start(exercise.RoleReview); err != nil {
 			t.Fatalf("Start() = %v", err)
@@ -345,7 +339,7 @@ func TestScoreReview(t *testing.T) {
 }
 
 func TestScoreReviewEdgeCases(t *testing.T) {
-	t.Run("prázdné vstupy", func(t *testing.T) {
+	t.Run("empty inputs", func(t *testing.T) {
 		got := exercise.ScoreReview(nil, nil)
 		if got.TruePositives != 0 || got.FalsePositives != 0 || got.Missed != 0 {
 			t.Errorf("ScoreReview(nil, nil) = %+v, chci nuly", got)
@@ -372,14 +366,14 @@ func TestScoreReviewEdgeCases(t *testing.T) {
 		}
 	})
 
-	t.Run("samé falešné poplachy", func(t *testing.T) {
+	t.Run("only false positives", func(t *testing.T) {
 		got := exercise.ScoreReview([]exercise.Finding{{ID: "a"}, {ID: "b"}}, nil)
 		if got.FalsePositives != 2 || !approx(got.Precision, 0) || !approx(got.Recall, 1) {
 			t.Errorf("ScoreReview() = %+v, chci FP 2, precision 0, recall 1", got)
 		}
 	})
 
-	t.Run("duplicitní nálezy se počítají jednou", func(t *testing.T) {
+	t.Run("duplicate findings counted once", func(t *testing.T) {
 		planted := []exercise.Finding{{ID: "f1", Category: "errors"}}
 		found := []exercise.Finding{{ID: "f1"}, {ID: "f1"}, {ID: "f1"}}
 		got := exercise.ScoreReview(found, planted)

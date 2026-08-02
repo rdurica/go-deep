@@ -8,7 +8,7 @@ import (
 	exercise "github.com/rdurica/go-deep/lessons/lesson-10/solutions"
 )
 
-func TestDeferOrderJeLIFO(t *testing.T) {
+func TestDeferOrderIsLIFO(t *testing.T) {
 	got := exercise.DeferOrder()
 	want := []string{"third", "second", "first"}
 	if !reflect.DeepEqual(got, want) {
@@ -16,7 +16,7 @@ func TestDeferOrderJeLIFO(t *testing.T) {
 	}
 }
 
-func TestDeferOrderJeStabilni(t *testing.T) {
+func TestDeferOrderIsStable(t *testing.T) {
 	first := exercise.DeferOrder()
 	for i := 0; i < 10; i++ {
 		if got := exercise.DeferOrder(); !reflect.DeepEqual(got, first) {
@@ -32,10 +32,10 @@ func TestSumWithLog(t *testing.T) {
 		wantTotal int
 		wantSteps []string
 	}{
-		{"prázdný", nil, 0, []string{"total=0"}},
-		{"jedno číslo", []int{5}, 5, []string{"+5=5", "total=5"}},
-		{"tři čísla", []int{1, 2, 3}, 6, []string{"+1=1", "+2=3", "+3=6", "total=6"}},
-		{"se zápornými", []int{10, -4}, 6, []string{"+10=10", "+-4=6", "total=6"}},
+		{"empty", nil, 0, []string{"total=0"}},
+		{"one number", []int{5}, 5, []string{"+5=5", "total=5"}},
+		{"three numbers", []int{1, 2, 3}, 6, []string{"+1=1", "+2=3", "+3=6", "total=6"}},
+		{"with negatives", []int{10, -4}, 6, []string{"+10=10", "+-4=6", "total=6"}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -50,7 +50,7 @@ func TestSumWithLog(t *testing.T) {
 	}
 }
 
-func TestSumWithLogPosledniKrokPridavaDefer(t *testing.T) {
+func TestSumWithLogLastStepAddsDefer(t *testing.T) {
 	// Kdyby defer neupravoval pojmenovanou návratovou hodnotu, poslední
 	// krok by se do výsledku vůbec nedostal.
 	_, steps := exercise.SumWithLog([]int{4, 4})
@@ -69,12 +69,12 @@ func TestSafeDivide(t *testing.T) {
 		want    int
 		wantErr bool
 	}{
-		{"běžné dělení", 10, 2, 5, false},
-		{"celočíselné zaokrouhlení dolů", 7, 2, 3, false},
-		{"záporný dělitel", -9, 3, -3, false},
-		{"nula v čitateli", 0, 5, 0, false},
-		{"dělení nulou", 10, 0, 0, true},
-		{"nula dělená nulou", 0, 0, 0, true},
+		{"normal division", 10, 2, 5, false},
+		{"integer truncates down", 7, 2, 3, false},
+		{"negative divisor", -9, 3, -3, false},
+		{"zero numerator", 0, 5, 0, false},
+		{"divide by zero", 10, 0, 0, true},
+		{"zero divided by zero", 0, 0, 0, true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -92,7 +92,7 @@ func TestSafeDivide(t *testing.T) {
 	}
 }
 
-func TestSafeDivideNepropustiPaniku(t *testing.T) {
+func TestSafeDivideDoesNotLeakPanic(t *testing.T) {
 	// Kdyby recover chyběl, tenhle test shodí celý běh testů.
 	defer func() {
 		if r := recover(); r != nil {
@@ -105,19 +105,19 @@ func TestSafeDivideNepropustiPaniku(t *testing.T) {
 }
 
 func TestCloseAll(t *testing.T) {
-	t.Run("nil vstup", func(t *testing.T) {
+	t.Run("nil input", func(t *testing.T) {
 		if err := exercise.CloseAll(nil); err != nil {
 			t.Errorf("CloseAll(nil) = %v, chci nil", err)
 		}
 	})
 
-	t.Run("prázdný vstup", func(t *testing.T) {
+	t.Run("empty input", func(t *testing.T) {
 		if err := exercise.CloseAll([]func() error{}); err != nil {
 			t.Errorf("CloseAll([]) = %v, chci nil", err)
 		}
 	})
 
-	t.Run("všechno projde", func(t *testing.T) {
+	t.Run("all succeed", func(t *testing.T) {
 		calls := 0
 		ok := func() error { calls++; return nil }
 		if err := exercise.CloseAll([]func() error{ok, ok, ok}); err != nil {
@@ -128,7 +128,7 @@ func TestCloseAll(t *testing.T) {
 		}
 	})
 
-	t.Run("vrací první chybu a zavře všechno", func(t *testing.T) {
+	t.Run("returns first error and closes all", func(t *testing.T) {
 		errFirst := errors.New("první chyba")
 		errSecond := errors.New("druhá chyba")
 		calls := 0
@@ -149,7 +149,7 @@ func TestCloseAll(t *testing.T) {
 		}
 	})
 
-	t.Run("přeskočí nil položky", func(t *testing.T) {
+	t.Run("skips nil items", func(t *testing.T) {
 		calls := 0
 		closers := []func() error{
 			nil,
@@ -167,35 +167,35 @@ func TestCloseAll(t *testing.T) {
 
 func TestStackPushPop(t *testing.T) {
 	var s exercise.Stack
-	if got := s.Len(); got != 0 {
-		t.Errorf("Len() nového zásobníku = %d, chci 0", got)
-	}
 
 	s.Push(1)
 	s.Push(2)
 	s.Push(3)
-	if got := s.Len(); got != 3 {
-		t.Errorf("Len() = %d, chci 3", got)
-	}
 
 	for _, want := range []int{3, 2, 1} {
 		if got := s.Pop(); got != want {
 			t.Errorf("Pop() = %d, chci %d", got, want)
 		}
 	}
-	if got := s.Len(); got != 0 {
-		t.Errorf("Len() po vyprázdnění = %d, chci 0", got)
-	}
+
+	// Další Pop na prázdném zásobníku paniká — ověříme, že Push/Pop
+	// opravdu vyprázdnily zásobník, bez volání Len z pozdějšího stupně.
+	defer func() {
+		if recover() == nil {
+			t.Error("Pop() po vyprázdnění nepanikoval")
+		}
+	}()
+	s.Pop()
 }
 
-func TestStackLenNaNilPointeru(t *testing.T) {
+func TestStackLenOnNilPointer(t *testing.T) {
 	var s *exercise.Stack
 	if got := s.Len(); got != 0 {
 		t.Errorf("Len() na nil pointeru = %d, chci 0", got)
 	}
 }
 
-func TestStackPopNaPrazdnemPanikuje(t *testing.T) {
+func TestStackPopOnEmptyPanics(t *testing.T) {
 	defer func() {
 		r := recover()
 		if r == nil {
@@ -220,7 +220,7 @@ func TestTryPop(t *testing.T) {
 	}
 }
 
-func TestTryPopNaPrazdnem(t *testing.T) {
+func TestTryPopOnEmpty(t *testing.T) {
 	var s exercise.Stack
 	v, ok := exercise.TryPop(&s)
 	if ok {
@@ -231,7 +231,7 @@ func TestTryPopNaPrazdnem(t *testing.T) {
 	}
 }
 
-func TestTryPopNaNilPointeru(t *testing.T) {
+func TestTryPopOnNilPointer(t *testing.T) {
 	// Nil dereference je taky panika a recover ji musí pobrat.
 	v, ok := exercise.TryPop(nil)
 	if ok || v != 0 {
@@ -239,7 +239,7 @@ func TestTryPopNaNilPointeru(t *testing.T) {
 	}
 }
 
-func TestZasobnikJePoRecoveruPouzitelny(t *testing.T) {
+func TestStackUsableAfterRecover(t *testing.T) {
 	var s exercise.Stack
 
 	if _, ok := exercise.TryPop(&s); ok {
@@ -263,7 +263,7 @@ func TestZasobnikJePoRecoveruPouzitelny(t *testing.T) {
 	}
 }
 
-func TestStackStridaniOperaci(t *testing.T) {
+func TestStackAlternatingOps(t *testing.T) {
 	var s exercise.Stack
 	for i := 0; i < 100; i++ {
 		s.Push(i)

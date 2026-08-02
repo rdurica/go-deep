@@ -45,31 +45,32 @@ type Catalog struct {
 	bySKU map[string]Product
 }
 
-// Validate ověří jeden produkt. Kontroluje v pořadí SKU, jméno, cenu
-// a vrací odpovídající sentinel obalený jménem produktu.
+// Validate ověří jeden produkt v pořadí SKU, jméno, cena.
+// Prázdné SKU/jméno (i jen bílé znaky) → ErrEmptySKU/ErrEmptyName;
+// záporná cena → ErrNegativeCents; nula je platná. Chybu obal SKU pro errors.Is.
 func Validate(p Product) error {
-	// TODO: úkol A
+	// TODO
 	return nil
 }
 
-// New sestaví katalog ze zadaných produktů. Každý produkt projde Validate,
-// duplicitní SKU je chyba. Prázdný vstup dává prázdný katalog, ne chybu.
+// New sestaví katalog ze zadaných produktů. Každý projde Validate,
+// duplicitní SKU je ErrDuplicateSKU. Prázdný vstup dává prázdný katalog.
 func New(products ...Product) (*Catalog, error) {
-	// TODO: úkol A
+	// TODO
 	return nil, nil
 }
 
-// BySKU vrací produkt podle SKU. Neznámé SKU (i nil katalog) vrací chybu
-// obalující ErrNotFound.
+// BySKU vrací produkt podle SKU. Neznámé SKU i nil katalog vrací chybu
+// obalující ErrNotFound (metoda na nil pointeru je legální).
 func (c *Catalog) BySKU(sku string) (Product, error) {
-	// TODO: úkol A
+	// TODO
 	return *new(Product), nil
 }
 
-// All vrací všechny produkty seřazené vzestupně podle SKU. Mapa nemá pořadí,
-// takže řazení je součástí kontraktu.
+// All vrací všechny produkty seřazené vzestupně podle SKU.
+// Iterace mapy je náhodná — řazení je součást kontraktu, ne volitelný detail.
 func (c *Catalog) All() []Product {
-	// TODO: úkol A
+	// TODO
 	return nil
 }
 

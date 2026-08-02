@@ -46,6 +46,7 @@ type Store struct {
 	items map[string]Item
 }
 
+// --- Stupeň: jednoduchý ---
 // NewStore vytvoří prázdné úložiště.
 func NewStore() *Store {
 	return &Store{items: make(map[string]Item)}
@@ -72,6 +73,7 @@ func (s *Store) Get(id string) (Item, bool) {
 	return item, ok
 }
 
+// --- Stupeň: střední ---
 // Delete smaže položku podle ID a vrátí true, pokud existovala.
 func (s *Store) Delete(id string) bool {
 	s.mu.Lock()
@@ -110,32 +112,42 @@ func WriteJSON(w http.ResponseWriter, status int, v any) error {
 	return json.NewEncoder(w).Encode(v)
 }
 
-// ItemsRouter vrací router nad úložištěm položek.
+// ItemsRouter vrací ServeMux nad úložištěm. Chybové odpovědi jako ErrorResponse JSON.
+// GET /{$} → 200 ServiceInfo{Service:"items"} (přesný kořen).
+// GET /items/{id} → 200 nebo 404.
+// GET /items → pole v pořadí vložení; query přes ParseListQuery (chyba → 400);
+// q filtruje jméno case-insensitive, limit ořízne počet; prázdný výsledek je [] ne null.
+// POST /items → CreateItemRequest; rozbitý JSON/prázdné jméno → 400; úspěch 201 + Location.
+// DELETE /items/{id} → 204 nebo 404. PUT a jiné metody řeší mux (405 + Allow) sám.
 func ItemsRouter(store *Store) http.Handler {
-	// TODO: úkol A
+	// TODO
 	return *new(http.Handler)
 }
 
+// --- Stupeň: obtížný ---
 // ParseListQuery přečte a zvaliduje query parametry limit a q.
+// Chybějící limit → 0; jinak celé číslo ≥ 1, jinak ErrInvalidQuery. q ořízni od bílých znaků.
 func ParseListQuery(values url.Values) (limit int, q string, err error) {
-	// TODO: úkol B
+	// TODO
 	return
 }
 
 // SafeJoin složí cestu k souboru pod kořenem root a odmítne pokus o únik z něj.
+// Odmítni prázdný rel, absolutní cestu a segmenty "", ".", ".."; ověř prefix pod root.
 func SafeJoin(root, rel string) (string, error) {
-	// TODO: úkol C
+	// TODO
 	return "", nil
 }
 
 // FilesHandler servíruje soubory pod adresářem root podle wildcardu {path...}.
+// SafeJoin chyba → 400; neexistující nebo adresář → 404; jinak http.ServeFile.
 func FilesHandler(root string) http.Handler {
-	// TODO: úkol C
+	// TODO
 	return *new(http.Handler)
 }
 
 // FilesRouter registruje FilesHandler na vzor "GET /files/{path...}".
 func FilesRouter(root string) http.Handler {
-	// TODO: úkol C
+	// TODO
 	return *new(http.Handler)
 }

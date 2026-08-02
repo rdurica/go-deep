@@ -40,7 +40,7 @@ func TestParseUserID(t *testing.T) {
 }
 
 func TestParseUserIDs(t *testing.T) {
-	t.Run("platný seznam", func(t *testing.T) {
+	t.Run("valid list", func(t *testing.T) {
 		got, err := exercise.ParseUserIDs("1, 2 ,30")
 		if err != nil {
 			t.Fatalf("ParseUserIDs vrátil chybu %v, chci nil", err)
@@ -56,7 +56,7 @@ func TestParseUserIDs(t *testing.T) {
 		}
 	})
 
-	t.Run("prázdný vstup", func(t *testing.T) {
+	t.Run("empty input", func(t *testing.T) {
 		got, err := exercise.ParseUserIDs("   ")
 		if err != nil {
 			t.Fatalf("ParseUserIDs(\"   \") vrátil chybu %v, chci nil", err)
@@ -66,7 +66,7 @@ func TestParseUserIDs(t *testing.T) {
 		}
 	})
 
-	t.Run("chyba nese index", func(t *testing.T) {
+	t.Run("error carries index", func(t *testing.T) {
 		_, err := exercise.ParseUserIDs("1,2,")
 		if !errors.Is(err, exercise.ErrEmptyID) {
 			t.Fatalf("chyba = %v, chci obalenou ErrEmptyID", err)
@@ -76,7 +76,7 @@ func TestParseUserIDs(t *testing.T) {
 		}
 	})
 
-	t.Run("chyba u záporného ID", func(t *testing.T) {
+	t.Run("error on negative ID", func(t *testing.T) {
 		_, err := exercise.ParseUserIDs("5,-1")
 		if !errors.Is(err, exercise.ErrNonPositiveID) {
 			t.Fatalf("chyba = %v, chci obalenou ErrNonPositiveID", err)
@@ -148,7 +148,7 @@ func TestProcessOrders(t *testing.T) {
 func TestProcessOrdersEmpty(t *testing.T) {
 	for name, in := range map[string][]exercise.Order{
 		"nil":     nil,
-		"prázdný": {},
+		"empty": {},
 	} {
 		t.Run(name, func(t *testing.T) {
 			got, err := exercise.ProcessOrders(in)
@@ -170,13 +170,13 @@ func TestProcessOrdersErrors(t *testing.T) {
 		wantSub string
 	}{
 		{
-			name:    "chybějící ID",
+			name:    "missing ID",
 			orders:  []exercise.Order{{ID: "", Customer: "acme", Status: "paid"}},
 			wantErr: exercise.ErrMissingOrderID,
 			wantSub: "index 0",
 		},
 		{
-			name: "neznámý status",
+			name: "unknown status",
 			orders: []exercise.Order{
 				{ID: "A-1", Customer: "acme", Status: "paid"},
 				{ID: "A-2", Customer: "acme", Status: "refunded"},
@@ -185,7 +185,7 @@ func TestProcessOrdersErrors(t *testing.T) {
 			wantSub: "A-2",
 		},
 		{
-			name: "nulové množství",
+			name: "zero quantity",
 			orders: []exercise.Order{{
 				ID: "A-9", Customer: "acme", Status: "paid",
 				Items: []exercise.Item{{SKU: "widget", Quantity: 0, UnitCents: 100}},
@@ -194,7 +194,7 @@ func TestProcessOrdersErrors(t *testing.T) {
 			wantSub: "widget",
 		},
 		{
-			name: "záporná cena",
+			name: "negative price",
 			orders: []exercise.Order{{
 				ID: "A-9", Customer: "acme", Status: "pending",
 				Items: []exercise.Item{{SKU: "widget", Quantity: 1, UnitCents: -1}},

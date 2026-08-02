@@ -11,39 +11,6 @@
 - Napsat vlastní `slog.Handler`, který obaluje jiný handler a mění záznamy.
 - Otestovat, co přesně kód zaloguje — a ověřit, že tam není heslo.
 
-## PHP → Go most
-
-Monolog má kanály, handlery, procesory a formátory a konfiguruje se v YAML. Logger se
-do služby dostane autowiringem, kanál se vybere jménem parametru:
-
-```php
-public function __construct(private LoggerInterface $paymentLogger) {}
-
-public function charge(Order $o): void
-{
-    $this->paymentLogger->info('charged', ['order_id' => $o->getId()]);
-}
-```
-
-Go má od verze 1.21 `log/slog` přímo ve stdlib. Konfigurace není v YAML, ale v kódu, a
-„kanál“ nahradíš odvozeným loggerem s trvalými atributy:
-
-```go
-type PaymentService struct{ log *slog.Logger }
-
-func NewPaymentService(logger *slog.Logger) *PaymentService {
-	return &PaymentService{log: logger.With("component", "payment")}
-}
-
-func (s *PaymentService) Charge(o Order) {
-	s.log.Info("charged", slog.String("order_id", o.ID))
-}
-```
-
-Co se mění v uvažování: přestaň logger hledat („kde vezmu logger?“) a začni ho **přijímat**.
-A přestaň skládat větu — `"Charged order ".$id` v Go neplatí. Zpráva je krátká konstanta,
-proměnné jsou atributy. Jen tak je log strojově zpracovatelný.
-
 ## Teorie
 
 ### Proč strukturovaně
@@ -202,6 +169,39 @@ if rec["level"] != "INFO" { … }
 Když logger píše z jiné goroutiny (HTTP handler), obal buffer mutexem — jinak
 ti `-race` právem vynadá.
 
+## Rozdíly proti PHP
+
+Monolog má kanály, handlery, procesory a formátory a konfiguruje se v YAML. Logger se
+do služby dostane autowiringem, kanál se vybere jménem parametru:
+
+```php
+public function __construct(private LoggerInterface $paymentLogger) {}
+
+public function charge(Order $o): void
+{
+    $this->paymentLogger->info('charged', ['order_id' => $o->getId()]);
+}
+```
+
+Go má od verze 1.21 `log/slog` přímo ve stdlib. Konfigurace není v YAML, ale v kódu, a
+„kanál“ nahradíš odvozeným loggerem s trvalými atributy:
+
+```go
+type PaymentService struct{ log *slog.Logger }
+
+func NewPaymentService(logger *slog.Logger) *PaymentService {
+	return &PaymentService{log: logger.With("component", "payment")}
+}
+
+func (s *PaymentService) Charge(o Order) {
+	s.log.Info("charged", slog.String("order_id", o.ID))
+}
+```
+
+Co se mění v uvažování: přestaň logger hledat („kde vezmu logger?“) a začni ho **přijímat**.
+A přestaň skládat větu — `"Charged order ".$id` v Go neplatí. Zpráva je krátká konstanta,
+proměnné jsou atributy. Jen tak je log strojově zpracovatelný.
+
 ## Časté chyby
 
 | Chyba | Proč vzniká | Jak to udělat správně |
@@ -213,56 +213,52 @@ ti `-race` právem vynadá.
 | Heslo v atributu | logují se celé DTO / mapy | maskuj v handleru, ne v místě volání |
 | Log a zároveň návrat chyby na každé úrovni | strach, že se chyba ztratí | zaloguj tam, kde chybu řešíš; jinak jen obal `%w` |
 
+## AI kvíz
+
+Po přečtení teorie spusť v Cursoru **`/go-deep-quiz 29`**. AI tě ~5 minut prověří mentální model (ne hotové cvičení). Slabiny si uloží do [`GAPS.md`](../../GAPS.md).
+
 ## Úkol
 
-Pracuj v `exercise/`. Postupuj A → B → C, po každé části spusť test.
+Pracuj v `exercise/`. Po doplnění spouštěj testy:
 
-### A — rozcvička (~10 min)
+Stupně jdou od jednodušších ke složitějším — po každém stupni spusť review, než jdeš dál.
 
-1. `NewLogger(w io.Writer, level slog.Level) *slog.Logger` — logger s `JSONHandler`,
-   který píše do `w` a filtruje podle `level`.
-2. `LogRequest(logger *slog.Logger, method, path string, status int, dur time.Duration)` —
-   zaloguje na úrovni Info zprávu `"http_request"` s atributy `method`, `path`, `status`
-   (int) a `duration` (jako `slog.Duration`). Použij `LogAttrs`.
+### Jednoduchý
 
-např. `LogRequest(..., "POST", "/tasks", 201, 1500ms)` → JSON `"http_request"` se `status:201`
-
-### B — jádro (~35 min)
-
-1. `NewService(logger *slog.Logger) *Service` — uloží logger odvozený přes
-   `With("component", "service")`, aby atribut `component=service` byl v každém záznamu.
-2. `func (s *Service) Process(id string) error` — prázdné `id` zaloguje na úrovni **Error**
-   se zprávou `"process failed"` a atributem `error` a vrátí `ErrEmptyID`; neprázdné `id`
-   zaloguje na úrovni **Info** se zprávou `"processed"` a atributem `id` a vrátí `nil`.
-3. `RedactingHandler` — vlastní `slog.Handler`, který obaluje jiný handler a u atributů
-   s klíčem `password`, `token` nebo `api_key` (bez ohledu na velikost písmen) nahradí
-   hodnotu konstantou `Redacted`. Musí to fungovat pro atributy záznamu, pro atributy
-   přidané přes `With` (`WithAttrs`) i **rekurzivně uvnitř skupin** `slog.Group`.
-   `Enabled` a `WithGroup` deleguj na obalovaný handler.
-
-např. `Process("task-42")` → `nil` (+ log `"processed"`, `id:"task-42"`)
-
-### C — rozšíření (~20 min)
-
-`LoggingMiddleware(logger *slog.Logger) func(http.Handler) http.Handler` — middleware,
-která po dokončení požadavku zaloguje `"http_request"` s atributy `method`, `path`,
-`status` a `duration`. Status musí být ten **skutečně odeslaný**, takže potřebuješ obalit
-`http.ResponseWriter` a zachytit `WriteHeader`. Handler, který `WriteHeader` nezavolá
-vůbec, poslal 200. Middleware nesmí odpověď nijak změnit.
-
-např. handler pošle `418` → odpověď beze změny, log `"http_request"` se `status:418`
+Funkce: `NewLogger`, `LogRequest`, `NewService`
 
 ```bash
-make lesson L=29
+make lesson L=29 PART=1
 ```
 
-Až budeš hotový, porovnej se `solutions/` (spoiler).
+Pak **`/go-deep-review 29 easy`**.
 
-## Ověření
+### Střední
 
-Po dokončení úkolů spusť v Cursoru **`/go-deep-review`** a zadej třeba jen `29`. AI tě postupně projde body níže, doptá se a ověří pochopení — nestačí jen zelené testy.
+Funkce: `Process`, `NewRedactingHandler`, `Enabled`
 
-- [ ] `make lesson L=29` prochází
+```bash
+make lesson L=29 PART=2
+```
+
+Pak **`/go-deep-review 29 medium`**.
+
+### Obtížný
+
+Funkce: `Handle`, `WithAttrs`, `WithGroup`, `LoggingMiddleware`
+
+```bash
+make lesson L=29 PART=3
+```
+
+Pak **`/go-deep-review 29 hard`**.
+
+Až budou stupně hotové, porovnej se `solutions/` (spoiler).
+
+## Závěrečné otázky
+
+Spusť **`/go-deep-review 29 final`**. AI projde body níže, doptá se a ověří pochopení. Celé cvičení ověří `make lesson L=29` (+ `make race L=29`, pokud to lekce vyžaduje).
+
 - [ ] Umíš vysvětlit, proč `msg` nemá obsahovat proměnné hodnoty
 - [ ] Umíš vysvětlit rozdíl mezi `logger.Info(...)` a `logger.LogAttrs(...)`
 - [ ] Umíš vysvětlit, proč `WithAttrs` musí vracet nový handler

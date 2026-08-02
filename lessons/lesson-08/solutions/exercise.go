@@ -16,6 +16,7 @@ type Item struct {
 // položku mutovat přímo v mapě.
 type Inventory map[string]*Item
 
+// --- Stupeň: jednoduchý ---
 // WordCount spočítá výskyty každého slova. Vždy vrací ne-nil mapu.
 func WordCount(words []string) map[string]int {
 	counts := make(map[string]int, len(words))
@@ -40,6 +41,7 @@ func (s Set) Add(item string) {
 	s[item] = struct{}{}
 }
 
+// --- Stupeň: střední ---
 // Has vrací true, pokud je prvek v množině. Funguje i na nil množině.
 func (s Set) Has(item string) bool {
 	_, ok := s[item]
@@ -52,6 +54,7 @@ func (s Set) Remove(item string) {
 }
 
 // Len vrací počet prvků množiny.
+// Nil množina vrací 0 bez paniky.
 func (s Set) Len() int {
 	return len(s)
 }
@@ -66,6 +69,7 @@ func (s Set) Sorted() []string {
 	return items
 }
 
+// --- Stupeň: obtížný ---
 // Union vrací novou množinu se všemi prvky s i other.
 func (s Set) Union(other Set) Set {
 	out := make(Set, len(s)+len(other))

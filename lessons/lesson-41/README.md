@@ -11,32 +11,6 @@
 - Napsat generátor, fan-in a publish/subscribe, které po sobě neuklidí nikdo jiný než ony.
 - Vysvětlit, proč `nil` kanál blokuje navždy a k čemu se to hodí.
 
-## PHP → Go most
-
-V Symfony je předání práce jinam vždycky přes prostředníka: Messenger bus, Redis fronta,
-databázový outbox. Odesílatel a příjemce se nikdy nepotkají a nikdo neřeší, kdo frontu
-„zavírá" — ta existuje nezávisle na obou.
-
-```php
-// odesílatel neví nic o příjemci a nikdy nečeká
-$this->bus->dispatch(new SendInvoice($id));
-
-// příjemce běží v jiném procesu, fronta žije dál, i když oba spadnou
-```
-
-Go kanál vypadá podobně, ale chová se přesně naopak. Nebufferovaný kanál je
-**rendez-vous**: odesílatel čeká, dokud si hodnotu někdo nepřevezme.
-
-```go
-ch := make(chan Invoice)   // žádný buffer
-ch <- inv                  // blokuje, dokud jiná goroutina nezavolá <-ch
-```
-
-A hlavně: kanál je objekt v tvé paměti, ne infrastruktura. Někdo ho musí zavřít, jinak
-čtenáři visí; a když ho zavře nesprávná strana, program panikuje. Návyk „pošlu to do
-fronty a je to vyřízené" tady nefunguje — u každého kanálu musíš vědět, **kdo je jeho
-vlastník**.
-
 ## Teorie
 
 ### Kanál je typované potrubí s rendez-vous
@@ -183,6 +157,32 @@ buf = buf[:0]      // ...a hned zase přepisuji stejnou paměť. Závod.
 Kdy volit kanál a kdy mutex, rozebírá lekce 43. Zjednodušeně: kanál na **předání a
 orchestraci**, mutex na **ochranu stavu**, který někde musí zůstat.
 
+## Rozdíly proti PHP
+
+V Symfony je předání práce jinam vždycky přes prostředníka: Messenger bus, Redis fronta,
+databázový outbox. Odesílatel a příjemce se nikdy nepotkají a nikdo neřeší, kdo frontu
+„zavírá" — ta existuje nezávisle na obou.
+
+```php
+// odesílatel neví nic o příjemci a nikdy nečeká
+$this->bus->dispatch(new SendInvoice($id));
+
+// příjemce běží v jiném procesu, fronta žije dál, i když oba spadnou
+```
+
+Go kanál vypadá podobně, ale chová se přesně naopak. Nebufferovaný kanál je
+**rendez-vous**: odesílatel čeká, dokud si hodnotu někdo nepřevezme.
+
+```go
+ch := make(chan Invoice)   // žádný buffer
+ch <- inv                  // blokuje, dokud jiná goroutina nezavolá <-ch
+```
+
+A hlavně: kanál je objekt v tvé paměti, ne infrastruktura. Někdo ho musí zavřít, jinak
+čtenáři visí; a když ho zavře nesprávná strana, program panikuje. Návyk „pošlu to do
+fronty a je to vyřízené" tady nefunguje — u každého kanálu musíš vědět, **kdo je jeho
+vlastník**.
+
 ## Časté chyby
 
 | Chyba | Proč vzniká | Jak to udělat správně |
@@ -194,63 +194,52 @@ orchestraci**, mutex na **ochranu stavu**, který někde musí zůstat.
 | Zapomenutý `make` u kanálu | zero value vypadá použitelně jako u slice | `nil` kanál blokuje navždy — vždy `make` |
 | Sdílení slice po odeslání do kanálu | v PHP se serializuje kopie do fronty | po odeslání je hodnota cizí, nesahej na ni |
 
+## AI kvíz
+
+Po přečtení teorie spusť v Cursoru **`/go-deep-quiz 41`**. AI tě ~5 minut prověří mentální model (ne hotové cvičení). Slabiny si uloží do [`GAPS.md`](../../GAPS.md).
+
 ## Úkol
 
-Pracuj v `exercise/`. Postupuj A → B → C, po každé části spusť test.
+Pracuj v `exercise/`. Po doplnění spouštěj testy:
 
-### A — rozcvička (~10 min)
+Stupně jdou od jednodušších ke složitějším — po každém stupni spusť review, než jdeš dál.
 
-1. `Generate(nums ...int) <-chan int` — pošli všechna čísla do kanálu a **sám ho zavři**.
-   Bez volání `Collect` nesmí funkce blokovat volajícího (kanál plní goroutina).
-2. `Collect(ch <-chan int) []int` — přečti kanál až do zavření a vrať hodnoty v pořadí,
-   v jakém dorazily. Prázdný vstup vrací prázdný slice, ne `nil` s panikou.
+### Jednoduchý
 
-např. `Collect(Generate(1, 2, 3, 4, 5))` → `[1, 2, 3, 4, 5]`
-
-### B — jádro (~35 min)
-
-1. `Merge(chs ...<-chan int) <-chan int` — fan-in. Každý vstup obsluhuje vlastní
-   goroutina, výstup se zavře **právě jednou**, až po zavření všech vstupů. Volání bez
-   argumentů musí vrátit rovnou zavřený kanál (ne kanál, na kterém všichni visí).
-2. `Split(ch <-chan int, n int) []<-chan int` — opak fan-inu. Vrať `n` kanálů, mezi které
-   se hodnoty rozdělí (každá hodnota skončí právě v jednom z nich, rozdělení nemusí být
-   rovnoměrné). Po vyčerpání vstupu se musí zavřít všechny výstupy. `n < 1` se chová
-   jako 1.
-
-např. `Collect(Merge(Generate(1, 2, 3), Generate(10, 20), Generate(100)))` → `[1, 2, 3, 10, 20, 100]` (libovolné pořadí)
-
-### C — rozšíření (~25 min)
-
-`Broker` — publish/subscribe nad kanály:
-
-- `NewBroker(buffer int) *Broker` — buffer je velikost kanálu každého odběratele,
-  záporná hodnota se chová jako nula.
-- `Subscribe() <-chan string` — zaregistruje odběratele a vrátí jeho kanál. Po `Close`
-  vrací rovnou zavřený kanál (jinak by nový odběratel visel navždy).
-- `Publish(msg string)` — rozešle zprávu všem. **Pomalý odběratel nesmí zablokovat
-  brokera ani ostatní**: když se zpráva do jeho bufferu nevejde, zahoď ji a započítej.
-- `Dropped() int` — počet zahozených zpráv.
-- `Close()` — zavře kanály všech odběratelů, takže jejich `range` skončí. Opakované
-  volání nesmí panikovat, `Publish` po zavření nic nedělá.
-
-Test hlídá, že po `Close` nezůstane viset žádná goroutina odběratele, a pouští publish i
-subscribe souběžně pod `-race`.
-
-např. `Publish("a"); Publish("b"); Close()` → odběratelé dostanou `[a b]`, `Dropped() = 0`
+Funkce: `Generate`, `Collect`, `Merge`
 
 ```bash
-make lesson L=41
-make race L=41
+make lesson L=41 PART=1
 ```
 
-Až budeš hotový, porovnej se `solutions/` (spoiler).
+Pak **`/go-deep-review 41 easy`**.
 
-## Ověření
+### Střední
 
-Po dokončení úkolů spusť v Cursoru **`/go-deep-review`** a zadej třeba jen `41`. AI tě postupně projde body níže, doptá se a ověří pochopení — nestačí jen zelené testy.
+Funkce: `Split`, `NewBroker`, `Subscribe`
 
-- [ ] `make lesson L=41` prochází
-- [ ] `make race L=41` prochází
+```bash
+make lesson L=41 PART=2
+```
+
+Pak **`/go-deep-review 41 medium`**.
+
+### Obtížný
+
+Funkce: `Publish`, `Dropped`, `Close`
+
+```bash
+make lesson L=41 PART=3
+```
+
+Pak **`/go-deep-review 41 hard`**.
+
+Až budou stupně hotové, porovnej se `solutions/` (spoiler).
+
+## Závěrečné otázky
+
+Spusť **`/go-deep-review 41 final`**. AI projde body níže, doptá se a ověří pochopení. Celé cvičení ověří `make lesson L=41` (+ `make race L=41`, pokud to lekce vyžaduje).
+
 - [ ] Umíš vysvětlit, proč kanál nikdy nezavírá příjemce
 - [ ] Umíš popsat, co přesně řeší buffer a co neřeší
 - [ ] Umíš říct, proč se konec signalizuje přes `close(done)` a ne zápisem

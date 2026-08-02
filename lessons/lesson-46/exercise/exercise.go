@@ -21,36 +21,42 @@ type Semaphore struct {
 	slots chan struct{}
 }
 
-// NewSemaphore vrátí semafor s kapacitou n. Pro n <= 0 panikuje.
+// --- Stupeň: jednoduchý ---
+// NewSemaphore vytvoří semafor s kapacitou n nad bufferovaným kanálem.
+// Pro n <= 0 panikuje. Kapacita drží počet volných míst ve slots kanálu.
 func NewSemaphore(n int) *Semaphore {
-	// TODO: úkol A
+	// TODO
 	return nil
 }
 
-// Acquire zabere jedno místo. Blokuje, dokud se místo neuvolní nebo se nezruší ctx.
-// Při zrušení kontextu vrací ctx.Err() a místo NEzabere.
+// Acquire zabere jedno místo a blokuje, dokud není volné nebo se nezruší ctx.
+// Při chybě místo nezabírá; u už zrušeného kontextu vrací chybu i když je volno.
 func (s *Semaphore) Acquire(ctx context.Context) error {
-	// TODO: úkol A
+	// TODO
 	return nil
 }
 
-// TryAcquire zabere místo, pokud je zrovna volné, a vrátí true. Nikdy neblokuje.
+// TryAcquire zabere místo, pokud je zrovna volné, a vrátí true.
+// Nikdy neblokuje; při plném semaforu vrací false.
 func (s *Semaphore) TryAcquire() bool {
-	// TODO: úkol A
+	// TODO
 	return false
 }
 
-// Release uvolní jedno místo. Uvolnění bez předchozího zabrání panikuje.
+// Release uvolní jedno místo na semaforu.
+// Uvolnění bez předchozího Acquire panikuje; NewSemaphore(0) taky panikuje.
 func (s *Semaphore) Release() {
-	// TODO: úkol A
+	// TODO
 }
 
+// --- Stupeň: střední ---
 // LimitedMap aplikuje f na všechny vstupy, nejvýš limit z nich souběžně,
 // a vrátí výsledky ve stejném pořadí jako vstup.
 // Pro limit <= 0 se použije limit 1, pro f == nil vrací nil.
 // Když se ctx zruší, nespuštěné položky zůstanou na prázdném řetězci.
+// Po návratu nesmí zůstat běžící goroutina.
 func LimitedMap(ctx context.Context, inputs []string, limit int, f func(string) string) []string {
-	// TODO: úkol A
+	// TODO
 	return nil
 }
 
@@ -79,30 +85,33 @@ type Pool struct {
 	results chan Result
 }
 
-// New spustí pool s daným počtem workerů. Pro workers <= 0 panikuje.
+// New spustí worker pool s daným počtem workerů nad nebufferovaným kanálem úloh.
+// Pro workers <= 0 panikuje. Z Results musíš číst souběžně se Submit (backpressure).
 func New(workers int) *Pool {
-	// TODO: úkol B
+	// TODO
 	return nil
 }
 
-// Submit předá úlohu poolu. Blokuje, dokud ji nepřevezme worker.
-// Po Close vrací ErrPoolClosed a úlohu zahodí.
+// --- Stupeň: obtížný ---
+// Submit předá úlohu poolu a blokuje, dokud ji nepřevezme worker (backpressure).
+// Po Close vrací ErrPoolClosed a úlohu zahodí; nesmí zapsat do zavřeného kanálu.
+// Job s Run == nil dá Result{Err: ErrNilJob}, ne paniku.
 func (p *Pool) Submit(job Job) error {
-	// TODO: úkol B
+	// TODO
 	return nil
 }
 
-// Results vrací kanál výsledků. Zavře se, až doběhnou všechny úlohy přijaté před Close.
+// Results vrací kanál výsledků úloh přijatých před Close.
+// Kanál se zavře, až doběhnou všechny tyto úlohy.
 func (p *Pool) Results() <-chan Result {
-	// TODO: úkol B
-	ch := make(chan Result)
-	close(ch)
-	return ch
+	// TODO
+	return nil
 }
 
-// Close oznámí poolu, že další úlohy nepřijdou. Je bezpečné ho volat opakovaně.
+// Close oznámí poolu, že další úlohy nepřijdou.
+// Idempotentní — opakované volání je bezpečné.
 func (p *Pool) Close() {
-	// TODO: úkol B
+	// TODO
 }
 
 // MapErr aplikuje f na všechny prvky in, nejvýš limit z nich souběžně,
@@ -112,8 +121,8 @@ func (p *Pool) Close() {
 // nemá cenu pokračovat), MapErr počká na doběhnutí rozběhnutých goroutin
 // a vrátí (nil, tu chybu).
 // Pro limit <= 0 vrací ErrInvalidWorkers, pro f == nil ErrNilJob.
-// Zrušený vstupní kontext vrací ctx.Err().
+// Prázdný vstup vrací prázdný výsledek a nil; zrušený vstupní kontext vrací ctx.Err().
 func MapErr[T, U any](ctx context.Context, in []T, limit int, f func(context.Context, T) (U, error)) ([]U, error) {
-	// TODO: úkol C
+	// TODO
 	return nil, nil
 }

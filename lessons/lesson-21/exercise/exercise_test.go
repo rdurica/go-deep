@@ -9,7 +9,7 @@ import (
 	exercise "github.com/rdurica/go-deep/lessons/lesson-21/exercise"
 )
 
-func TestReadConfigPlatnyVstup(t *testing.T) {
+func TestReadConfigValidInput(t *testing.T) {
 	in := strings.Join([]string{
 		"# konfigurace služby",
 		"",
@@ -28,7 +28,7 @@ func TestReadConfigPlatnyVstup(t *testing.T) {
 	}
 }
 
-func TestReadConfigVolitelnyDebug(t *testing.T) {
+func TestReadConfigOptionalDebug(t *testing.T) {
 	got, err := exercise.ReadConfig(strings.NewReader("name=api\nport=1\n"))
 	if err != nil {
 		t.Fatalf("ReadConfig vrátil chybu %v, chci nil", err)
@@ -39,7 +39,7 @@ func TestReadConfigVolitelnyDebug(t *testing.T) {
 	}
 }
 
-func TestReadConfigPosledniKlicVyhrava(t *testing.T) {
+func TestReadConfigLastKeyWins(t *testing.T) {
 	got, err := exercise.ReadConfig(strings.NewReader("name=a\nname=b\nport=80\nport=443\n"))
 	if err != nil {
 		t.Fatalf("ReadConfig vrátil chybu %v, chci nil", err)
@@ -50,7 +50,7 @@ func TestReadConfigPosledniKlicVyhrava(t *testing.T) {
 	}
 }
 
-func TestReadConfigChyby(t *testing.T) {
+func TestReadConfigErrors(t *testing.T) {
 	tests := []struct {
 		name    string
 		in      string
@@ -58,61 +58,61 @@ func TestReadConfigChyby(t *testing.T) {
 		wantMsg string
 	}{
 		{
-			name:    "řádek bez rovnítka",
+			name:    "line without equals",
 			in:      "name=api\nport=8080\nfoo\n",
 			wantErr: exercise.ErrMalformedLine,
 			wantMsg: `line 3: malformed line: "foo"`,
 		},
 		{
-			name:    "neznámý klíč",
+			name:    "unknown key",
 			in:      "name=api\ncolour=red\nport=8080\n",
 			wantErr: exercise.ErrUnknownKey,
 			wantMsg: `line 2: unknown key: "colour"`,
 		},
 		{
-			name:    "klíč je case sensitive",
+			name:    "key is case sensitive",
 			in:      "Name=api\n",
 			wantErr: exercise.ErrUnknownKey,
 			wantMsg: `line 1: unknown key: "Name"`,
 		},
 		{
-			name:    "port není číslo",
+			name:    "port is not a number",
 			in:      "name=api\nport=abc\n",
 			wantErr: exercise.ErrInvalidPort,
 			wantMsg: `line 2: invalid port: "abc"`,
 		},
 		{
-			name:    "port mimo rozsah dole",
+			name:    "port below range",
 			in:      "name=api\nport=0\n",
 			wantErr: exercise.ErrInvalidPort,
 			wantMsg: `line 2: invalid port: "0"`,
 		},
 		{
-			name:    "port mimo rozsah nahoře",
+			name:    "port above range",
 			in:      "name=api\nport=70000\n",
 			wantErr: exercise.ErrInvalidPort,
 			wantMsg: `line 2: invalid port: "70000"`,
 		},
 		{
-			name:    "debug není bool",
+			name:    "debug is not bool",
 			in:      "name=api\nport=80\ndebug=yes\n",
 			wantErr: exercise.ErrInvalidBool,
 			wantMsg: `line 3: invalid bool: "yes"`,
 		},
 		{
-			name:    "chybí name",
+			name:    "missing name",
 			in:      "port=8080\n",
 			wantErr: exercise.ErrMissingKey,
 			wantMsg: `missing key: "name"`,
 		},
 		{
-			name:    "chybí port",
+			name:    "missing port",
 			in:      "name=api\n",
 			wantErr: exercise.ErrMissingKey,
 			wantMsg: `missing key: "port"`,
 		},
 		{
-			name:    "prázdný vstup hlásí nejdřív name",
+			name:    "empty input reports name first",
 			in:      "",
 			wantErr: exercise.ErrMissingKey,
 			wantMsg: `missing key: "name"`,
@@ -144,7 +144,7 @@ func (f failingReader) Read([]byte) (int, error) {
 	return 0, f.err
 }
 
-func TestReadConfigChybaCteni(t *testing.T) {
+func TestReadConfigReadError(t *testing.T) {
 	boom := errors.New("disk on fire")
 
 	_, err := exercise.ReadConfig(failingReader{err: boom})
@@ -178,19 +178,19 @@ func TestPipelineHappyPath(t *testing.T) {
 	}
 }
 
-func TestPipelinePrazdna(t *testing.T) {
+func TestPipelineEmpty(t *testing.T) {
 	p := exercise.NewPipeline()
 
-	got, err := p.Run("beze změny")
+	got, err := p.Run("unchanged")
 	if err != nil {
 		t.Fatalf("Run vrátil chybu %v, chci nil", err)
 	}
-	if want := "beze změny"; got != want {
+	if want := "unchanged"; got != want {
 		t.Errorf("Run = %q, chci %q", got, want)
 	}
 }
 
-func TestPipelineChybaNeseNazevKroku(t *testing.T) {
+func TestPipelineErrorCarriesStepName(t *testing.T) {
 	errTooShort := errors.New("input too short")
 
 	p := exercise.NewPipeline(
@@ -221,7 +221,7 @@ func TestPipelineChybaNeseNazevKroku(t *testing.T) {
 	}
 }
 
-func TestPipelineRetezKontextu(t *testing.T) {
+func TestPipelineContextChain(t *testing.T) {
 	errBoom := errors.New("boom")
 
 	inner := exercise.NewPipeline(
@@ -243,7 +243,7 @@ func TestPipelineRetezKontextu(t *testing.T) {
 	}
 }
 
-func TestPipelineNilKrok(t *testing.T) {
+func TestPipelineNilStep(t *testing.T) {
 	p := exercise.NewPipeline(exercise.Step{Name: "broken"})
 
 	_, err := p.Run("x")
@@ -266,7 +266,7 @@ func (c *fakeCloser) Close() error {
 	return c.err
 }
 
-func TestCloseAllUspech(t *testing.T) {
+func TestCloseAllSuccess(t *testing.T) {
 	a, b := &fakeCloser{}, &fakeCloser{}
 
 	if err := exercise.CloseAll([]io.Closer{a, b}); err != nil {
@@ -277,7 +277,7 @@ func TestCloseAllUspech(t *testing.T) {
 	}
 }
 
-func TestCloseAllPrazdnyANil(t *testing.T) {
+func TestCloseAllEmptyAndNil(t *testing.T) {
 	if err := exercise.CloseAll(nil); err != nil {
 		t.Errorf("CloseAll(nil) = %v, chci nil", err)
 	}
@@ -289,7 +289,7 @@ func TestCloseAllPrazdnyANil(t *testing.T) {
 	}
 }
 
-func TestCloseAllSpojiChyby(t *testing.T) {
+func TestCloseAllJoinsErrors(t *testing.T) {
 	errFirst := errors.New("first failed")
 	errThird := errors.New("third failed")
 
@@ -316,7 +316,7 @@ func TestWithCleanup(t *testing.T) {
 	errWork := errors.New("work failed")
 	errClean := errors.New("cleanup failed")
 
-	t.Run("obojí projde", func(t *testing.T) {
+	t.Run("both succeed", func(t *testing.T) {
 		cleaned := 0
 		err := exercise.WithCleanup(
 			func() error { return nil },
@@ -330,7 +330,7 @@ func TestWithCleanup(t *testing.T) {
 		}
 	})
 
-	t.Run("selže f, cleanup projde", func(t *testing.T) {
+	t.Run("f fails, cleanup succeeds", func(t *testing.T) {
 		cleaned := 0
 		err := exercise.WithCleanup(
 			func() error { return errWork },
@@ -347,7 +347,7 @@ func TestWithCleanup(t *testing.T) {
 		}
 	})
 
-	t.Run("f projde, selže cleanup", func(t *testing.T) {
+	t.Run("f succeeds, cleanup fails", func(t *testing.T) {
 		err := exercise.WithCleanup(
 			func() error { return nil },
 			func() error { return errClean },
@@ -360,7 +360,7 @@ func TestWithCleanup(t *testing.T) {
 		}
 	})
 
-	t.Run("selže obojí", func(t *testing.T) {
+	t.Run("both fail", func(t *testing.T) {
 		err := exercise.WithCleanup(
 			func() error { return errWork },
 			func() error { return errClean },
@@ -376,7 +376,7 @@ func TestWithCleanup(t *testing.T) {
 		}
 	})
 
-	t.Run("cleanup je nil", func(t *testing.T) {
+	t.Run("cleanup is nil", func(t *testing.T) {
 		if err := exercise.WithCleanup(func() error { return nil }, nil); err != nil {
 			t.Errorf("chyba = %v, chci nil", err)
 		}
@@ -385,7 +385,7 @@ func TestWithCleanup(t *testing.T) {
 		}
 	})
 
-	t.Run("f je nil", func(t *testing.T) {
+	t.Run("f is nil", func(t *testing.T) {
 		cleaned := 0
 		err := exercise.WithCleanup(nil, func() error { cleaned++; return nil })
 		if !errors.Is(err, exercise.ErrNilFunc) {

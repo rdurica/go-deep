@@ -18,6 +18,7 @@ const (
 	LevelError
 )
 
+// --- Stupeň: jednoduchý ---
 // Classify vrací "negative", "zero" nebo "positive".
 func Classify(n int) string {
 	switch {
@@ -46,6 +47,7 @@ func ZeroValueOf(kind string) string {
 	}
 }
 
+// --- Stupeň: střední ---
 // CentsToPrice převede celé centy na desetinnou cenu (1999 -> 19.99).
 func CentsToPrice(cents int) float64 {
 	return float64(cents) / 100
@@ -59,6 +61,7 @@ func ToInt8(n int) (int8, bool) {
 	return int8(n), true
 }
 
+// --- Stupeň: obtížný ---
 // String implementuje fmt.Stringer.
 func (l Level) String() string {
 	switch l {

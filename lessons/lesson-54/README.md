@@ -10,32 +10,6 @@
 - Rozdělit implementaci podle `//go:build` tagů a spustit test nad konkrétní variantou.
 - Poznat rozdíl mezi tagem, příponou souboru (`_linux.go`) a `//go:generate`.
 
-## PHP → Go most
-
-V PHP jsou generika jen v docblocku a reflexe je běžný nástroj. Doctrine, Symfony DI i
-Serializer stojí na tom, že runtime dokáže přečíst atributy a typy tříd:
-
-```php
-#[ORM\Column(name: 'user_name')]
-private string $name;
-```
-
-Kontejner si na startu projde třídy, přečte atributy a poskládá služby. Je to pomalé, ale
-výsledek se zkompiluje do cache a nikdo to neřeší.
-
-V Go je tohle pořád možné, ale je to výslovně nástroj **knihoven**, ne aplikací:
-
-```go
-type User struct {
-	Name string `map:"user_name"`
-}
-```
-
-Co se mění v uvažování: **v Go platíš za reflexi při každém volání, ne jednou při warm-upu.**
-Neexistuje kompilovaná cache kontejneru. Když si v aplikaci napíšeš vlastní mapper přes
-reflexi, zaplatíš ho v každém requestu — a navíc přijdeš o kontrolu kompilátoru.
-Reflexe patří do `encoding/json`, ne do tvého service layeru.
-
 ## Teorie
 
 ### Kdy generika v API pomáhají
@@ -158,6 +132,32 @@ skutečně sestaví.
 `//go:generate` je něco jiného — není to build tag, jen komentář s příkazem, který spustí
 `go generate ./...`. Nic se nespouští při buildu; vygenerovaný kód se commituje.
 
+## Rozdíly proti PHP
+
+V PHP jsou generika jen v docblocku a reflexe je běžný nástroj. Doctrine, Symfony DI i
+Serializer stojí na tom, že runtime dokáže přečíst atributy a typy tříd:
+
+```php
+#[ORM\Column(name: 'user_name')]
+private string $name;
+```
+
+Kontejner si na startu projde třídy, přečte atributy a poskládá služby. Je to pomalé, ale
+výsledek se zkompiluje do cache a nikdo to neřeší.
+
+V Go je tohle pořád možné, ale je to výslovně nástroj **knihoven**, ne aplikací:
+
+```go
+type User struct {
+	Name string `map:"user_name"`
+}
+```
+
+Co se mění v uvažování: **v Go platíš za reflexi při každém volání, ne jednou při warm-upu.**
+Neexistuje kompilovaná cache kontejneru. Když si v aplikaci napíšeš vlastní mapper přes
+reflexi, zaplatíš ho v každém requestu — a navíc přijdeš o kontrolu kompilátoru.
+Reflexe patří do `encoding/json`, ne do tvého service layeru.
+
 ## Časté chyby
 
 | Chyba | Proč vzniká | Jak to udělat správně |
@@ -169,70 +169,52 @@ skutečně sestaví.
 | `reflect.ValueOf(c)` a pak `SetString` | zapomenutá adresovatelnost | `reflect.ValueOf(&c).Elem()` |
 | Prázdný řádek chybí mezi `//go:build` a `package` | vypadá to jako obyčejný komentář | bez něj se řádek ignoruje a tag neplatí |
 
+## AI kvíz
+
+Po přečtení teorie spusť v Cursoru **`/go-deep-quiz 54`**. AI tě ~5 minut prověří mentální model (ne hotové cvičení). Slabiny si uloží do [`GAPS.md`](../../GAPS.md).
+
 ## Úkol
 
-Pracuj v `exercise/`. Typy `User`, `Config` a `BadConfig` včetně tagů jsou předvyplněné.
+Pracuj v `exercise/`. Po doplnění spouštěj testy:
 
-### A — rozcvička (~10 min)
+Stupně jdou od jednodušších ke složitějším — po každém stupni spusť review, než jdeš dál.
 
-Generický `Result[T]` — hodnota, nebo chyba.
+### Jednoduchý
 
-- `Ok[T any](v T) Result[T]` a `Err[T any](err error) Result[T]`.
-  `Err(nil)` je platný Ok s nulovou hodnotou — tedy `IsOk()` závisí jen na tom, jestli je
-  chyba nil. Nulová hodnota `Result[T]` musí být použitelná (je to Ok s nulovým `T`).
-- `(r Result[T]) IsOk() bool` a `(r Result[T]) Unwrap() (T, error)`. Při chybě vrací
-  `Unwrap` **nulovou** hodnotu, ne to, co bylo uvnitř.
-- `Map[T, U any](r Result[T], f func(T) U) Result[U]` — nad chybou se `f` **nesmí zavolat**.
-- `Must[T any](v T, err error) T` — při chybě panikuje hodnotou té chyby
-  (test ji vytahuje přes `recover()` a `errors.Is`).
-
-např. `Must(strconv.Atoi("123"))` → `123`
-
-### B — jádro (~35 min)
-
-1. `StructToMap(v any) (map[string]any, error)` — přes reflexi převede struct nebo pointer
-   na struct na mapu. Neexportovaná pole přeskoč. Tag `map:"jmeno"` určí klíč, `map:"-"`
-   pole vynechá, chybějící nebo prázdný tag znamená jméno pole beze změny. Cokoli, co není
-   struct (včetně `nil` a nil pointeru), je chyba obalující `ErrNotStruct`.
-2. `UserToMap(u User) map[string]any` — totéž pro `User`, ale ručně a bez reflexe. Test
-   ověřuje, že obě funkce vrátí identickou mapu; benchmark je porovná.
-3. `SetDefaults(v any) error` — vezme **nenilový pointer na struct** a každé exportované
-   pole, které má tag `default` a je na nulové hodnotě, nastaví podle tagu. Podporuj
-   `string`, celočíselné typy (`ParseInt` na správný počet bitů) a `bool`. Vyplněné pole
-   se nepřepisuje, neexportované se ignoruje. Špatný vstup je `ErrNotPointer`,
-   nepřevoditelná hodnota `ErrBadDefault`, nepodporovaný typ pole `ErrUnsupportedKind`.
-
-např. `StructToMap(User{…Alice…})` → `{"id":7, "name":"Alice", "Active":true}`
-
-### C — rozšíření (~20 min)
-
-V `exercise/` už jsou dva soubory se stejnými funkcemi a opačnými build tagy:
-
-- `feature_off.go` s `//go:build !fancy` — `FeatureName()` vrací `"basic"`, `Discount`
-  vždy `0`,
-- `feature_on.go` s `//go:build fancy` — `FeatureName()` vrací `"fancy"`, `Discount` vrací
-  20 % z částky (celočíselně dolů), pro nekladný vstup `0`.
-
-Doplň obě těla. Výchozí variantu ověřuje `feature_default_test.go` (má sám tag `!fancy`),
-zapnutou `feature_fancy_test.go`:
+Funkce: `IsOk`, `Unwrap`
 
 ```bash
-make lesson L=54                                  # basic
-cd exercise && go test -tags fancy -count=1 .     # fancy
+make lesson L=54 PART=1
 ```
 
-Všimni si, že testy musí být otagované také — jinak by test na `"basic"` spadl při buildu
-s `-tags fancy`. Obě varianty musí projít `gofmt` i `go vet -tags fancy`.
+Pak **`/go-deep-review 54 easy`**.
 
-např. `FeatureName()` bez `-tags fancy` → `"basic"`
+### Střední
 
-Až budeš hotový, porovnej se `solutions/` (spoiler).
+Funkce: `NewUser`, `Password`, `Secret`
 
-## Ověření
+```bash
+make lesson L=54 PART=2
+```
 
-Po dokončení úkolů spusť v Cursoru **`/go-deep-review`** a zadej třeba jen `54`. AI tě postupně projde body níže, doptá se a ověří pochopení — nestačí jen zelené testy.
+Pak **`/go-deep-review 54 medium`**.
 
-- [ ] `make lesson L=54` prochází i `go test -tags fancy` v `exercise/`
+### Obtížný
+
+Funkce: `StructToMap`, `UserToMap`, `SetDefaults`
+
+```bash
+make lesson L=54 PART=3
+```
+
+Pak **`/go-deep-review 54 hard`**.
+
+Až budou stupně hotové, porovnej se `solutions/` (spoiler).
+
+## Závěrečné otázky
+
+Spusť **`/go-deep-review 54 final`**. AI projde body níže, doptá se a ověří pochopení. Celé cvičení ověří `make lesson L=54` (+ `make race L=54`, pokud to lekce vyžaduje).
+
 - [ ] Umíš vysvětlit, proč metoda nesmí mít vlastní typový parametr
 - [ ] Umíš uvést jeden případ, kdy je generika lepší než rozhraní, a jeden opačný
 - [ ] Umíš vysvětlit, proč reflexe nevidí neexportovaná pole

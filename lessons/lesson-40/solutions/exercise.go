@@ -7,6 +7,7 @@ import (
 	"time"
 )
 
+// --- Stupeň: jednoduchý ---
 // ParallelSquares vrátí druhé mocniny všech čísel ve stejném pořadí jako vstup.
 func ParallelSquares(nums []int) []int {
 	out := make([]int, len(nums))
@@ -25,6 +26,7 @@ func ParallelSquares(nums []int) []int {
 	return out
 }
 
+// --- Stupeň: střední ---
 // FanOutSum sečte všechna čísla pomocí nejvýše workers goroutin, které si
 // dílčí součty předávají kanálem.
 func FanOutSum(nums []int, workers int) int {
@@ -109,6 +111,7 @@ func stableGoroutines() int {
 	return runtime.NumGoroutine()
 }
 
+// --- Stupeň: obtížný ---
 // LeakyGenerator je záměrně vadná funkce: spustí goroutinu, která uvízne
 // navždy na zápisu do kanálu, ze kterého nikdo nečte.
 func LeakyGenerator() {

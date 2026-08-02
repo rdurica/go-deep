@@ -49,6 +49,7 @@ type Store struct {
 	items map[string]Item
 }
 
+// --- Stupeň: jednoduchý ---
 // NewStore vytvoří prázdné úložiště.
 func NewStore() *Store {
 	return &Store{items: make(map[string]Item)}
@@ -75,6 +76,7 @@ func (s *Store) Get(id string) (Item, bool) {
 	return item, ok
 }
 
+// --- Stupeň: střední ---
 // Delete smaže položku podle ID a vrátí true, pokud existovala.
 func (s *Store) Delete(id string) bool {
 	s.mu.Lock()
@@ -184,6 +186,7 @@ func ItemsRouter(store *Store) http.Handler {
 	return mux
 }
 
+// --- Stupeň: obtížný ---
 // ParseListQuery přečte a zvaliduje query parametry limit a q.
 func ParseListQuery(values url.Values) (limit int, q string, err error) {
 	q = strings.TrimSpace(values.Get("q"))

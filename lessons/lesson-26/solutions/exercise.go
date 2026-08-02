@@ -23,6 +23,7 @@ type ErrorResponse struct {
 // Middleware je funkce, která obalí handler jiným handlerem.
 type Middleware func(http.Handler) http.Handler
 
+// --- Stupeň: jednoduchý ---
 // WriteJSON zapíše v jako JSON odpověď se status kódem status.
 // Hotové z lekce 24.
 func WriteJSON(w http.ResponseWriter, status int, v any) error {
@@ -42,6 +43,7 @@ type statusRecorder struct {
 }
 
 // WriteHeader zapamatuje status a přepošle ho podkladovému writeru — jen jednou.
+// Druhé a další WriteHeader status nepřepisují (první vyhrává).
 func (rec *statusRecorder) WriteHeader(status int) {
 	if rec.wroteHeader {
 		return
@@ -61,6 +63,7 @@ func (rec *statusRecorder) Write(b []byte) (int, error) {
 	return n, err
 }
 
+// --- Stupeň: střední ---
 // Chain obalí h middlewary tak, že první uvedený je nejvíc vnější.
 func Chain(h http.Handler, mws ...Middleware) http.Handler {
 	for i := len(mws) - 1; i >= 0; i-- {
@@ -124,6 +127,7 @@ func newRequestID() string {
 	return hex.EncodeToString(buf[:])
 }
 
+// --- Stupeň: obtížný ---
 // RequestID vrací middleware, který doplní ID požadavku do kontextu i do odpovědi.
 func RequestID() Middleware {
 	return func(next http.Handler) http.Handler {

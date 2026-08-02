@@ -37,6 +37,7 @@ type Report struct {
 	Top   string
 }
 
+// --- Stupeň: obtížný ---
 // String formátuje částku jako desetinné číslo se dvěma místy.
 func (m Money) String() string {
 	v := int64(m)
@@ -48,11 +49,13 @@ func (m Money) String() string {
 	return fmt.Sprintf("%s%d.%02d", sign, v/100, v%100)
 }
 
+// --- Stupeň: jednoduchý ---
 // Error implementuje rozhraní error.
 func (e *ValidationError) Error() string {
 	return fmt.Sprintf("transakce %d: pole %q: %s", e.Index, e.Field, e.Reason)
 }
 
+// --- Stupeň: střední ---
 // ParseTransactions načte pole transakcí z JSON a ověří je.
 func ParseTransactions(r io.Reader) ([]Transaction, error) {
 	var txs []Transaction

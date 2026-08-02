@@ -1,22 +1,28 @@
 // Package exercise obsahuje cvičení lekce 01.
 package exercise
 
-// Greet vrací pozdrav pro dané jméno. Prázdné jméno (i po ořezu bílých znaků)
-// dá "Hello, Go!".
+// --- Stupeň: jednoduchý ---
+// Greet vrací pozdrav pro dané jméno.
+// Prázdné jméno (i po ořezu bílých znaků) dá "Hello, Go!".
+// Jinak vrátí "Hello, <name>!" s ořezanými bílými znaky.
 func Greet(name string) string {
-	// TODO: úkol A
+	// TODO
 	return ""
 }
 
-// SumAll sečte libovolný počet celých čísel.
+// --- Stupeň: střední ---
+// SumAll sečte libovolný počet celých čísel předaných jako argumenty.
+// Bez argumentů vrátí 0. Záporná čísla sečte normálně.
 func SumAll(nums ...int) int {
-	// TODO: úkol B
+	// TODO
 	return 0
 }
 
-// Describe popíše slice ve tvaru "count=3 sum=6 max=3".
-// Prázdný nebo nil slice vrací "empty".
+// --- Stupeň: obtížný ---
+// Describe popíše slice čísel.
+// Nil nebo prázdný slice vrací přesně "empty".
+// Jinak vrátí "count=<počet> sum=<součet> max=<maximum>" (formát musí sedět přesně).
 func Describe(vals []int) string {
-	// TODO: úkol B
+	// TODO
 	return ""
 }

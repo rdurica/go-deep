@@ -1,0 +1,3 @@
+1:TestDescribe|TestDescribeErrors|TestLoadRecords|TestLoadRecordsEmptyInput|TestLoadRecordsErrors|TestLoadRecordsReadError
+2:TestStoreSatisfiesLoader
+3:TestStoreValidation|TestIntegrationLoadAndStore|TestStoreZeroValue|TestStoreLifecycle|TestStorePutAllJoinsErrors

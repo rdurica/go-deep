@@ -15,41 +15,49 @@ type Catalog struct {
 	items []Item
 }
 
-// ApplyDiscount vrátí cenu po slevě percent procent, zaokrouhlenou
-// na celé centy (půlka nahoru). Percent mimo rozsah 0–100 se ořízne.
+// --- Stupeň: jednoduchý ---
+// ApplyDiscount vrátí cenu po slevě percent procent, zaokrouhlenou na celé centy
+// (půlka nahoru: 5 centů se slevou 50 % je 3). Percent mimo 0–100 se ořízne.
+// priceCents <= 0 vrací 0.
 func ApplyDiscount(priceCents int, percent int) int {
-	// TODO: úkol A
+	// TODO
 	return 0
 }
 
-// TotalCents sečte cenu všech položek včetně množství.
+// TotalCents sečte PriceCents * Qty přes všechny položky.
+// Položky s Qty <= 0 přeskočí. Nil i prázdný slice dají 0. Vstup nemění.
 func TotalCents(items []Item) int {
-	// TODO: úkol B
+	// TODO
 	return 0
 }
 
-// Cheapest vrátí nejlevnější položku podle jednotkové ceny.
-// Druhá návratová hodnota je false, pokud žádná položka není.
+// --- Stupeň: střední ---
+// Cheapest vrátí položku s nejnižší jednotkovou cenou (PriceCents) a true.
+// Při shodě ceny vyhrává první výskyt. Prázdný nebo nil vstup: Item{}, false.
 func Cheapest(items []Item) (Item, bool) {
-	// TODO: úkol B
+	// TODO
 	return *new(Item), false
 }
 
-// NewCatalog vytvoří ceník z položek. Wiring je ruční, žádný kontejner.
+// NewCatalog vytvoří ceník z položek. Vstupní slice okopíruje,
+// aby pozdější změna u volajícího ceník neovlivnila.
 func NewCatalog(items []Item) *Catalog {
-	// TODO: úkol C
+	// TODO
 	return nil
 }
 
+// --- Stupeň: obtížný ---
 // Price vrátí jednotkovou cenu položky podle jména a true, pokud existuje.
+// Nenalezeno vrací 0, false.
 func (c *Catalog) Price(name string) (int, bool) {
-	// TODO: úkol C
+	// TODO
 	return 0, false
 }
 
-// Checkout spočítá cenu objednávky ze jmen položek se slevou percent.
-// Vrátí false, pokud kterékoli jméno v ceníku není.
+// Checkout spočítá cenu objednávky ze jmen (opakované jméno se počítá vícekrát),
+// aplikuje ApplyDiscount a vrátí true. Chybějící jméno: 0, false.
+// Prázdný seznam jmen je platná objednávka za 0.
 func (c *Catalog) Checkout(names []string, percent int) (int, bool) {
-	// TODO: úkol C
+	// TODO
 	return 0, false
 }

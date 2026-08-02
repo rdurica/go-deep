@@ -44,6 +44,7 @@ type Note struct {
 	Text string `json:"text"`
 }
 
+// --- Stupeň: jednoduchý ---
 // LoadConfig sestaví Config z getenv a posbírá všechny chyby najednou.
 func LoadConfig(getenv func(string) string) (Config, error) {
 	var errs []error
@@ -98,6 +99,7 @@ type ctxKey struct{}
 
 var requestIDKey ctxKey
 
+// --- Stupeň: střední ---
 // RequestIDMiddleware zajistí, že každý požadavek má identifikátor v kontextu i hlavičce.
 func RequestIDMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -187,6 +189,7 @@ func (s *noteStore) delete(id string) bool {
 	return true
 }
 
+// --- Stupeň: obtížný ---
 // NewServer sestaví router s middleware chainem a in-memory úložištěm poznámek.
 func NewServer(logger *slog.Logger) http.Handler {
 	store := newNoteStore()

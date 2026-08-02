@@ -8,6 +8,7 @@ type Stack struct {
 	items []int
 }
 
+// --- Stupeň: jednoduchý ---
 // DeferOrder registruje tři defery zapisující do výsledku a vrací jejich
 // skutečné pořadí provedení.
 func DeferOrder() (order []string) {
@@ -33,6 +34,7 @@ func SumWithLog(nums []int) (total int, steps []string) {
 	return total, steps
 }
 
+// --- Stupeň: střední ---
 // SafeDivide vydělí a/b a paniku z dělení nulou převede přes recover na error.
 func SafeDivide(a, b int) (result int, err error) {
 	defer func() {
@@ -76,6 +78,7 @@ func (s *Stack) Pop() int {
 	return v
 }
 
+// --- Stupeň: obtížný ---
 // Len vrací počet prvků. Funguje i na nil pointeru.
 func (s *Stack) Len() int {
 	if s == nil {

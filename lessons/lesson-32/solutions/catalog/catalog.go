@@ -46,6 +46,7 @@ type Catalog struct {
 	bySKU map[string]Product
 }
 
+// --- Stupeň: jednoduchý ---
 // Validate ověří jeden produkt. Kontroluje v pořadí SKU, jméno, cenu
 // a vrací odpovídající sentinel obalený jménem produktu.
 func Validate(p Product) error {
@@ -61,6 +62,7 @@ func Validate(p Product) error {
 	}
 }
 
+// --- Stupeň: střední ---
 // New sestaví katalog ze zadaných produktů. Každý produkt projde Validate,
 // duplicitní SKU je chyba. Prázdný vstup dává prázdný katalog, ne chybu.
 func New(products ...Product) (*Catalog, error) {
@@ -77,6 +79,7 @@ func New(products ...Product) (*Catalog, error) {
 	return c, nil
 }
 
+// --- Stupeň: obtížný ---
 // BySKU vrací produkt podle SKU. Neznámé SKU (i nil katalog) vrací chybu
 // obalující ErrNotFound.
 func (c *Catalog) BySKU(sku string) (Product, error) {

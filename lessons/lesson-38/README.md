@@ -10,37 +10,6 @@
 - Napsat akceptační test proti HTTP API, který nezná vnitřek služby.
 - Poznat, kdy je abstrakce přepálená, a smazat ji dřív, než se rozroste.
 
-## PHP → Go most
-
-Symfony projekt začínáš tím, že vygeneruješ entitu. Doctrine anotace, repository třída,
-controller, `services.yaml`. Doména vzniká jako vedlejší produkt persistence:
-
-```php
-#[ORM\Entity(repositoryClass: OrderRepository::class)]
-class Order
-{
-    #[ORM\Column(type: 'string')]
-    private string $status = 'draft';   // stav je sloupec, ne pravidlo
-}
-```
-
-V Go se začíná z opačného konce — od pravidel, bez jediné závislosti:
-
-```go
-type Order struct {
-	Status Status
-}
-
-func (o Order) Ship() (Order, error) {
-	return o.transition(StatusShipped, StatusPaid) // pravidlo, ne sloupec
-}
-```
-
-Co se mění v uvažování: přestaneš se ptát „jak to uložím" a začneš se ptát „co je
-pravda o objednávce". Uložení je detail, který přijde na řadu jako třetí a dá se
-vyměnit. Když někdo v code review řekne „tohle je jen anemický DTO se settery",
-mluví přesně o tomhle rozdílu.
-
 ## Teorie
 
 ### Začni od domény, protože nemá závislosti
@@ -155,7 +124,7 @@ ale rychlost zpětné vazby.
 Slovní dohoda vydrží do prvního spěchu. Napiš si test:
 
 ```go
-func TestDomenaNeimportujeAdaptery(t *testing.T) {
+func TestDomainDoesNotImportAdapters(t *testing.T) {
 	fset := token.NewFileSet()
 	bezTestu := func(fi fs.FileInfo) bool {
 		return !strings.HasSuffix(fi.Name(), "_test.go")
@@ -225,6 +194,37 @@ Konkrétně v Go: nedělej balíčky `service/`, `repository/`, `dto/`. To je Sy
 adresářová struktura přenesená do jazyka, kde balíček znamená hranici viditelnosti,
 ne složku. Balíček se jmenuje podle domény (`order`), ne podle role.
 
+## Rozdíly proti PHP
+
+Symfony projekt začínáš tím, že vygeneruješ entitu. Doctrine anotace, repository třída,
+controller, `services.yaml`. Doména vzniká jako vedlejší produkt persistence:
+
+```php
+#[ORM\Entity(repositoryClass: OrderRepository::class)]
+class Order
+{
+    #[ORM\Column(type: 'string')]
+    private string $status = 'draft';   // stav je sloupec, ne pravidlo
+}
+```
+
+V Go se začíná z opačného konce — od pravidel, bez jediné závislosti:
+
+```go
+type Order struct {
+	Status Status
+}
+
+func (o Order) Ship() (Order, error) {
+	return o.transition(StatusShipped, StatusPaid) // pravidlo, ne sloupec
+}
+```
+
+Co se mění v uvažování: přestaneš se ptát „jak to uložím" a začneš se ptát „co je
+pravda o objednávce". Uložení je detail, který přijde na řadu jako třetí a dá se
+vyměnit. Když někdo v code review řekne „tohle je jen anemický DTO se settery",
+mluví přesně o tomhle rozdílu.
+
 ## Časté chyby
 
 | Chyba | Proč vzniká | Jak to udělat správně |
@@ -238,73 +238,47 @@ ne složku. Balíček se jmenuje podle domény (`order`), ne podle role.
 | Balíčky `service/`, `dto/` | Symfony struktura | balíček podle domény |
 | Doménový test přes HTTP | „testuju to celé" | doména proti fake portu, HTTP zvlášť |
 
+## AI kvíz
+
+Po přečtení teorie spusť v Cursoru **`/go-deep-quiz 38`**. AI tě ~5 minut prověří mentální model (ne hotové cvičení). Slabiny si uloží do [`GAPS.md`](../../GAPS.md).
+
 ## Úkol
 
-Cvičení v `exercise/` je zmenšenina projektu P03 — stejná architektura, méně kódu.
-Struktura:
+Pracuj v `exercise/`. Po doplnění spouštěj testy:
 
-```
-exercise/
-  exercise.go        fasáda pro testy (hotová, needituj)
-  order/             doména: Order, Line, Status, přechody, doménové chyby
-  app/               porty Repository a IDGen + aplikační služba
-  memstore/          in-memory adaptér portu Repository
-  httpapi/           HTTP adaptér a mapování chyb na statusy
-```
+Stupně jdou od jednodušších ke složitějším — po každém stupni spusť review, než jdeš dál.
 
-Šipky závislostí míří jen dovnitř: `httpapi` → `app` → `order`, `memstore` → `order`.
-Balíček `order` neimportuje **nic** kromě `errors`, `fmt` a `strings` — a test to hlídá
-strojově.
+### Jednoduchý
 
-### A — doména a přechody (~25 min)
-
-V `order/`:
-
-1. `Status.String()` pro všech pět stavů; neznámá hodnota dá `"unknown"`.
-   `Line.TotalCents()` vrací cenu za množství.
-2. `New(id string, lines []Line) (Order, error)` — ořízne ID, odmítne prázdné ID
-   (`ErrMissingID`), prázdný seznam položek (`ErrEmptyOrder`) a vadnou položku
-   (`ErrInvalidLine`: prázdné SKU, nekladné množství, nekladná cena). Vrátí objednávku
-   ve stavu `new` s **kopií** slice položek. Při chybě nulovou hodnotu.
-3. `Order.TotalCents()` a přechody `Pay`, `Ship`, `Cancel` s hodnotovým receiverem.
-Povolené cesty: new→paid→shipped, `Cancel` z new i paid. Odeslanou ani zrušenou
-objednávku už nelze změnit — chyba obalující `ErrInvalidTransition`.
-
-např. `Line{Qty:3, UnitPriceCents:1999}.TotalCents()` → `5997`
-
-### B — porty, adaptér a use-casy (~35 min)
-
-1. V `memstore/`: `New`, `Save`, `Find`. Neznámé ID → chyba obalující `order.ErrNotFound`,
-   zrušený kontext → chyba z `ctx.Err()`. Ukládej i vracej **kopie** položek a hlídej
-   souběžný přístup mutexem.
-2. V `app/`: `NewService`, `Place`, `Get`, `Pay`, `Ship`, `Cancel`. `Place` si vezme ID
-   z portu `IDGen`, nechá doménu ověřit invarianty a uloží; neplatná objednávka se
-   **nesmí** uložit. Přechodové use-casy načtou, nechají rozhodnout doménu a uloží —
-   a když doména přechod zamítne, `Save` se nezavolá vůbec. Chyby portů obal přes `%w`.
-
-např. `Place(lines)` → `{ID:"ord-1", Status:new}`
-
-### C — HTTP adaptér (~25 min)
-
-V `httpapi/`:
-
-1. `NewHandler(svc *app.Service) http.Handler` — router se vzory `ServeMux`:
-   `GET /healthz`, `POST /orders` (201), `GET /orders/{id}` a
-   `POST /orders/{id}/{pay,ship,cancel}`. Tělo dekóduj přísně
-   (`DisallowUnknownFields`, `io.LimitReader`) a převeď DTO na doménové typy — doména
-   JSON tagy nemá a mít nebude.
-2. Mapování chyb na **jednom místě**: `ErrNotFound` → 404, `ErrInvalidTransition` → 409,
-invarianty objednávky → 422, nečitelné tělo → 400, cokoli jiného → 500 bez
-prozrazení detailu. Chyby posílej jako `application/problem+json`.
-
-např. `POST /orders` → `201`
+Funkce: `NewOrder`
 
 ```bash
-make lesson L=38
-cd lessons/lesson-38/exercise && go test -race ./...
+make lesson L=38 PART=1
 ```
 
-Až budeš hotový, porovnej se `solutions/` (spoiler).
+Pak **`/go-deep-review 38 easy`**.
+
+### Střední
+
+Funkce: `NewMemoryRepository`
+
+```bash
+make lesson L=38 PART=2
+```
+
+Pak **`/go-deep-review 38 medium`**.
+
+### Obtížný
+
+Funkce: `NewService`, `NewHandler`
+
+```bash
+make lesson L=38 PART=3
+```
+
+Pak **`/go-deep-review 38 hard`**.
+
+Až budou stupně hotové, porovnej se `solutions/` (spoiler).
 
 ## Projekt P03
 
@@ -316,12 +290,10 @@ graceful shutdownem a testem hranice balíčků přes `go/parser`.
 Akceptační kritéria jsou v `ACCEPTANCE.md`; projdi je bod po bodu, než projekt prohlásíš
 za hotový.
 
-## Ověření
+## Závěrečné otázky
 
-Po dokončení úkolů spusť v Cursoru **`/go-deep-review`** a zadej třeba jen `38`. AI tě postupně projde body níže, doptá se a ověří pochopení — nestačí jen zelené testy.
+Spusť **`/go-deep-review 38 final`**. AI projde body níže, doptá se a ověří pochopení. Celé cvičení ověří `make lesson L=38` (+ `make race L=38`, pokud to lekce vyžaduje).
 
-- [ ] `make lesson L=38` prochází a `go test -race ./...` v `exercise/` je zelené
-- [ ] `go test -race ./...` v `projects/p03-hex-service` je zelené
 - [ ] Umíš vysvětlit, proč port patří k `Service` a ne k adaptéru
 - [ ] Umíš vysvětlit, proč fake adaptér ukládá kopii
 - [ ] Umíš vysvětlit, proč se čas injektuje místo `time.Now()` v doméně

@@ -35,11 +35,13 @@ var (
 	ErrOverflow      = pricing.ErrOverflow
 )
 
+// --- Stupeň: jednoduchý ---
 // Validate ověří jeden produkt doménovými pravidly.
 func Validate(p Product) error {
 	return catalog.Validate(p)
 }
 
+// --- Stupeň: střední ---
 // BuildCatalog sestaví katalog ze zadaných produktů.
 func BuildCatalog(products ...Product) (*Catalog, error) {
 	return catalog.New(products...)
@@ -55,6 +57,7 @@ func PriceOf(c *Catalog, sku string, qty int) (int64, error) {
 	return pricing.Total([]Item{{Product: p, Qty: qty}})
 }
 
+// --- Stupeň: obtížný ---
 // TotalOf spočítá cenu celého košíku.
 func TotalOf(items []Item) (int64, error) {
 	return pricing.Total(items)

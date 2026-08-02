@@ -15,10 +15,10 @@ func TestSum(t *testing.T) {
 		want int
 	}{
 		{"nil", nil, 0},
-		{"prázdný", []int{}, 0},
-		{"jeden prvek", []int{7}, 7},
-		{"kladné", []int{1, 2, 3, 4}, 10},
-		{"se zápornými", []int{-5, 5, -2}, -2},
+		{"empty", []int{}, 0},
+		{"one element", []int{7}, 7},
+		{"positive", []int{1, 2, 3, 4}, 10},
+		{"with negatives", []int{-5, 5, -2}, -2},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -29,7 +29,7 @@ func TestSum(t *testing.T) {
 	}
 }
 
-func TestSumNahodnaData(t *testing.T) {
+func TestSumRandomData(t *testing.T) {
 	// Náhodná data brání tomu, aby test prošel se zadrátovanou hodnotou.
 	nums := make([]int, 100)
 	want := 0
@@ -48,10 +48,10 @@ func TestReverse(t *testing.T) {
 		in   []int
 		want []int
 	}{
-		{"prázdný", []int{}, []int{}},
-		{"jeden prvek", []int{1}, []int{1}},
-		{"sudá délka", []int{1, 2, 3, 4}, []int{4, 3, 2, 1}},
-		{"lichá délka", []int{1, 2, 3}, []int{3, 2, 1}},
+		{"empty", []int{}, []int{}},
+		{"one element", []int{1}, []int{1}},
+		{"even length", []int{1, 2, 3, 4}, []int{4, 3, 2, 1}},
+		{"odd length", []int{1, 2, 3}, []int{3, 2, 1}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -63,11 +63,11 @@ func TestReverse(t *testing.T) {
 	}
 }
 
-func TestReverseNilNepanikuje(t *testing.T) {
+func TestReverseNilDoesNotPanic(t *testing.T) {
 	exercise.Reverse(nil)
 }
 
-func TestReverseMutujeVstup(t *testing.T) {
+func TestReverseMutatesInput(t *testing.T) {
 	// Reverse nic nevrací, takže musí měnit backing pole volajícího.
 	nums := []int{1, 2, 3}
 	view := nums[:2]
@@ -77,7 +77,7 @@ func TestReverseMutujeVstup(t *testing.T) {
 	}
 }
 
-func TestGrowVraciPuvodniSliceKdyzKapacitaStaci(t *testing.T) {
+func TestGrowReturnsOriginalWhenCapacityEnough(t *testing.T) {
 	s := make([]int, 2, 8)
 	s[0], s[1] = 10, 20
 
@@ -91,7 +91,7 @@ func TestGrowVraciPuvodniSliceKdyzKapacitaStaci(t *testing.T) {
 	}
 }
 
-func TestGrowAlokujeKdyzKapacitaNestaci(t *testing.T) {
+func TestGrowAllocatesWhenCapacityInsufficient(t *testing.T) {
 	s := []int{1, 2, 3}
 	got := exercise.Grow(s, 10)
 
@@ -128,13 +128,13 @@ func TestRemoveAt(t *testing.T) {
 		i    int
 		want []int
 	}{
-		{"první", []int{1, 2, 3, 4}, 0, []int{2, 3, 4}},
-		{"prostřední", []int{1, 2, 3, 4}, 1, []int{1, 3, 4}},
-		{"poslední", []int{1, 2, 3, 4}, 3, []int{1, 2, 3}},
-		{"jediný prvek", []int{9}, 0, []int{}},
-		{"index moc velký", []int{1, 2, 3}, 3, []int{1, 2, 3}},
-		{"záporný index", []int{1, 2, 3}, -1, []int{1, 2, 3}},
-		{"prázdný slice", []int{}, 0, []int{}},
+		{"first", []int{1, 2, 3, 4}, 0, []int{2, 3, 4}},
+		{"middle", []int{1, 2, 3, 4}, 1, []int{1, 3, 4}},
+		{"last", []int{1, 2, 3, 4}, 3, []int{1, 2, 3}},
+		{"single element", []int{9}, 0, []int{}},
+		{"index too large", []int{1, 2, 3}, 3, []int{1, 2, 3}},
+		{"negative index", []int{1, 2, 3}, -1, []int{1, 2, 3}},
+		{"empty slice", []int{}, 0, []int{}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -153,12 +153,12 @@ func TestRemoveFast(t *testing.T) {
 		i    int
 		want []int
 	}{
-		{"první", []int{1, 2, 3, 4}, 0, []int{4, 2, 3}},
-		{"prostřední", []int{1, 2, 3, 4}, 1, []int{1, 4, 3}},
-		{"poslední", []int{1, 2, 3, 4}, 3, []int{1, 2, 3}},
-		{"jediný prvek", []int{9}, 0, []int{}},
-		{"index moc velký", []int{1, 2, 3}, 5, []int{1, 2, 3}},
-		{"záporný index", []int{1, 2, 3}, -2, []int{1, 2, 3}},
+		{"first", []int{1, 2, 3, 4}, 0, []int{4, 2, 3}},
+		{"middle", []int{1, 2, 3, 4}, 1, []int{1, 4, 3}},
+		{"last", []int{1, 2, 3, 4}, 3, []int{1, 2, 3}},
+		{"single element", []int{9}, 0, []int{}},
+		{"index too large", []int{1, 2, 3}, 5, []int{1, 2, 3}},
+		{"negative index", []int{1, 2, 3}, -2, []int{1, 2, 3}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -170,7 +170,7 @@ func TestRemoveFast(t *testing.T) {
 	}
 }
 
-func TestRemoveFastNealokuje(t *testing.T) {
+func TestRemoveFastDoesNotAllocate(t *testing.T) {
 	s := []int{1, 2, 3, 4}
 	got := exercise.RemoveFast(s, 0)
 	if len(got) > 0 && &got[0] != &s[0] {
@@ -202,7 +202,7 @@ func TestCloneNil(t *testing.T) {
 	}
 }
 
-func TestClonePrazdny(t *testing.T) {
+func TestCloneEmpty(t *testing.T) {
 	got := exercise.Clone([]int{})
 	if got == nil {
 		t.Error("Clone([]int{}) = nil, chci prázdný ne-nil slice")
@@ -221,7 +221,7 @@ func TestChunk(t *testing.T) {
 	}{
 		{"beze zbytku", []int{1, 2, 3, 4}, 2, [][]int{{1, 2}, {3, 4}}},
 		{"se zbytkem", []int{1, 2, 3, 4, 5}, 2, [][]int{{1, 2}, {3, 4}, {5}}},
-		{"size větší než délka", []int{1, 2}, 10, [][]int{{1, 2}}},
+		{"size larger than length", []int{1, 2}, 10, [][]int{{1, 2}}},
 		{"size 1", []int{1, 2, 3}, 1, [][]int{{1}, {2}, {3}}},
 	}
 	for _, tt := range tests {
@@ -234,16 +234,16 @@ func TestChunk(t *testing.T) {
 	}
 }
 
-func TestChunkHraniceniPripady(t *testing.T) {
+func TestChunkEdgeCases(t *testing.T) {
 	tests := []struct {
 		name string
 		in   []int
 		size int
 	}{
 		{"size 0", []int{1, 2, 3}, 0},
-		{"záporný size", []int{1, 2, 3}, -1},
-		{"prázdný vstup", []int{}, 2},
-		{"nil vstup", nil, 2},
+		{"negative size", []int{1, 2, 3}, -1},
+		{"empty input", []int{}, 2},
+		{"nil input", nil, 2},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -254,7 +254,7 @@ func TestChunkHraniceniPripady(t *testing.T) {
 	}
 }
 
-func TestChunkVraciNezavisleKopie(t *testing.T) {
+func TestChunkReturnsIndependentCopies(t *testing.T) {
 	in := []int{1, 2, 3, 4, 5, 6}
 	got := exercise.Chunk(in, 2)
 	if len(got) != 3 {
@@ -287,10 +287,10 @@ func TestFilter(t *testing.T) {
 		keep func(int) bool
 		want []int
 	}{
-		{"sudá čísla", []int{1, 2, 3, 4, 5, 6}, even, []int{2, 4, 6}},
-		{"nic neprojde", []int{1, 3, 5}, even, []int{}},
-		{"všechno projde", []int{2, 4}, even, []int{2, 4}},
-		{"prázdný vstup", []int{}, even, []int{}},
+		{"even numbers", []int{1, 2, 3, 4, 5, 6}, even, []int{2, 4, 6}},
+		{"nothing passes", []int{1, 3, 5}, even, []int{}},
+		{"all pass", []int{2, 4}, even, []int{2, 4}},
+		{"empty input", []int{}, even, []int{}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -313,7 +313,7 @@ func TestFilterNil(t *testing.T) {
 	}
 }
 
-func TestFilterPrepisujeVstup(t *testing.T) {
+func TestFilterOverwritesInput(t *testing.T) {
 	// Trik s[:0] skládá výsledek do backing pole vstupu. Test to schválně
 	// odhaluje: implementace přes make() by tímhle testem neprošla.
 	in := []int{1, 2, 3, 4, 5, 6}

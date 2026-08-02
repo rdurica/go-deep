@@ -36,47 +36,55 @@ type Email struct {
 	value string
 }
 
-// ParseEmail normalizuje a ověří e-mailovou adresu.
+// --- Stupeň: jednoduchý ---
+// ParseEmail ořízne bílé znaky, převede na malá písmena a ověří tvar.
+// Prázdný → ErrEmptyEmail; délka >254, bílý znak uvnitř, chybějící/vícenásobný
+// @, prázdná lokální část/doména, doména bez tečky nebo s tečkou na okraji
+// → chyba obalující ErrInvalidEmail. Při chybě nulová hodnota.
 func ParseEmail(s string) (Email, error) {
-	// TODO: úkol A
+	// TODO
 	return *new(Email), nil
 }
 
 // String vrací normalizovanou podobu adresy.
 func (e Email) String() string {
-	// TODO: úkol A
+	// TODO
 	return ""
 }
 
-// IsZero vrací true pro nulovou hodnotu, tedy pro Email vyrobený bez ParseEmail.
+// IsZero vrací true pro nulovou hodnotu Email.
 func (e Email) IsZero() bool {
-	// TODO: úkol A
+	// TODO
 	return false
 }
 
+// --- Stupeň: střední ---
 // Username je ověřené uživatelské jméno.
 type Username struct {
 	value string
 }
 
-// ParseUsername ořízne bílé znaky a ověří tvar uživatelského jména.
+// ParseUsername ořízne bílé znaky. Prázdný → ErrEmptyUsername; 3–20 runů,
+// jen ASCII písmena, číslice a _, první znak písmeno → jinak ErrInvalidUsername.
+// Chyby obal %w pro errors.Is.
 func ParseUsername(s string) (Username, error) {
-	// TODO: úkol A
+	// TODO
 	return *new(Username), nil
 }
 
 // String vrací uživatelské jméno.
 func (u Username) String() string {
-	// TODO: úkol A
+	// TODO
 	return ""
 }
 
 // ValidationErrors je mapa pole → důvod zamítnutí. Implementuje error.
 type ValidationErrors map[string]string
 
-// Error implementuje error. Výpis je deterministický, pole jsou seřazená.
+// Error implementuje error. Pole abecedně seřazená (deterministický výpis).
+// Prázdná mapa dá rozumnou větu, ne prázdný string.
 func (v ValidationErrors) Error() string {
-	// TODO: úkol B
+	// TODO
 	return ""
 }
 
@@ -92,16 +100,19 @@ type CreateUserRequest struct {
 	Age      int    `json:"age"`
 }
 
-// Validate ověří všechna pole najednou a vrátí ValidationErrors,
-// nebo nil, pokud je požadavek v pořádku.
+// --- Stupeň: obtížný ---
+// Validate ověří všechna pole najednou. Klíče email, username, age.
+// E-mail a jméno přes Parse z části A; věk 13–150. Vrať nil, ne typovaný nil mapy.
 func (r CreateUserRequest) Validate() error {
-	// TODO: úkol B
+	// TODO
 	return nil
 }
 
-// DecodeAndValidate dekóduje JSON tělo požadavku do T a zavolá jeho Validate.
+// DecodeAndValidate dekóduje JSON do T s LimitReader, DisallowUnknownFields,
+// odmítne druhý dokument a chybějící tělo. Dekódování → ErrMalformedJSON;
+// validace propusť pro errors.As. Při chybě nulová hodnota T.
 func DecodeAndValidate[T Validator](r *http.Request) (T, error) {
-	// TODO: úkol B
+	// TODO
 	return *new(T), nil
 }
 
@@ -117,18 +128,22 @@ type ProblemDetails struct {
 	Errors map[string]string `json:"errors,omitempty"`
 }
 
-// WriteProblem zapíše odpověď ve tvaru problem+json.
+// WriteProblem zapíše application/problem+json s Type about:blank.
+// Prázdný detail ani prázdná fields se do těla nedostanou (omitempty).
 func WriteProblem(w http.ResponseWriter, status int, title, detail string, fields map[string]string) {
-	// TODO: úkol C
+	// TODO
 }
 
-// ErrorHandler přeloží chybu na HTTP status a tělo odpovědi.
+// ErrorHandler mapuje chyby: ValidationErrors→422, ErrMalformedJSON→400,
+// ErrNotFound→404, ErrConflict→409, nil i ostatní→500. body.Status = status.
+// Funguje na obalené chyby (errors.Is/As).
 func ErrorHandler(err error) (int, ProblemDetails) {
-	// TODO: úkol C
+	// TODO
 	return 0, *new(ProblemDetails)
 }
 
-// WriteError přeloží chybu přes ErrorHandler a zapíše ji přes WriteProblem.
+// WriteError přeloží chybu přes ErrorHandler a zapíše přes WriteProblem.
+// Text interní chyby se do těla nedostane.
 func WriteError(w http.ResponseWriter, err error) {
-	// TODO: úkol C
+	// TODO
 }

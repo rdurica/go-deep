@@ -34,44 +34,58 @@ type Report struct {
 	Top   string
 }
 
+// --- Stupeň: obtížný ---
 // String formátuje částku jako desetinné číslo se dvěma místy.
+// 1999 → "19.99", 5 → "0.05", 0 → "0.00", -250 → "-2.50". Hodnotový receiver pro fmt.Stringer.
 func (m Money) String() string {
-	// TODO: úkol A
+	// TODO
 	return ""
 }
 
+// --- Stupeň: jednoduchý ---
 // Error implementuje rozhraní error.
+// Text musí obsahovat index transakce, jméno pole a důvod, např.
+// transakce 2: pole "amount": nesmí být nula.
 func (e *ValidationError) Error() string {
-	// TODO: úkol A
+	// TODO
 	return ""
 }
 
-// ParseTransactions načte pole transakcí z JSON a ověří je.
+// --- Stupeň: střední ---
+// ParseTransactions načte pole transakcí z JSON přes json.Decoder (ne Unmarshal nad řetězcem).
+// Ověř id, payee, category (neprázdné po oříznutí) a amount (nesmí být nula; záporné OK).
+// První neplatná transakce skončí chybou obalující *ValidationError (errors.As).
+// Prázdné [] je platný vstup; rozbitý JSON je chyba.
 func ParseTransactions(r io.Reader) ([]Transaction, error) {
-	// TODO: úkol B
+	// TODO
 	return nil, nil
 }
 
 // TotalsByCategory sečte částky podle kategorie.
+// Prázdný vstup vrací prázdnou, ale nenilovou mapu.
 func TotalsByCategory(txs []Transaction) map[string]Money {
-	// TODO: úkol B
+	// TODO
 	return nil
 }
 
 // GroupBy seskupí prvky podle klíče spočítaného funkcí key.
+// Pořadí prvků uvnitř skupiny odpovídá vstupu; prázdný vstup → prázdná mapa.
 func GroupBy[T any, K comparable](items []T, key func(T) K) map[K][]T {
-	// TODO: úkol C
+	// TODO
 	return nil
 }
 
 // String implementuje fmt.Stringer.
+// Výstup: transakcí: N, celkem: X.XX, top kategorie: cat. Prázdná Top → "-".
 func (r Report) String() string {
-	// TODO: úkol C
+	// TODO
 	return ""
 }
 
 // BuildReport načte transakce ze vstupu a sestaví z nich souhrn.
+// Kniha bez transakcí → ErrEmptyLedger (errors.Is); chyba validace se propíše beze změny.
+// Top kategorie má nejvyšší součet; při shodě rozhoduje abeceda.
 func BuildReport(r io.Reader) (Report, error) {
-	// TODO: úkol C
+	// TODO
 	return *new(Report), nil
 }

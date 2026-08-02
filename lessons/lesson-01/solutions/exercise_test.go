@@ -12,10 +12,10 @@ func TestGreet(t *testing.T) {
 		input string
 		want  string
 	}{
-		{"jméno", "Radek", "Hello, Radek!"},
-		{"prázdné", "", "Hello, Go!"},
+		{"name", "Radek", "Hello, Radek!"},
+		{"empty", "", "Hello, Go!"},
 		{"jen mezery", "   ", "Hello, Go!"},
-		{"ořez", "  Radek \t", "Hello, Radek!"},
+		{"trim", "  Radek \t", "Hello, Radek!"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -32,10 +32,10 @@ func TestSumAll(t *testing.T) {
 		in   []int
 		want int
 	}{
-		{"bez argumentů", nil, 0},
+		{"no args", nil, 0},
 		{"jeden", []int{5}, 5},
-		{"víc", []int{1, 2, 3}, 6},
-		{"záporné", []int{-4, 2}, -2},
+		{"more", []int{1, 2, 3}, 6},
+		{"negative", []int{-4, 2}, -2},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -53,11 +53,11 @@ func TestDescribe(t *testing.T) {
 		want string
 	}{
 		{"nil", nil, "empty"},
-		{"prázdný", []int{}, "empty"},
+		{"empty", []int{}, "empty"},
 		{"jeden", []int{7}, "count=1 sum=7 max=7"},
-		{"víc", []int{1, 2, 3}, "count=3 sum=6 max=3"},
-		{"max není poslední", []int{9, 2, 3}, "count=3 sum=14 max=9"},
-		{"záporné", []int{-5, -2}, "count=2 sum=-7 max=-2"},
+		{"more", []int{1, 2, 3}, "count=3 sum=6 max=3"},
+		{"max is not last", []int{9, 2, 3}, "count=3 sum=14 max=9"},
+		{"negative", []int{-5, -2}, "count=2 sum=-7 max=-2"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

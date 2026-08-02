@@ -19,6 +19,7 @@ type Gen struct {
 	n      int64
 }
 
+// --- Stupeň: jednoduchý ---
 // New vytvoří generátor s daným prefixem. Prázdný prefix se nahradí "id".
 func New(prefix string) *Gen {
 	if prefix == "" {
@@ -27,6 +28,7 @@ func New(prefix string) *Gen {
 	return &Gen{prefix: prefix}
 }
 
+// --- Stupeň: střední ---
 // NewID vrací další identifikátor ve tvaru "<prefix>-000001".
 // Je bezpečné volat ho z více goroutin současně.
 func (g *Gen) NewID() string {

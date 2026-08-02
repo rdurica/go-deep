@@ -74,7 +74,7 @@ func TestLiveHandler(t *testing.T) {
 	}
 }
 
-func TestReadyHandlerZdravy(t *testing.T) {
+func TestReadyHandlerHealthy(t *testing.T) {
 	h := exercise.NewHealthChecker(time.Second)
 	var volano sync.Map
 	for _, name := range []string{"db", "cache", "queue"} {
@@ -105,7 +105,7 @@ func TestReadyHandlerZdravy(t *testing.T) {
 	}
 }
 
-func TestReadyHandlerBezKontrol(t *testing.T) {
+func TestReadyHandlerNoChecks(t *testing.T) {
 	h := exercise.NewHealthChecker(time.Second)
 	resp, code := zavolejReady(t, h)
 	if code != http.StatusOK {
@@ -116,7 +116,7 @@ func TestReadyHandlerBezKontrol(t *testing.T) {
 	}
 }
 
-func TestReadyHandlerSelhaniJedneKontroly(t *testing.T) {
+func TestReadyHandlerOneCheckFails(t *testing.T) {
 	h := exercise.NewHealthChecker(time.Second)
 	h.Register("db", func(context.Context) error { return errKontrola })
 	h.Register("cache", func(context.Context) error { return nil })
@@ -136,9 +136,9 @@ func TestReadyHandlerSelhaniJedneKontroly(t *testing.T) {
 	}
 }
 
-// TestReadyHandlerZaseknutaKontrola ověřuje, že se handler nezasekne na kontrole,
+// TestReadyHandlerStuckCheck ověřuje, že se handler nezasekne na kontrole,
 // která ignoruje context — musí odpovědět na timeoutu, ne viset.
-func TestReadyHandlerZaseknutaKontrola(t *testing.T) {
+func TestReadyHandlerStuckCheck(t *testing.T) {
 	h := exercise.NewHealthChecker(80 * time.Millisecond)
 	uvolnit := make(chan struct{})
 	t.Cleanup(func() { close(uvolnit) })
@@ -167,7 +167,7 @@ func TestReadyHandlerZaseknutaKontrola(t *testing.T) {
 	}
 }
 
-func TestShutdownSequencePoradi(t *testing.T) {
+func TestShutdownSequenceOrder(t *testing.T) {
 	var mu sync.Mutex
 	var poradi []string
 	krok := func(name string) exercise.ShutdownStep {
@@ -195,7 +195,7 @@ func TestShutdownSequencePoradi(t *testing.T) {
 	}
 }
 
-func TestShutdownSequenceChybaNezastaviZbytek(t *testing.T) {
+func TestShutdownSequenceErrorDoesNotStopRest(t *testing.T) {
 	var mu sync.Mutex
 	var poradi []string
 	zapis := func(name string) {
@@ -225,7 +225,7 @@ func TestShutdownSequenceChybaNezastaviZbytek(t *testing.T) {
 	}
 }
 
-func TestShutdownSequenceBezFunkce(t *testing.T) {
+func TestShutdownSequenceWithoutFunc(t *testing.T) {
 	err := exercise.ShutdownSequence(context.Background(), time.Second,
 		[]exercise.ShutdownStep{{Name: "prazdny"}})
 	if !errors.Is(err, exercise.ErrNoStepFunc) {

@@ -10,33 +10,6 @@
 - Napsat vlastní kontrolu nad `go/parser` a `go/ast`, která ty nálezy hledá strojově.
 - Rozhodnout, kdy má smysl diff opravit a kdy ho zahodit a napsat to sám.
 
-## PHP → Go most
-
-V Symfony týmu se review opírá o strukturu, kterou vidíš na první pohled: soubor
-v `Controller/` dělá HTTP, soubor v `Entity/` je doména, a když v controlleru uvidíš SQL,
-víš to hned. Statická analýza (PHPStan, Psalm) navíc chytí velkou část chyb typu
-„zapomenutá návratová hodnota".
-
-```php
-// PHPStan level 8 tohle nepustí
-$user = $this->repo->find($id);
-echo $user->getName();   // možná null
-```
-
-Go ti nedá ani jedno zadarmo. `go vet` je záměrně konzervativní a nechytí `_ = err`,
-context ve structu ani goroutinu bez ukončení. Zato ti dá něco, co v PHP nemáš:
-**parser jazyka jako součást standardní knihovny**.
-
-```go
-fset := token.NewFileSet()
-file, err := parser.ParseFile(fset, "src.go", src, parser.SkipObjectResolution)
-// file je AST, po kterém můžeš chodit a hledat přesně své vzory
-```
-
-Změna v uvažování: pravidla, která v PHP kupuješ jako nástroj, si v Go za odpoledne
-napíšeš sám — a přesně na míru chybám, které dělá tvůj agent. Review pak není jen čtení,
-ale i pár desítek řádků kódu, které čtou za tebe.
-
 ## Teorie
 
 ### Proč AI kód potřebuje jiné review
@@ -160,6 +133,33 @@ zároveň, zahoď ho.** Tři vysvětlené opravy jsou konverzace; deset oprav zn
 implementaci vlastníš ty, jen ji čteš pozpátku. Napsat 80 řádků domény ručně trvá dvacet
 minut. Přesvědčit model přes pět kol trvá hodinu a výsledek stejně nikdo nezná.
 
+## Rozdíly proti PHP
+
+V Symfony týmu se review opírá o strukturu, kterou vidíš na první pohled: soubor
+v `Controller/` dělá HTTP, soubor v `Entity/` je doména, a když v controlleru uvidíš SQL,
+víš to hned. Statická analýza (PHPStan, Psalm) navíc chytí velkou část chyb typu
+„zapomenutá návratová hodnota".
+
+```php
+// PHPStan level 8 tohle nepustí
+$user = $this->repo->find($id);
+echo $user->getName();   // možná null
+```
+
+Go ti nedá ani jedno zadarmo. `go vet` je záměrně konzervativní a nechytí `_ = err`,
+context ve structu ani goroutinu bez ukončení. Zato ti dá něco, co v PHP nemáš:
+**parser jazyka jako součást standardní knihovny**.
+
+```go
+fset := token.NewFileSet()
+file, err := parser.ParseFile(fset, "src.go", src, parser.SkipObjectResolution)
+// file je AST, po kterém můžeš chodit a hledat přesně své vzory
+```
+
+Změna v uvažování: pravidla, která v PHP kupuješ jako nástroj, si v Go za odpoledne
+napíšeš sám — a přesně na míru chybám, které dělá tvůj agent. Review pak není jen čtení,
+ale i pár desítek řádků kódu, které čtou za tebe.
+
 ## Časté chyby
 
 | Chyba | Proč vzniká | Jak to udělat správně |
@@ -171,89 +171,52 @@ minut. Přesvědčit model přes pět kol trvá hodinu a výsledek stejně nikdo
 | Řádek z `token.Pos` bez `FileSet` | `Pos()` vypadá jako číslo řádku | vždy `fset.Position(pos).Line` |
 | Nekonečné dokolečka opravování promptem | zdá se to levnější než psát | tři opravy = konverzace, deset = přepiš to sám |
 
+## AI kvíz
+
+Po přečtení teorie spusť v Cursoru **`/go-deep-quiz 57`**. AI tě ~5 minut prověří mentální model (ne hotové cvičení). Slabiny si uloží do [`GAPS.md`](../../GAPS.md).
+
 ## Úkol
 
-Pracuj v `exercise/`. Postupuj A → B → C, po každé části spusť test.
+Pracuj v `exercise/`. Po doplnění spouštěj testy:
 
-Píšeš vlastní review nástroj: čtečku funkcí, tři kontroly nad AST a filtr diffu.
+Stupně jdou od jednodušších ke složitějším — po každém stupni spusť review, než jdeš dál.
 
-### A — rozcvička (~10 min)
+### Jednoduchý
 
-1. `Severity.String()` → `"INFO"`, `"WARN"`, `"ERROR"`.
-2. `ParseFuncs(src string) ([]FuncInfo, error)` — přes `go/parser` rozeber zdroják
-   jednoho souboru a vrať pro každou funkci i metodu (v pořadí výskytu):
-   - `Name` — jméno funkce (u metody bez přijímače),
-   - `Params` / `Results` — počty **jednotlivých** parametrů a návratových hodnot
-     (`func f(a, b int) (int, error)` → 2 a 2; přijímač se nepočítá),
-   - `Lines` — počet řádků deklarace včetně hlavičky i uzavírací závorky,
-   - `Exported` — začíná velkým písmenem.
-
-   Nevalidní zdroják vrací chybu.
-
-např. `ParseFuncs` u `Add(a, b int) int` → `{Name:"Add", Params:2, Results:1}`
-
-### B — jádro (~35 min)
-
-Tři kontroly. Když se zdroják nepodaří rozebrat, každá vrací **jediný** nález
-`{Rule: "parse-error", Severity: SeverityError, Line: 0}` s libovolnou neprázdnou zprávou.
-Nálezy jsou vždy v pořadí výskytu ve zdrojáku a mají vyplněné `Line`, `Rule`, `Severity`
-a `Message`.
-
-1. `CheckIgnoredErrors(src string) []Finding` — najdi přiřazení, jehož pravá strana je
-   **jediné volání funkce** a jehož levá strana obsahuje `_`. Zachytí tedy `_ = f()`
-   i `v, _ := f()`, ale ne `_ = x` ani `v, ok := m[k]`. Řádek ber z pozice blank
-   identifikátoru. `Rule: "ignored-error"`, `Severity: SeverityError`.
-2. `CheckContextInStruct(src string) []Finding` — pole typu `context.Context`
-   (i `*context.Context`) v jakémkoli struct typu, včetně anonymních structů uvnitř funkcí.
-   Řádek ber z pozice pole. `Rule: "context-in-struct"`, `Severity: SeverityError`.
-3. `CheckContextNotFirst(src string) []Finding` — funkce nebo metoda, která má parametr
-   typu `context.Context` na jiné než první pozici (pozor na `func f(a, b int, ctx …)`,
-   kde je `ctx` třetí parametr, ale druhý `Field`). Na jednu funkci nanejvýš jeden nález.
-   `Rule: "context-not-first"`, `Severity: SeverityWarn`.
-
-např. `CheckIgnoredErrors` na `_ = os.Remove("x")` → nález `ignored-error` na ř. 6
-
-### C — rozšíření (~25 min)
-
-1. `CriticalPath(diff string) []Hunk` — parser unified diffu. Vrať jen hunky, které
-   **zároveň** obsahují změněný řádek (začíná `+` nebo `-`) a týkají se funkce (řetězec
-   `func ` je v hlavičce hunku za `@@`, nebo v některém řádku těla). Vyplň:
-   - `File` — cesta z `+++ b/...` bez prefixu `b/` (u `/dev/null` použij cestu z `--- a/...`),
-   - `OldStart` / `NewStart` — čísla z `@@ -24,9 +25,12 @@`,
-   - `Header` — text za druhým `@@`, ořezaný,
-   - `Lines` — řádky těla hunku, jak jsou (včetně vedoucího znaku).
-
-   Testovací diffy jsou v `testdata/`. Hunk bez změn a diff, který se netýká Go kódu,
-   se do výsledku nedostanou.
-
-2. `ReviewReport(findings []Finding) string` — přehled seskupený podle závažnosti
-   v pořadí ERROR, WARN, INFO. Prázdné skupiny vynech, prázdný vstup dá `"Žádné nálezy.\n"`.
-   Uvnitř skupiny řaď podle řádku, pak podle `Rule`, pak podle zprávy. Formát:
-
-```
-## ERROR (2)
-- ř. 7 [context-in-struct] ctx ve structu
-- ř. 30 [ignored-error] chyba do _
-
-## WARN (1)
-- ř. 12 [context-not-first] ctx není první
-```
-
-   Mezi skupinami je jeden prázdný řádek, výstup končí jediným `\n`.
-
-např. `ReviewReport(nil)` → `"Žádné nálezy.\n"`
+Funkce: `String`, `ParseFuncs`
 
 ```bash
-make lesson L=57
+make lesson L=57 PART=1
 ```
 
-Až budeš hotový, porovnej se `solutions/` (spoiler).
+Pak **`/go-deep-review 57 easy`**.
 
-## Ověření
+### Střední
 
-Po dokončení úkolů spusť v Cursoru **`/go-deep-review`** a zadej třeba jen `57`. AI tě postupně projde body níže, doptá se a ověří pochopení — nestačí jen zelené testy.
+Funkce: `CheckIgnoredErrors`, `CheckContextInStruct`
 
-- [ ] `make lesson L=57` prochází
+```bash
+make lesson L=57 PART=2
+```
+
+Pak **`/go-deep-review 57 medium`**.
+
+### Obtížný
+
+Funkce: `CheckContextNotFirst`, `CriticalPath`, `ReviewReport`
+
+```bash
+make lesson L=57 PART=3
+```
+
+Pak **`/go-deep-review 57 hard`**.
+
+Až budou stupně hotové, porovnej se `solutions/` (spoiler).
+
+## Závěrečné otázky
+
+Spusť **`/go-deep-review 57 final`**. AI projde body níže, doptá se a ověří pochopení. Celé cvičení ověří `make lesson L=57` (+ `make race L=57`, pokud to lekce vyžaduje).
+
 - [ ] Umíš vysvětlit tři rozdíly mezi review kolegy a review agenta
 - [ ] Umíš popsat pořadí, ve kterém čteš velký diff, a proč zrovna takhle
 - [ ] Umíš najít v cizím diffu ignorovanou chybu, context ve structu a goroutinu bez ukončení

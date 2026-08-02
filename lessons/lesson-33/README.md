@@ -12,40 +12,6 @@
   totéž pravidlo z jiné strany.
 - Sestavit graf závislostí v jedné funkci a obhájit, proč Go nepotřebuje DI kontejner.
 
-## PHP → Go most
-
-V Symfony je interface deklarace u implementace a autowiring je slepí dohromady:
-
-```php
-interface OrderRepositoryInterface {
-    public function save(Order $o): void;
-    public function find(string $id): ?Order;
-    public function findAll(): array;
-    public function findByCustomer(string $c): array;
-    public function countPending(): int;
-    // …a dalších devět metod, protože „interface má popsat repozitář"
-}
-
-final class DoctrineOrderRepository implements OrderRepositoryInterface { /* … */ }
-```
-
-Interface je tu **popis implementace**. Vzniká zrcadlením třídy, roste s ní a každý
-konzument dostane všech čtrnáct metod, i když volá jednu.
-
-V Go je to obráceně. Interface deklaruje **konzument** a popisuje jen to, co sám volá:
-
-```go
-// v balíčku ordering — u konzumenta
-type OrderStore interface {
-	Save(o Order) error
-	Get(id string) (Order, bool)
-}
-```
-
-Implementace o tom interface nikdy nemusí vědět; splní ho tím, že má správné metody.
-Návyk k opuštění: **nepiš `XxxInterface` vedle `Xxx`.** Když má interface stejné metody
-jako jediná implementace, není to abstrakce, jen zdvojený kód.
-
 ## Teorie
 
 ### Port je interface u konzumenta
@@ -166,6 +132,40 @@ if err := s.store.Save(o); err != nil {
 Dvojité `%w` (od Go 1.20) dá volajícímu obojí: `errors.Is(err, ErrStore)` pro rozhodnutí,
 co dělat, i původní chybu pro log.
 
+## Rozdíly proti PHP
+
+V Symfony je interface deklarace u implementace a autowiring je slepí dohromady:
+
+```php
+interface OrderRepositoryInterface {
+    public function save(Order $o): void;
+    public function find(string $id): ?Order;
+    public function findAll(): array;
+    public function findByCustomer(string $c): array;
+    public function countPending(): int;
+    // …a dalších devět metod, protože „interface má popsat repozitář"
+}
+
+final class DoctrineOrderRepository implements OrderRepositoryInterface { /* … */ }
+```
+
+Interface je tu **popis implementace**. Vzniká zrcadlením třídy, roste s ní a každý
+konzument dostane všech čtrnáct metod, i když volá jednu.
+
+V Go je to obráceně. Interface deklaruje **konzument** a popisuje jen to, co sám volá:
+
+```go
+// v balíčku ordering — u konzumenta
+type OrderStore interface {
+	Save(o Order) error
+	Get(id string) (Order, bool)
+}
+```
+
+Implementace o tom interface nikdy nemusí vědět; splní ho tím, že má správné metody.
+Návyk k opuštění: **nepiš `XxxInterface` vedle `Xxx`.** Když má interface stejné metody
+jako jediná implementace, není to abstrakce, jen zdvojený kód.
+
 ## Časté chyby
 
 | Chyba | Proč vzniká | Jak to udělat správně |
@@ -177,70 +177,52 @@ co dělat, i původní chybu pro log.
 | Doména importuje `database/sql` | vrstvení podle Doctrine | závislost míří dovnitř, ne ven |
 | Vracení interfacu z konstruktoru | „ať je to abstraktní" | accept interfaces, return structs |
 
+## AI kvíz
+
+Po přečtení teorie spusť v Cursoru **`/go-deep-quiz 33`**. AI tě ~5 minut prověří mentální model (ne hotové cvičení). Slabiny si uloží do [`GAPS.md`](../../GAPS.md).
+
 ## Úkol
 
-Pracuj v `exercise/`. Postupuj A → B → C, po každé části spusť test.
+Pracuj v `exercise/`. Po doplnění spouštěj testy:
 
-### A — rozcvička (~10 min)
+Stupně jdou od jednodušších ke složitějším — po každém stupni spusť review, než jdeš dál.
 
-Porty `Clock` a `IDGen` jsou předepsané. Implementuj:
+### Jednoduchý
 
-1. `NewService(clock Clock, ids IDGen) (*Service, error)` — chybějící port (kterýkoli
-   z nich, i oba) vrací `ErrMissingDependency`.
-2. `(*Service).NewOrder(customer string, totalCents int64) (Order, error)` — jméno
-   zákazníka ořízne o bílé znaky, prázdné jméno je `ErrEmptyCustomer`, nekladná částka
-   `ErrInvalidTotal`. `ID` bere z `IDGen`, `PlacedAt` z `Clock` — **nikde nevolej
-   `time.Now()` přímo**, test to pozná.
-
-Test dosadí za porty vlastní fake adaptéry (`fixedClock`, `seqIDs`) a porovná celou
-objednávku přes `==`.
-
-např. `NewOrder("  Alice  ", 1999)` → `{ID:"ord-1", Customer:"Alice", TotalCents:1999}`
-
-### B — jádro (~35 min)
-
-1. `NewMemoryStore() *MemoryStore`, `Save` a `Get` — in-memory adaptér portu
-   `OrderStore`. Musí být bezpečný pro souběžné použití; test na něj pouští sto goroutin
-   a běží s `-race`. Uložení existujícího ID hodnotu přepíše.
-2. `FailingStore.Save` a `FailingStore.Get` — fake adaptér pro chybovou cestu. `Save`
-   vždy vrací pole `Err`, `Get` čte z mapy `Orders` (i když je `nil`).
-3. `NewOrderService(store OrderStore, clock Clock, ids IDGen) (*OrderService, error)` —
-   chybějící kterákoli závislost je `ErrMissingDependency`.
-4. `Place` — sestaví objednávku (použij `Service` z části A) a uloží ji. Když úložiště
-   selže, vrať chybu, pro kterou platí `errors.Is(err, ErrStore)` **i**
-   `errors.Is(err, původníChyba)`.
-5. `Find` — neznámé ID je chyba obalující `ErrNotFound`.
-6. `Cancel` — neznámé ID `ErrNotFound`, už stornovaná objednávka `ErrAlreadyCanceled`,
-   jinak nastaví `Canceled` a uloží. Selhání zápisu obal stejně jako u `Place`. Storno
-   musí být vidět i při dalším `Find`.
-
-např. `Place("Alice", 1999)` → `{ID:"ord-1", Canceled:false}`; po `Cancel` → `Canceled:true`
-
-### C — rozšíření (~20 min)
-
-1. `SystemClock.Now()` — produkční adaptér nad `time.Now`.
-2. `RandomIDGen.NewID()` — 32 hexadecimálních znaků, tedy 16 bajtů z `crypto/rand`
-   přes `encoding/hex`. Test hlídá tvar i to, že se pět set ID neopakuje.
-3. `Wire() (*OrderService, error)` — sestaví službu z produkčních adaptérů. Jeden výraz,
-   žádná logika.
-
-Až budeš hotový, zkus si myšlenkový experiment: kdyby přišel požadavek ukládat do
-Postgresu, kolik souborů se musí změnit? (Správná odpověď je „jeden nový a `Wire`".)
-
-např. `Wire().Place("Alice", 4200).ID` → 32 hex znaků (`^[0-9a-f]{32}$`)
+Funkce: `Now`, `NewID`, `NewService`, `NewOrder`
 
 ```bash
-make lesson L=33
-make race L=33
+make lesson L=33 PART=1
 ```
 
-Až budeš hotový, porovnej se `solutions/` (spoiler).
+Pak **`/go-deep-review 33 easy`**.
 
-## Ověření
+### Střední
 
-Po dokončení úkolů spusť v Cursoru **`/go-deep-review`** a zadej třeba jen `33`. AI tě postupně projde body níže, doptá se a ověří pochopení — nestačí jen zelené testy.
+Funkce: `NewMemoryStore`, `Save`, `Get`, `Save`, `Get`
 
-- [ ] `make lesson L=33` prochází, včetně `make race L=33`
+```bash
+make lesson L=33 PART=2
+```
+
+Pak **`/go-deep-review 33 medium`**.
+
+### Obtížný
+
+Funkce: `NewOrderService`, `Place`, `Find`, `Cancel`, `Wire`
+
+```bash
+make lesson L=33 PART=3
+```
+
+Pak **`/go-deep-review 33 hard`**.
+
+Až budou stupně hotové, porovnej se `solutions/` (spoiler).
+
+## Závěrečné otázky
+
+Spusť **`/go-deep-review 33 final`**. AI projde body níže, doptá se a ověří pochopení. Celé cvičení ověří `make lesson L=33` (+ `make race L=33`, pokud to lekce vyžaduje).
+
 - [ ] Umíš vysvětlit, proč port patří ke konzumentovi, ne k implementaci
 - [ ] Umíš rozlišit driving a driven port a určit směr závislostí
 - [ ] Umíš říct, proč je `UserRepositoryInterface` se 14 metodami anti-vzor

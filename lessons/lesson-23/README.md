@@ -10,48 +10,6 @@
 - Odhadnout podle stylu, který kus kódu psal model bez kontextu Go konvencí.
 - Zhodnotit vlastní úroveň v tématech fáze 2 a vědět, co zopakovat.
 
-## PHP → Go most
-
-Celá fáze 2 se dá shrnout jedním obrázkem. Takhle vypadá Symfony služba přepsaná do Go
-doslova:
-
-```go
-// package service
-type UserServiceInterface interface {
-	GetUser(id *int) (*User, error)
-	GetAllUsers() ([]*User, error)
-	CreateUser(u *User) error
-	UpdateUser(u *User) error
-	DeleteUser(id *int) error
-	ValidateUser(u *User) (bool, error)
-}
-
-type userService struct{ repo repository.UserRepositoryInterface }
-
-func NewUserService(repo repository.UserRepositoryInterface) UserServiceInterface {
-	return &userService{repo: repo}
-}
-```
-
-A takhle vypadá totéž napsané v Go:
-
-```go
-// package user
-
-// Store je port. Definuje ho ten, kdo ho volá, a má jen to, co skutečně potřebuje.
-type Store interface {
-	Save(User) error
-}
-
-type Service struct{ store Store }
-
-func New(store Store) (*Service, error) { /* ... */ }
-```
-
-Rozdíl není v počtu řádků, ale v tom, kdo koho vlastní. V první verzi vlastní rozhraní
-implementace a konzument bere, co dostane. Ve druhé ho vlastní konzument a implementace
-se mu přizpůsobí. To je celá fáze 2 v jedné větě.
-
 ## Recap
 
 ### Otázky a odpovědi
@@ -159,6 +117,48 @@ podle kterých to poznáš skoro okamžitě:
 Nejužitečnější věta při review AI kódu zní: **„Co by se stalo, kdybych to smazal?"**
 Většina vygenerovaného kódu jsou vrstvy, které nic nedělají.
 
+## Rozdíly proti PHP
+
+Celá fáze 2 se dá shrnout jedním obrázkem. Takhle vypadá Symfony služba přepsaná do Go
+doslova:
+
+```go
+// package service
+type UserServiceInterface interface {
+	GetUser(id *int) (*User, error)
+	GetAllUsers() ([]*User, error)
+	CreateUser(u *User) error
+	UpdateUser(u *User) error
+	DeleteUser(id *int) error
+	ValidateUser(u *User) (bool, error)
+}
+
+type userService struct{ repo repository.UserRepositoryInterface }
+
+func NewUserService(repo repository.UserRepositoryInterface) UserServiceInterface {
+	return &userService{repo: repo}
+}
+```
+
+A takhle vypadá totéž napsané v Go:
+
+```go
+// package user
+
+// Store je port. Definuje ho ten, kdo ho volá, a má jen to, co skutečně potřebuje.
+type Store interface {
+	Save(User) error
+}
+
+type Service struct{ store Store }
+
+func New(store Store) (*Service, error) { /* ... */ }
+```
+
+Rozdíl není v počtu řádků, ale v tom, kdo koho vlastní. V první verzi vlastní rozhraní
+implementace a konzument bere, co dostane. Ve druhé ho vlastní konzument a implementace
+se mu přizpůsobí. To je celá fáze 2 v jedné větě.
+
 ## Časté chyby
 
 | Chyba | Proč vzniká | Jak to udělat správně |
@@ -170,126 +170,47 @@ Většina vygenerovaného kódu jsou vrstvy, které nic nedělají.
 | `New()` u typu s prázdnou mapou | „objekt bez konstruktoru neexistuje" | líná inicializace |
 | Refaktor, který mimochodem mění chování | „stejně to bylo špatně" | testy první, chování zamčené |
 
+## AI kvíz
+
+Po přečtení teorie spusť v Cursoru **`/go-deep-quiz 23`**. AI tě ~5 minut prověří mentální model (ne hotové cvičení). Slabiny si uloží do [`GAPS.md`](../../GAPS.md).
+
 ## Úkol
 
-Pracuj v `exercise/`. Tohle je **kumulativní úloha**: jeden balíček, který kombinuje
-pojmenování (19), konstruktory a zero value (20), error handling (21) a čtení cizího kódu
-(22).
+Pracuj v `exercise/`. Po doplnění spouštěj testy:
 
-Zadání zní: *„AI vygenerovala tenhle skladový balíček. Přepiš ho."* Původní verze vypadá
-takhle (výřez — je funkční, ale prolezlá):
+Stupně jdou od jednodušších ke složitějším — po každém stupni spusť review, než jdeš dál.
 
-```go
-// ŠPATNĚ — tohle přepisuješ
-package inventory
+### Jednoduchý
 
-type InventoryManagerInterface interface {
-	GetRecordBySku(sku *string) (*Record, error)
-	GetAllRecords() ([]*Record, error)
-	SaveRecord(record *Record) error
-	DeleteRecord(sku *string) error
-	GetTotalQuantity() int
-	DescribeRecord(sku *string) string
-	LoadRecordsFromFile(filePath string) []*Record
-}
-
-type inventoryManager struct{ recordsMap map[string]*Record }
-
-func NewInventoryManager() InventoryManagerInterface {
-	return &inventoryManager{recordsMap: make(map[string]*Record)}
-}
-
-func (m *inventoryManager) DescribeRecord(sku *string) string {
-	record, _ := m.GetRecordBySku(sku) // chyba? jaká chyba
-	if record != nil {
-		return record.Name + ": " + strconv.Itoa(record.Qty) + " ks"
-	}
-	return "Error: Record not found!"
-}
-```
-
-Cílové veřejné API je **předepsané** a stuby už v `exercise.go` jsou — nevymýšlej si
-vlastní jména, testy počítají přesně s těmito.
-
-### A — malý interface místo velkého (~15 min)
-
-Port `Loader` má jedinou metodu. `Describe(l Loader, sku string) (string, error)`:
-
-- `l == nil` → `"", ErrMissingLoader`;
-- `sku == ""` → `"", ErrEmptySKU` a loader se **vůbec nevolá**;
-- chyba z `Load` → `""` a `fmt.Errorf("describe %q: %w", sku, err)`;
-- jinak `fmt.Sprintf("%s: %d ks", r.Name, r.Qty)`.
-
-Všimni si, co jsi právě získal: test si napíše pětiřádkový `stubLoader` a nepotřebuje
-mockovací knihovnu. Podívej se na něj v `exercise_test.go`.
-
-např. `Describe(loader, "A1")` → `"Šroub: 12 ks"`
-
-### B — error handling a wrapping (~30 min)
-
-`LoadRecords(r io.Reader) ([]Record, error)` čte řádky `sku;name;qty`.
-
-- Prázdné řádky a řádky začínající `#` se přeskakují, ale **počítají se** do čísla řádku.
-- Všechna tři pole se ořezávají o bílé znaky.
-- Pořadí výsledku odpovídá pořadí ve vstupu. Prázdný vstup → prázdný výsledek, `nil` chyba.
-
-Přesné texty chyb (číslování řádků od 1, při chybě vrať `nil` slice):
-
-| Situace | Text |
-|---|---|
-| jiný než 3 sloupce | `line 2: malformed line: "B2;Matice"` |
-| prázdné SKU | `line 2: empty sku` |
-| množství není číslo nebo je záporné | `line 1: invalid quantity: "mnoho"` |
-| SKU už bylo | `line 3: duplicate sku: "A1"` |
-| selhalo čtení | `read records: io timeout` |
-
-Sentinely musí zůstat dohledatelné přes `errors.Is`.
-
-např. `LoadRecords("A1;Šroub;12")` → `[{SKU:"A1", Name:"Šroub", Qty:12}]`
-
-### C — celý balíček (~30 min)
-
-`Store` je sklad v paměti. **Nepiš konstruktor** — `var s Store` musí fungovat.
-
-- `Put(r Record) error` — prázdné `SKU` → `ErrEmptySKU`; `Qty < 0` → chyba obalující
-  `ErrInvalidQty` s hodnotou v textu; jinak vlož nebo přepiš. Neplatný záznam se neuloží.
-- `PutAll(records []Record) error` — uloží **všechny platné** položky a chyby těch
-  vadných spojí přes `errors.Join`, každou s kontextem
-  `fmt.Errorf("record %d: %w", i, err)`. Bez chyb vrací `nil`.
-- `Load(sku string) (Record, error)` — chybějící SKU → `Record{}` a
-  `fmt.Errorf("%w: %q", ErrNotFound, sku)`. Tahle metoda dělá ze `Store` implementaci
-  `Loader` — nic dalšího pro to psát nebudeš.
-- `Remove(sku string) error` — chybějící SKU → stejná chyba jako u `Load`.
-- `List() []Record` — kopie všech položek **seřazená podle SKU**; prázdný sklad → prázdný
-  slice, ne `nil` panika.
-- `TotalQty() int` — součet množství.
-
-Pravidla, která platí pro celé řešení:
-
-- Žádný `*Record` v signaturách. `Record` je malá hodnota, pointer nepřidává nic.
-- Žádná ignorovaná chyba, žádná panika.
-- Žádná funkce delší než 20 řádků.
-- Žádný getter s prefixem `Get`.
-
-např. `Put({SKU:"A1", Name:"Šroub", Qty:5}); TotalQty()` → `5`
+Funkce: `Describe`, `LoadRecords`
 
 ```bash
-make lesson L=23
+make lesson L=23 PART=1
 ```
 
-Až budeš hotový, porovnej se `solutions/` (spoiler).
+Pak **`/go-deep-review 23 easy`**.
 
-## Ověření
+### Střední
 
-Po dokončení úkolů spusť v Cursoru **`/go-deep-review`** a zadej třeba jen `23`. AI tě postupně projde body níže, doptá se a ověří pochopení — nestačí jen zelené testy.
+Funkce: `Put`, `PutAll`, `Load`
 
-- [ ] `make lesson L=23` prochází
-- [ ] `grep -c '\*Record' exercise/exercise.go` vrací 0
-- [ ] Umíš vyjmenovat aspoň sedm zápachů z katalogu a ke každému opravu
-- [ ] Umíš vysvětlit, proč `Store` nepotřebuje konstruktor
-- [ ] Umíš vysvětlit, proč `Describe` bere `Loader` a ne `*Store`
-- [ ] Umíš vysvětlit, kdy `errors.Join` a kdy `%w`
-- [ ] Umíš popsat tři znaky, podle kterých poznáš Go vygenerované AI
+```bash
+make lesson L=23 PART=2
+```
+
+Pak **`/go-deep-review 23 medium`**.
+
+### Obtížný
+
+Funkce: `Remove`, `List`, `TotalQty`
+
+```bash
+make lesson L=23 PART=3
+```
+
+Pak **`/go-deep-review 23 hard`**.
+
+Až budou stupně hotové, porovnej se `solutions/` (spoiler).
 
 ## Sebehodnocení
 
@@ -320,6 +241,17 @@ Vyhodnocení:
 
 Zvlášť sleduj položky 5 a 7. Návrh portů a kombinování chyb ti fáze 3 a 4 budou vracet
 každý den, a zároveň je AI generuje nejhůř.
+
+## Závěrečné otázky
+
+Spusť **`/go-deep-review 23 final`**. AI projde body níže, doptá se a ověří pochopení. Celé cvičení ověří `make lesson L=23` (+ `make race L=23`, pokud to lekce vyžaduje).
+
+- [ ] `grep -c '\*Record' exercise/exercise.go` vrací 0
+- [ ] Umíš vyjmenovat aspoň sedm zápachů z katalogu a ke každému opravu
+- [ ] Umíš vysvětlit, proč `Store` nepotřebuje konstruktor
+- [ ] Umíš vysvětlit, proč `Describe` bere `Loader` a ne `*Store`
+- [ ] Umíš vysvětlit, kdy `errors.Join` a kdy `%w`
+- [ ] Umíš popsat tři znaky, podle kterých poznáš Go vygenerované AI
 
 ## AI režim
 

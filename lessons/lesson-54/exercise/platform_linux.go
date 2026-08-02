@@ -2,9 +2,9 @@
 
 package exercise
 
-// PlatformHint vrací jméno platformy. Sufix _linux.go by stačil sám,
-// značka //go:build linux je tu navíc jako ukázka.
+// PlatformHint vrací jméno platformy na Linuxu (sufix _linux.go nebo tag linux).
+// Na Linuxu vrací "linux"; na jiných GOOS se kompiluje platform_other.go.
 func PlatformHint() string {
-	// TODO: úkol C
+	// TODO
 	return ""
 }

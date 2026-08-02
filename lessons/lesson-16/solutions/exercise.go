@@ -45,6 +45,7 @@ type UserDeleted struct {
 // V JSON se objevuje jako desetinné číslo (1999 -> 19.99).
 type Cents int64
 
+// --- Stupeň: jednoduchý ---
 // ToJSON serializuje uživatele do JSON.
 func ToJSON(u User) ([]byte, error) {
 	data, err := json.Marshal(u)
@@ -69,6 +70,7 @@ func FromJSON(data []byte) (User, error) {
 	return u, nil
 }
 
+// --- Stupeň: střední ---
 // DecodeEvent podle pole Kind dekóduje payload do odpovídajícího typu.
 func DecodeEvent(data []byte) (any, error) {
 	var ev Event
@@ -107,6 +109,7 @@ func (c Cents) MarshalJSON() ([]byte, error) {
 	return []byte(fmt.Sprintf("%s%d.%02d", sign, v/100, v%100)), nil
 }
 
+// --- Stupeň: obtížný ---
 // UnmarshalJSON načte částku z desetinného čísla nebo z řetězce.
 func (c *Cents) UnmarshalJSON(data []byte) error {
 	s := strings.TrimSpace(string(data))

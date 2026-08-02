@@ -10,37 +10,6 @@
 - Rozhodnout mezi `nil` slice a prázdným slice a vědět, kdy na tom rozdílu záleží.
 - Napsat mazání prvku se zachováním i bez zachování pořadí a vědět, co každá varianta stojí.
 
-## PHP → Go most
-
-PHP pole je jeden univerzální kontejner: uspořádaná hash mapa, která umí být seznam
-i slovník. Roste sama, kopíruje se při přiřazení (copy-on-write) a nemusíš o ní
-přemýšlet.
-
-```php
-$a = [1, 2, 3];
-$b = $a;        // logická kopie, $b je nezávislé
-$b[] = 4;
-count($a);      // 3 — $a se nezměnilo
-```
-
-Go rozděluje tenhle kontejner na dvě věci. **Pole** (`[3]int`) má délku v typu, je to
-hodnota a při přiřazení se opravdu zkopíruje. **Slice** (`[]int`) je malá struktura
-ukazující do cizí paměti a při přiřazení se zkopíruje jen ta struktura, ne data.
-
-```go
-a := []int{1, 2, 3}
-b := a          // zkopíruje se jen header, data jsou sdílená
-b[0] = 99
-fmt.Println(a[0]) // 99 — a se změnilo!
-
-b = append(b, 4)  // tady už se možná alokovalo nové pole
-```
-
-Přenos návyku: v PHP se ptáš „co je v poli". V Go se musíš ptát **„kdo vlastní backing
-array a kdo do něj ještě kouká"**. Slice je pohled na paměť, ne vlastník dat. Tohle je
-jediný koncept z celé fáze 1, na kterém opravdu zakopne každý, kdo přichází z PHP —
-protože vypadá jako pole, ale chová se jako ukazatel s délkou.
-
 ## Teorie
 
 ### Pole je hodnota, slice je pohled
@@ -271,6 +240,37 @@ potřebuješ jen výjimečně (typicky `json.Unmarshal`). Idiomatické Go místo
 Pokud funkce nesmí vstup rozbít, musí si udělat vlastní kopii — buď přes `make` + `copy`,
 nebo vstup předat jako `s[:len(s):len(s)]`, aby první `append` vždy alokoval.
 
+## Rozdíly proti PHP
+
+PHP pole je jeden univerzální kontejner: uspořádaná hash mapa, která umí být seznam
+i slovník. Roste sama, kopíruje se při přiřazení (copy-on-write) a nemusíš o ní
+přemýšlet.
+
+```php
+$a = [1, 2, 3];
+$b = $a;        // logická kopie, $b je nezávislé
+$b[] = 4;
+count($a);      // 3 — $a se nezměnilo
+```
+
+Go rozděluje tenhle kontejner na dvě věci. **Pole** (`[3]int`) má délku v typu, je to
+hodnota a při přiřazení se opravdu zkopíruje. **Slice** (`[]int`) je malá struktura
+ukazující do cizí paměti a při přiřazení se zkopíruje jen ta struktura, ne data.
+
+```go
+a := []int{1, 2, 3}
+b := a          // zkopíruje se jen header, data jsou sdílená
+b[0] = 99
+fmt.Println(a[0]) // 99 — a se změnilo!
+
+b = append(b, 4)  // tady už se možná alokovalo nové pole
+```
+
+Přenos návyku: v PHP se ptáš „co je v poli". V Go se musíš ptát **„kdo vlastní backing
+array a kdo do něj ještě kouká"**. Slice je pohled na paměť, ne vlastník dat. Tohle je
+jediný koncept z celé fáze 1, na kterém opravdu zakopne každý, kdo přichází z PHP —
+protože vypadá jako pole, ale chová se jako ukazatel s délkou.
+
 ## Časté chyby
 
 | Chyba | Proč vzniká | Jak to udělat správně |
@@ -283,66 +283,52 @@ nebo vstup předat jako `s[:len(s):len(s)]`, aby první `append` vždy alokoval.
 | Vracení výřezu interního bufferu | v PHP by šlo o kopii | vrať `Clone(s)` nebo `s[a:b:b]` |
 | Porovnávání slice přes `==` | zvyk na `$a == $b` v PHP | prvek po prvku, nebo `reflect.DeepEqual` v testu |
 
+## AI kvíz
+
+Po přečtení teorie spusť v Cursoru **`/go-deep-quiz 07`**. AI tě ~5 minut prověří mentální model (ne hotové cvičení). Slabiny si uloží do [`GAPS.md`](../../GAPS.md).
+
 ## Úkol
 
-Pracuj v `exercise/`. Postupuj A → B → C, po každé části spusť test.
+Pracuj v `exercise/`. Po doplnění spouštěj testy:
 
-### A — rozcvička (~10 min)
+Stupně jdou od jednodušších ke složitějším — po každém stupni spusť review, než jdeš dál.
 
-1. `Sum(nums []int) int` — součet prvků. Prázdný i `nil` vstup dá `0`.
-2. `Reverse(nums []int)` — otočí pořadí **in-place**, nic nevrací. Musí fungovat pro
-   sudou i lichou délku, pro prázdný i `nil` vstup. Použij dva indexy zleva a zprava,
-   nealokuj pomocný slice.
+### Jednoduchý
 
-Rozmysli si, proč `Reverse` nemusí nic vracet, i když `Grow` z části B musí.
-
-např. `Sum([]int{1, 2, 3, 4})` → `10`
-
-### B — jádro (~35 min)
-
-1. `Grow(s []int, n int) []int` — zajistí, že výsledek má `cap >= n`, a **zachová `len`
-   i obsah**. Pokud už `cap(s) >= n`, vrať `s` beze změny (tedy stejný header nad stejným
-   backing polem — test to kontroluje porovnáním adresy prvního prvku). Jinak alokuj nové
-   pole a data zkopíruj.
-2. `RemoveAt(s []int, i int) []int` — smaže prvek na indexu `i` a **zachová pořadí**
-   zbytku. Index mimo rozsah (`i < 0` nebo `i >= len(s)`) znamená „nedělej nic": vrať `s`
-   beze změny. Funkce smí (a bude) mutovat backing pole volajícího — to je záměr.
-3. `RemoveFast(s []int, i int) []int` — totéž, ale v `O(1)` a **bez zachování pořadí**:
-   na uvolněné místo přesuň poslední prvek a slice zkrať. Index mimo rozsah opět vrací
-   `s` beze změny.
-4. `Clone(s []int) []int` — vrátí **nezávislou** kopii: zápis do výsledku nesmí být vidět
-   ve vstupu a naopak. `nil` vstup vrací `nil`. Prázdný ne-nil slice vrací prázdný ne-nil
-   slice.
-
-např. `RemoveAt([]int{1, 2, 3, 4}, 1)` → `[1, 3, 4]`
-
-### C — rozšíření (~25 min)
-
-1. `Chunk(s []int, size int) [][]int` — rozdělí `s` na kusy délky `size`; poslední kus
-   může být kratší. `size <= 0` nebo prázdný vstup vrací výsledek s nulovou délkou.
-   **Každý chunk musí být nezávislá kopie** — test zapíše do jednoho chunku a ověří, že
-   se to neprojevilo v ostatních ani ve vstupu. Naivní `s[i:j]` tímhle testem neprojde.
-2. `Filter(s []int, keep func(int) bool) []int` — vrátí prvky, pro které `keep` vrátí
-   `true`, **implementovaný trikem `s[:0]`**: výsledek se skládá do stejného backing pole
-   jako vstup, bez jediné alokace. Zachovej pořadí.
-
-   Test tenhle trik cíleně odhaluje: po zavolání `Filter` zkontroluje, že se **vstupní
-   slice přepsal**. To je cena za nulovou alokaci a musíš o ní vědět — proto se tenhle
-   vzor nikdy nepoužívá na data, která ti nepatří.
-
-např. `Chunk([]int{1, 2, 3, 4, 5}, 2)` → `[[1, 2], [3, 4], [5]]`
+Funkce: `Sum`, `Reverse`
 
 ```bash
-make lesson L=07
+make lesson L=07 PART=1
 ```
 
-Až budeš hotový, porovnej se `solutions/` (spoiler).
+Pak **`/go-deep-review 07 easy`**.
 
-## Ověření
+### Střední
 
-Po dokončení úkolů spusť v Cursoru **`/go-deep-review`** a zadej třeba jen `07`. AI tě postupně projde body níže, doptá se a ověří pochopení — nestačí jen zelené testy.
+Funkce: `Grow`, `RemoveAt`, `RemoveFast`
 
-- [ ] `make lesson L=07` prochází
+```bash
+make lesson L=07 PART=2
+```
+
+Pak **`/go-deep-review 07 medium`**.
+
+### Obtížný
+
+Funkce: `Clone`, `Chunk`, `Filter`
+
+```bash
+make lesson L=07 PART=3
+```
+
+Pak **`/go-deep-review 07 hard`**.
+
+Až budou stupně hotové, porovnej se `solutions/` (spoiler).
+
+## Závěrečné otázky
+
+Spusť **`/go-deep-review 07 final`**. AI projde body níže, doptá se a ověří pochopení. Celé cvičení ověří `make lesson L=07` (+ `make race L=07`, pokud to lekce vyžaduje).
+
 - [ ] Umíš nakreslit slice header a vysvětlit rozdíl mezi `len` a `cap`
 - [ ] Umíš vysvětlit, proč `append` uvnitř funkce nezvětší slice volajícího
 - [ ] Umíš vysvětlit, kdy `a[1:3]` a `a[1:3:3]` dají různý výsledek
@@ -353,6 +339,7 @@ Po dokončení úkolů spusť v Cursoru **`/go-deep-review`** a zadej třeba jen
 
 `ZAKÁZÁNO` — viz [docs/ai-playbook.md](../../docs/ai-playbook.md).
 
+Mentor, kvíz i review (dialog) jsou vždy OK; v tomto režimu AI nesmí psát kód cvičení.
 ## Další čtení
 
 1. [Go blog — Go Slices: usage and internals](https://go.dev/blog/slices-intro)

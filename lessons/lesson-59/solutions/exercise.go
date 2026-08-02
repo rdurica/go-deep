@@ -43,6 +43,7 @@ type Bookmark struct {
 	CreatedAt time.Time
 }
 
+// --- Stupeň: jednoduchý ---
 // NormalizeURL převede URL na kanonický tvar: malé schéma a host, bez výchozího portu,
 // bez utm_ parametrů, bez fragmentu, s seřazeným query a bez koncového lomítka.
 func NormalizeURL(raw string) (string, error) {
@@ -169,6 +170,7 @@ func (b Bookmark) Validate() error {
 	return nil
 }
 
+// --- Stupeň: střední ---
 // New sestaví normalizovanou a ověřenou záložku.
 func New(id, rawURL, title string, tags []string, createdAt time.Time) (Bookmark, error) {
 	normURL, err := NormalizeURL(rawURL)
@@ -254,6 +256,7 @@ func (s *Store) Get(id string) (Bookmark, error) {
 	return clone(b), nil
 }
 
+// --- Stupeň: obtížný ---
 // Delete smaže záložku podle ID i její záznamy v indexu.
 func (s *Store) Delete(id string) error {
 	s.mu.Lock()

@@ -29,6 +29,7 @@ type Service struct {
 	ids  IDGen
 }
 
+// --- Stupeň: jednoduchý ---
 // NewService složí službu z portů.
 func NewService(repo Repository, ids IDGen) *Service {
 	return &Service{repo: repo, ids: ids}
@@ -46,6 +47,7 @@ func (s *Service) Place(ctx context.Context, lines []order.Line) (order.Order, e
 	return o, nil
 }
 
+// --- Stupeň: střední ---
 // Get vrátí objednávku podle ID.
 func (s *Service) Get(ctx context.Context, id string) (order.Order, error) {
 	o, err := s.repo.Find(ctx, id)
@@ -60,6 +62,7 @@ func (s *Service) Pay(ctx context.Context, id string) (order.Order, error) {
 	return s.apply(ctx, id, order.Order.Pay)
 }
 
+// --- Stupeň: obtížný ---
 // Ship odešle objednávku.
 func (s *Service) Ship(ctx context.Context, id string) (order.Order, error) {
 	return s.apply(ctx, id, order.Order.Ship)

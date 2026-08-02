@@ -62,6 +62,7 @@ type MemoryRepo struct {
 	users map[string]User
 }
 
+// --- Stupeň: jednoduchý ---
 // NewMemoryRepo vytvoří prázdný in-memory repozitář.
 func NewMemoryRepo() *MemoryRepo {
 	return &MemoryRepo{users: make(map[string]User)}
@@ -101,7 +102,9 @@ func (r *MemoryRepo) Save(ctx context.Context, u User) error {
 	return nil
 }
 
-// Delete smaže uživatele. Neznámé ID je chyba obalující ErrNotFound.
+// --- Stupeň: střední ---
+// Delete smaže uživatele. Neznámé ID → chyba obalující ErrNotFound.
+// Nejdřív zkontroluj ctx.Err(); zrušený kontext → context.Canceled.
 func (r *MemoryRepo) Delete(ctx context.Context, id string) error {
 	if err := ctx.Err(); err != nil {
 		return err
@@ -115,7 +118,9 @@ func (r *MemoryRepo) Delete(ctx context.Context, id string) error {
 	return nil
 }
 
+// --- Stupeň: obtížný ---
 // List vrátí všechny uživatele seřazené vzestupně podle ID.
+// Respektuj ctx.Err() jako u Get. Prázdný repo → prázdný slice a nil chyba.
 func (r *MemoryRepo) List(ctx context.Context) ([]User, error) {
 	if err := ctx.Err(); err != nil {
 		return nil, err

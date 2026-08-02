@@ -10,30 +10,6 @@
 - Napsat stresový test, který dá závodu šanci se projevit.
 - Opravit pět typických závodů: čítač, mapu, línou inicializaci, `append` a hot reload.
 
-## PHP → Go most
-
-V PHP se datový závod uvnitř procesu nemůže stát. Jeden request, jedno vlákno, žádná
-sdílená paměť. Souběžnost řešíš na úrovni **dat mimo proces** a nástroje na to jsou
-databázové:
-
-```php
-// dva requesty, klasický lost update — a řešení je transakce nebo zámek v DB
-$row = $db->fetch('SELECT views FROM posts WHERE id = ?', [$id]);
-$db->exec('UPDATE posts SET views = ? WHERE id = ?', [$row['views'] + 1, $id]);
-```
-
-Důležité je, že v PHP tenhle problém **vidíš** — je v SQL, je o transakcích, mluví se o
-něm na code review. V Go je stejná chyba jedním znakem a nikdo si jí nevšimne:
-
-```go
-p.views++ // dvě goroutiny, a je to lost update se stejnými následky
-```
-
-Co si přenést: instinkt „tohle čte a zapisuje sdílenou věc, kdo to hlídá?". Co opustit:
-představu, že když kód vypadá jako jedna operace, tak jedna operace je. `views++` je ve
-skutečnosti načtení, přičtení a uložení — přesně ten `SELECT` a `UPDATE` jako výše, jen
-bez transakce.
-
 ## Teorie
 
 ### Co je datový závod
@@ -169,6 +145,30 @@ Vedle toho piš tvrzení, která selžou i **bez** `-race`: součet, který nese
 slice, která je menší, invariant, který neplatí. Takový test chytí i závod, který
 detektor v daném běhu minul, a hlavně dává smysl i tomu, kdo `-race` zapomene zapnout.
 
+## Rozdíly proti PHP
+
+V PHP se datový závod uvnitř procesu nemůže stát. Jeden request, jedno vlákno, žádná
+sdílená paměť. Souběžnost řešíš na úrovni **dat mimo proces** a nástroje na to jsou
+databázové:
+
+```php
+// dva requesty, klasický lost update — a řešení je transakce nebo zámek v DB
+$row = $db->fetch('SELECT views FROM posts WHERE id = ?', [$id]);
+$db->exec('UPDATE posts SET views = ? WHERE id = ?', [$row['views'] + 1, $id]);
+```
+
+Důležité je, že v PHP tenhle problém **vidíš** — je v SQL, je o transakcích, mluví se o
+něm na code review. V Go je stejná chyba jedním znakem a nikdo si jí nevšimne:
+
+```go
+p.views++ // dvě goroutiny, a je to lost update se stejnými následky
+```
+
+Co si přenést: instinkt „tohle čte a zapisuje sdílenou věc, kdo to hlídá?". Co opustit:
+představu, že když kód vypadá jako jedna operace, tak jedna operace je. `views++` je ve
+skutečnosti načtení, přičtení a uložení — přesně ten `SELECT` a `UPDATE` jako výše, jen
+bez transakce.
+
 ## Časté chyby
 
 | Chyba | Proč vzniká | Jak to udělat správně |
@@ -180,74 +180,52 @@ detektor v daném běhu minul, a hlavně dává smysl i tomu, kdo `-race` zapome
 | Přepis konfigurace po polích | „vždyť je to jen pár přiřazení" | vyměň celou hodnotu (`atomic.Value`) |
 | `recover` na `concurrent map writes` | vypadá jako panika | není panika, je to fatal error; oprav mapu |
 
+## AI kvíz
+
+Po přečtení teorie spusť v Cursoru **`/go-deep-quiz 44`**. AI tě ~5 minut prověří mentální model (ne hotové cvičení). Slabiny si uloží do [`GAPS.md`](../../GAPS.md).
+
 ## Úkol
 
-Tahle lekce je jiná: v `exercise/exercise.go` **už kód je**, ale je závodný. Každé takové
-místo je označené komentářem `// ZÁVODNÍ implementace — oprav ji`. Tvoje práce je najít
-závod a odstranit ho, ne přepsat zadání.
+Pracuj v `exercise/`. Po doplnění spouštěj testy:
 
-Než začneš, pusť si testy a podívej se, jak to vypadá:
+Stupně jdou od jednodušších ke složitějším — po každém stupni spusť review, než jdeš dál.
 
-```bash
-make lesson L=44   # padá na špatných výsledcích
-make race L=44     # padá s WARNING: DATA RACE
-```
+### Jednoduchý
 
-### A — rozcvička (~10 min)
-
-`SafeIncrement(n int) int` — spustí `n` goroutin, každá zvýší společný čítač o jedna, a
-vrátí výslednou hodnotu. Oprav ho tak, aby vracel přesně `n`.
-
-např. `SafeIncrement(1000)` → `1000`
-
-### B — jádro (~35 min)
-
-1. `Registry` — registr se dvěma závody najednou: **líná inicializace** mapy a
-   **souběžné zápisy** do ní. Zero value musí zůstat použitelná (`var r Registry`), takže
-   inicializaci nemůžeš přesunout do konstruktoru. Použij `sync.Once` na vytvoření mapy a
-   zámek na přístup k ní. `Get` a `Len` musí být bezpečné souběžně se `Set`.
-2. `ParallelAppend(nums []int) []int` — vrací druhé mocniny v libovolném pořadí. Oprav
-   souběžný `append`. Výpočet nech mimo kritickou sekci.
-
-např. `ParallelAppend([]int{0, 1, 2, 3})` → `[0, 1, 4, 9]` (libovolné pořadí)
-
-### C — rozšíření (~25 min)
-
-1. `StressTest(t *testing.T, f func())` — napiš helper, který zavolá `f` ve
-   `StressGoroutines` goroutinách, každá `StressIterations` krát, a počká na dokončení.
-   Goroutiny musí vyrazit naráz (společný startovní kanál) a helper má volat `t.Helper()`.
-   Testy ho pak používají k tomu, aby závod vůbec dostal šanci.
-2. `Config` — konfigurace s hot reloadem. `StartReloader` na pozadí dokola volá `Store`,
-   zatímco osm goroutin volá `Load`. `Snapshot` má invariant
-   `Checksum == len(Endpoint) + Timeout`; jakmile ho čtenář uvidí porušený, viděl
-   rozepsaný zápis. Oprav to tak, aby se konfigurace měnila **jako celek** — přes
-   `atomic.Value` nebo `sync.RWMutex`. Zero value `Config` musí být použitelná a
-   `Load()` na ní vrací konzistentní (prázdný) snapshot.
-
-např. `Store(NewSnapshot("api.example.com", 30)); Load()` → stejný konzistentní snapshot
-
-### Jak si ověříš, že je to opravdu bez závodu
-
-Zelený test bez `-race` nic neznamená. Postupuj takhle:
+Funkce: `SafeIncrement`, `Set`, `Get`
 
 ```bash
-make race L=44                                          # musí být čistě
-cd lessons/lesson-44/exercise && go test -race -count=20 -timeout 300s .
-GORACE="halt_on_error=1" go test -race -count=5 .
+make lesson L=44 PART=1
 ```
 
-Dvacet opakování s `-race` a bez jediného `WARNING: DATA RACE` je rozumný důkaz. Když
-chceš mít jistotu, že tvoje tvrzení opravdu něco měří, dočasně vrať jednu původní
-závodní verzi a přesvědč se, že test spadne — test, který neumí selhat, nic nehlídá.
+Pak **`/go-deep-review 44 easy`**.
 
-Až budeš hotový, porovnej se `solutions/` (spoiler).
+### Střední
 
-## Ověření
+Funkce: `Len`, `ParallelAppend`, `StressTest`, `NewSnapshot`
 
-Po dokončení úkolů spusť v Cursoru **`/go-deep-review`** a zadej třeba jen `44`. AI tě postupně projde body níže, doptá se a ověří pochopení — nestačí jen zelené testy.
+```bash
+make lesson L=44 PART=2
+```
 
-- [ ] `make lesson L=44` prochází
-- [ ] `make race L=44` prochází a stejně tak `-count=20`
+Pak **`/go-deep-review 44 medium`**.
+
+### Obtížný
+
+Funkce: `Consistent`, `Store`, `Load`, `StartReloader`
+
+```bash
+make lesson L=44 PART=3
+```
+
+Pak **`/go-deep-review 44 hard`**.
+
+Až budou stupně hotové, porovnej se `solutions/` (spoiler).
+
+## Závěrečné otázky
+
+Spusť **`/go-deep-review 44 final`**. AI projde body níže, doptá se a ověří pochopení. Celé cvičení ověří `make lesson L=44` (+ `make race L=44`, pokud to lekce vyžaduje).
+
 - [ ] Umíš vyjmenovat tři podmínky datového závodu
 - [ ] Umíš vysvětlit, proč je závod nedefinované chování, a ne „nepřesný výsledek"
 - [ ] Umíš říct, co race detektor nikdy nenajde

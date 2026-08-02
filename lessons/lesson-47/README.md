@@ -10,38 +10,6 @@
 - Poznat sedm anti-vzorů práce s kontextem a opravit je.
 - Použít `context.WithoutCancel` pro práci na pozadí, která má přežít HTTP odpověď.
 
-## PHP → Go most
-
-V Symfony se „zruš to, klient je pryč" prakticky neřeší. Request běží, dokud neskončí,
-a nejbližší obdoba je timeout někde v konfiguraci:
-
-```php
-// max_execution_time = 30 — a víc nástrojů na zrušení nemáš
-$a = $this->api->fetchUser($id);        // 2 s
-$b = $this->api->fetchOrders($id);      // 3 s
-$c = $this->api->fetchInvoices($id);    // 4 s
-// celkem 9 s sériově; když třetí volání selže, první dvě už proběhla zbytečně
-```
-
-V Go tyhle tři dotazy pustíš najednou a zrušení je součást API:
-
-```go
-g, ctx := WithContext(r.Context())
-var a User
-var b []Order
-var c []Invoice
-g.Go(func() error { var err error; a, err = fetchUser(ctx, id); return err })
-g.Go(func() error { var err error; b, err = fetchOrders(ctx, id); return err })
-g.Go(func() error { var err error; c, err = fetchInvoices(ctx, id); return err })
-if err := g.Wait(); err != nil { // 4 s místo 9 — a při chybě rovnou míň
-    return err
-}
-```
-
-Co se mění v uvažování: `context.Context` není „další parametr, který se všude vláčí".
-Je to **strom zrušení**. Když se zruší uzel, zruší se celý podstrom pod ním. Tvoje práce
-je ten strom postavit tak, aby kopíroval strukturu volání — a nikdy ho neobejít.
-
 ## Teorie
 
 ### Co errgroup řeší
@@ -205,6 +173,38 @@ Dvě věci, které se u tohohle vzoru zapomínají. Za prvé: odpojený kontext 
 lekce 40 — musíš vědět, jak ta goroutina skončí. Při shutdownu serveru na ni nikdo
 nečeká, takže pokud na výsledku záleží, nepatří do goroutiny, ale do fronty.
 
+## Rozdíly proti PHP
+
+V Symfony se „zruš to, klient je pryč" prakticky neřeší. Request běží, dokud neskončí,
+a nejbližší obdoba je timeout někde v konfiguraci:
+
+```php
+// max_execution_time = 30 — a víc nástrojů na zrušení nemáš
+$a = $this->api->fetchUser($id);        // 2 s
+$b = $this->api->fetchOrders($id);      // 3 s
+$c = $this->api->fetchInvoices($id);    // 4 s
+// celkem 9 s sériově; když třetí volání selže, první dvě už proběhla zbytečně
+```
+
+V Go tyhle tři dotazy pustíš najednou a zrušení je součást API:
+
+```go
+g, ctx := WithContext(r.Context())
+var a User
+var b []Order
+var c []Invoice
+g.Go(func() error { var err error; a, err = fetchUser(ctx, id); return err })
+g.Go(func() error { var err error; b, err = fetchOrders(ctx, id); return err })
+g.Go(func() error { var err error; c, err = fetchInvoices(ctx, id); return err })
+if err := g.Wait(); err != nil { // 4 s místo 9 — a při chybě rovnou míň
+    return err
+}
+```
+
+Co se mění v uvažování: `context.Context` není „další parametr, který se všude vláčí".
+Je to **strom zrušení**. Když se zruší uzel, zruší se celý podstrom pod ním. Tvoje práce
+je ten strom postavit tak, aby kopíroval strukturu volání — a nikdy ho neobejít.
+
 ## Časté chyby
 
 | Chyba | Proč vzniká | Jak to udělat správně |
@@ -217,66 +217,52 @@ nečeká, takže pokud na výsledku záleží, nepatří do goroutiny, ale do fr
 | Logování `context.Canceled` jako chyby | vypadá to jako selhání | odlišit `Canceled` (klient odešel) od `DeadlineExceeded` |
 | `Wait()` bez závěrečného `cancel()` | „vrátil jsem nil, není co rušit" | `cancel` i v úspěšné větvi, jinak uzel stromu unikne |
 
+## AI kvíz
+
+Po přečtení teorie spusť v Cursoru **`/go-deep-quiz 47`**. AI tě ~5 minut prověří mentální model (ne hotové cvičení). Slabiny si uloží do [`GAPS.md`](../../GAPS.md).
+
 ## Úkol
 
-Pracuj v `exercise/`. Postupuj A → B → C, po každé části spusť test.
+Pracuj v `exercise/`. Po doplnění spouštěj testy:
 
-### A — rozcvička (~10 min)
+Stupně jdou od jednodušších ke složitějším — po každém stupni spusť review, než jdeš dál.
 
-Implementuj `Group.Go(func() error)` a `Group.Wait() error`:
+### Jednoduchý
 
-- nulová hodnota `Group` musí být použitelná (`var g Group`),
-- `Wait` počká na **všechny** úlohy, i když jedna z nich selhala dřív,
-- vrací chybu té úlohy, která selhala jako první; při úspěchu `nil`,
-- `Go(nil)` se tiše přeskočí.
-
-Zapamatování první chyby vyřeš přes `sync.Once` — dostaneš tím synchronizaci zadarmo.
-
-např. `20× Go(ok); Wait()` → `nil`
-
-### B — jádro (~35 min)
-
-1. `WithContext(ctx) (*Group, context.Context)` — vrátí skupinu a odvozený kontext, který
-   se zruší při první chybě. Použij `context.WithCancelCause`, aby si příjemce mohl přes
-   `context.Cause` vytáhnout skutečný důvod. `Wait` musí kontext zrušit **i v úspěšné
-   větvi**.
-2. `SetLimit(n int)` — omezí počet souběžně běžících úloh. `n <= 0` limit ruší. Volání
-   po prvním `Go` panikuje. Vstupenku ber v `Go`, ne uvnitř spuštěné goroutiny.
-
-Testy ověřují dodržení limitu (atomickým maximem), propagaci první chyby, že zrušení
-opravdu dorazí ke všem ostatním úlohám, že se propíše i zrušení rodiče, a že po `Wait`
-nezůstane žádná goroutina navíc.
-
-např. `WithContext` po úspěšném `Wait()` → `ctx.Err() = context.Canceled`
-
-### C — rozšíření (~20 min)
-
-1. `RunAll(ctx context.Context, tasks []Task) error` — spustí všechny úlohy souběžně.
-   Běžné dostanou kontext skupiny, úlohy s `Detached == true` dostanou
-   `context.WithoutCancel(ctx)`, takže přežijí zrušení rodiče. `RunAll` počká na
-   všechny — i na odpojené. Chybu úlohy obal jménem: `fmt.Errorf("task %q: %w", …)`.
-   Úloha s `Run == nil` dá `ErrNilTask`, prázdný seznam vrací `nil`.
-2. `Cause(err error) error` — rozbalí řetězec `Unwrap` až na nejhlubší chybu.
-   `nil` → `nil`, chyba bez `Unwrap` → ona sama.
-
-Test kontroluje, že odpojená úloha doběhne i po zrušení rodiče, že běžná ne, že odpojená
-pořád vidí hodnoty z kontextu, a že `RunAll` na odpojenou počká.
-
-např. `Cause(wrap("c", wrap("b", wrap("a", base))))` → `base`
+Funkce: `WithContext`, `SetLimit`
 
 ```bash
-make lesson L=47
-make race L=47
+make lesson L=47 PART=1
 ```
 
-Až budeš hotový, porovnej se `solutions/` (spoiler).
+Pak **`/go-deep-review 47 easy`**.
 
-## Ověření
+### Střední
 
-Po dokončení úkolů spusť v Cursoru **`/go-deep-review`** a zadej třeba jen `47`. AI tě postupně projde body níže, doptá se a ověří pochopení — nestačí jen zelené testy.
+Funkce: `Go`, `Wait`
 
-- [ ] `make lesson L=47` prochází
-- [ ] `make race L=47` prochází (žádné hlášení race detektoru)
+```bash
+make lesson L=47 PART=2
+```
+
+Pak **`/go-deep-review 47 medium`**.
+
+### Obtížný
+
+Funkce: `RunAll`, `Cause`
+
+```bash
+make lesson L=47 PART=3
+```
+
+Pak **`/go-deep-review 47 hard`**.
+
+Až budou stupně hotové, porovnej se `solutions/` (spoiler).
+
+## Závěrečné otázky
+
+Spusť **`/go-deep-review 47 final`**. AI projde body níže, doptá se a ověří pochopení. Celé cvičení ověří `make lesson L=47` (+ `make race L=47`, pokud to lekce vyžaduje).
+
 - [ ] Umíš vysvětlit, proč `Go` s limitem blokuje volajícího
 - [ ] Umíš vysvětlit rozdíl mezi `ctx.Err()` a `context.Cause(ctx)`
 - [ ] Umíš vyjmenovat aspoň pět anti-vzorů práce s kontextem

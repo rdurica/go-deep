@@ -49,49 +49,61 @@ type ShutdownStep struct {
 	Fn   func(ctx context.Context) error
 }
 
-// String vrací "verze (commit, čas)"; prázdná pole nahradí výchozími hodnotami.
+// --- Stupeň: jednoduchý ---
+// String vrací BuildInfo ve tvaru "verze (commit, čas)".
+// Prázdná pole nahradí postupně dev, none a unknown — BuildInfo{}.String() → "dev (none, unknown)".
 func (b BuildInfo) String() string {
-	// TODO: úkol A
+	// TODO
 	return ""
 }
 
-// Current vrátí BuildInfo poskládané z ldflags proměnných.
+// Current vrátí BuildInfo poskládané z package-level proměnných version, commit a buildTime.
+// Bez -ldflags platí výchozí hodnoty dev, none a unknown.
 func Current() BuildInfo {
-	// TODO: úkol A
-	return *new(BuildInfo)
+	// TODO
+	return BuildInfo{}
 }
 
-// VersionHandler vrací JSON s informacemi o buildu.
+// --- Stupeň: střední ---
+// VersionHandler vrací handler s JSON BuildInfo a Content-Type application/json.
+// Vždy vrací 200 a serializuje předané info.
 func VersionHandler(info BuildInfo) http.Handler {
-	// TODO: úkol A
-	return *new(http.Handler)
-}
-
-// NewHealthChecker vytvoří checker s daným timeoutem pro readiness kontroly.
-func NewHealthChecker(timeout time.Duration) *HealthChecker {
-	// TODO: úkol B
+	// TODO
 	return nil
 }
 
-// Register přidá nebo přepíše pojmenovanou kontrolu.
+// NewHealthChecker vytvoří checker s timeoutem pro readiness kontroly.
+// Nekladný timeout nahradí jednou vteřinou.
+func NewHealthChecker(timeout time.Duration) *HealthChecker {
+	// TODO
+	return nil
+}
+
+// Register přidá nebo přepíše kontrolu pod daným jménem.
+// Nil kontrolu ignoruj; volání je souběžně bezpečné pod mutexem.
 func (h *HealthChecker) Register(name string, check Check) {
-	// TODO: úkol B
+	// TODO
 }
 
-// LiveHandler odpovídá 200, dokud proces žije.
+// --- Stupeň: obtížný ---
+// LiveHandler vždy vrací 200 a nespouští žádnou registrovanou kontrolu.
+// I když je zaregistrovaná kontrola, která vždy selže, liveness vrací 200.
 func (h *HealthChecker) LiveHandler() http.Handler {
-	// TODO: úkol B
-	return *new(http.Handler)
+	// TODO
+	return nil
 }
 
-// ReadyHandler spustí kontroly souběžně a vrátí 200, nebo 503 s detailem.
+// ReadyHandler spustí kontroly souběžně s timeoutem z r.Context(); visící kontrola
+// po vypršení doplní ctx.Err(). Bez kontrol 200 a prázdná mapa; nesmí držet zámek při běhu kontrol.
 func (h *HealthChecker) ReadyHandler() http.Handler {
-	// TODO: úkol B
-	return *new(http.Handler)
+	// TODO
+	return nil
 }
 
-// ShutdownSequence provede kroky v pořadí a vrátí souhrnnou chybu.
+// ShutdownSequence provede kroky v pořadí pod jedním rozpočtem timeout.
+// Chyba kroku sekvenci nezastaví; po vypršení rozpočtu další kroky se nespustí.
+// Výsledek je errors.Join všech chyb, krok bez Fn je ErrNoStepFunc.
 func ShutdownSequence(ctx context.Context, timeout time.Duration, steps []ShutdownStep) error {
-	// TODO: úkol C
+	// TODO
 	return nil
 }

@@ -23,21 +23,67 @@ func waitNoLeak(t *testing.T, before int) {
 	t.Errorf("goroutine leak: před testem %d goroutin, po testu %d", before, runtime.NumGoroutine())
 }
 
-func TestGenerateAndCollect(t *testing.T) {
+// intsSource pošle nums do kanálu v goroutině a zavře ho — lokální fixture bez Generate.
+func intsSource(nums ...int) <-chan int {
+	ch := make(chan int)
+	go func() {
+		defer close(ch)
+		for _, n := range nums {
+			ch <- n
+		}
+	}()
+	return ch
+}
+
+// collectInt přečte kanál do slice — lokální helper bez Collect.
+func collectInt(ch <-chan int) []int {
+	var out []int
+	for v := range ch {
+		out = append(out, v)
+	}
+	return out
+}
+
+func TestGenerate(t *testing.T) {
 	tests := []struct {
 		name string
 		in   []int
 	}{
-		{"prázdný", nil},
-		{"jeden prvek", []int{7}},
-		{"několik prvků", []int{1, 2, 3, 4, 5}},
+		{"empty", nil},
+		{"one element", []int{7}},
+		{"several items", []int{1, 2, 3, 4, 5}},
 		{"duplicity a nuly", []int{0, 0, -1, -1, 3}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := exercise.Collect(exercise.Generate(tt.in...))
+			got := collectInt(exercise.Generate(tt.in...))
 			if len(got) != len(tt.in) {
-				t.Fatalf("Collect(Generate(%v)) = %v, chci %v", tt.in, got, tt.in)
+				t.Fatalf("Generate(%v) = %v, chci %v", tt.in, got, tt.in)
+			}
+			for i := range tt.in {
+				if got[i] != tt.in[i] {
+					t.Errorf("výsledek[%d] = %d, chci %d", i, got[i], tt.in[i])
+				}
+			}
+		})
+	}
+}
+
+func TestCollect(t *testing.T) {
+	tests := []struct {
+		name string
+		in   []int
+	}{
+		{"empty", nil},
+		{"one element", []int{7}},
+		{"several items", []int{1, 2, 3, 4, 5}},
+		{"duplicity a nuly", []int{0, 0, -1, -1, 3}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got := exercise.Collect(intsSource(tt.in...))
+			if len(got) != len(tt.in) {
+				t.Fatalf("Collect(...) = %v, chci %v", got, tt.in)
 			}
 			for i := range tt.in {
 				if got[i] != tt.in[i] {
@@ -81,11 +127,11 @@ func TestCollectOnAlreadyClosedChannel(t *testing.T) {
 func TestMerge(t *testing.T) {
 	before := runtime.NumGoroutine()
 
-	a := exercise.Generate(1, 2, 3)
-	b := exercise.Generate(10, 20)
-	c := exercise.Generate(100)
+	a := intsSource(1, 2, 3)
+	b := intsSource(10, 20)
+	c := intsSource(100)
 
-	got := exercise.Collect(exercise.Merge(a, b, c))
+	got := collectInt(exercise.Merge(a, b, c))
 	sort.Ints(got)
 
 	want := []int{1, 2, 3, 10, 20, 100}
@@ -127,7 +173,7 @@ func TestMergeLargeNoLeak(t *testing.T) {
 		for j := range nums {
 			nums[j] = 1
 		}
-		ins[i] = exercise.Generate(nums...)
+		ins[i] = intsSource(nums...)
 	}
 
 	sum := 0
@@ -150,7 +196,7 @@ func TestSplit(t *testing.T) {
 		nums[i] = i
 	}
 
-	outs := exercise.Split(exercise.Generate(nums...), 4)
+	outs := exercise.Split(intsSource(nums...), 4)
 	if len(outs) != 4 {
 		t.Fatalf("Split vrátil %d kanálů, chci 4", len(outs))
 	}
@@ -188,11 +234,11 @@ func TestSplitNonPositiveN(t *testing.T) {
 	before := runtime.NumGoroutine()
 
 	for _, n := range []int{0, -1} {
-		outs := exercise.Split(exercise.Generate(1, 2, 3), n)
+		outs := exercise.Split(intsSource(1, 2, 3), n)
 		if len(outs) != 1 {
 			t.Fatalf("Split(_, %d) vrátil %d kanálů, chci 1", n, len(outs))
 		}
-		if got := exercise.Collect(outs[0]); len(got) != 3 {
+		if got := collectInt(outs[0]); len(got) != 3 {
 			t.Errorf("Split(_, %d) propustil %v, chci tři hodnoty", n, got)
 		}
 	}

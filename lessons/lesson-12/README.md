@@ -9,39 +9,6 @@
 - Odhalit past „non-nil interface s nil pointerem uvnitř" a vysvětlit, proč vzniká.
 - Použít type assertion s comma-ok a type switch, aniž bys z nich udělal `instanceof` kaskádu.
 
-## PHP → Go most
-
-V PHP je implementace interfacu **deklarace**. Třída se k němu musí přihlásit jménem,
-a když interface vlastní cizí knihovna, musíš ji do svého kódu natáhnout:
-
-```php
-interface Notifier { public function notify(string $msg): void; }
-
-final class SlackNotifier implements Notifier   // explicitní přihlášení
-{
-    public function notify(string $msg): void { /* … */ }
-}
-```
-
-V Go je implementace **pozorování**. Typ splňuje interface v okamžiku, kdy má správnou
-sadu metod. Nikdo nikam nic nepíše:
-
-```go
-type Notifier interface {
-	Notify(msg string) error
-}
-
-type SlackNotifier struct{ token string }
-
-func (s SlackNotifier) Notify(msg string) error { return nil }
-// hotovo — SlackNotifier splňuje Notifier, aniž by o něm věděl
-```
-
-Co se mění v uvažování: interface přestává být kontrakt, ke kterému se implementace
-hlásí *shora*, a stává se **požadavkem, který si klade volající**. Proto se interface
-v Go deklaruje v balíčku, který ho konzumuje, je co nejmenší a implementace o něm často
-vůbec neví. Přesně naopak než Symfony, kde interface a jeho implementace bydlí vedle sebe.
-
 ## Teorie
 
 ### Interface je množina metod
@@ -220,6 +187,39 @@ Důvod je prostý: `Recorder{}` v interfacu je kopie a metoda, která mění sta
 kopii. Go tenhle omyl nedovolí. Chybová hláška `method has pointer receiver` je jedna
 z nejčastějších, co jako začátečník uvidíš — teď víš, že řešení je `&`.
 
+## Rozdíly proti PHP
+
+V PHP je implementace interfacu **deklarace**. Třída se k němu musí přihlásit jménem,
+a když interface vlastní cizí knihovna, musíš ji do svého kódu natáhnout:
+
+```php
+interface Notifier { public function notify(string $msg): void; }
+
+final class SlackNotifier implements Notifier   // explicitní přihlášení
+{
+    public function notify(string $msg): void { /* … */ }
+}
+```
+
+V Go je implementace **pozorování**. Typ splňuje interface v okamžiku, kdy má správnou
+sadu metod. Nikdo nikam nic nepíše:
+
+```go
+type Notifier interface {
+	Notify(msg string) error
+}
+
+type SlackNotifier struct{ token string }
+
+func (s SlackNotifier) Notify(msg string) error { return nil }
+// hotovo — SlackNotifier splňuje Notifier, aniž by o něm věděl
+```
+
+Co se mění v uvažování: interface přestává být kontrakt, ke kterému se implementace
+hlásí *shora*, a stává se **požadavkem, který si klade volající**. Proto se interface
+v Go deklaruje v balíčku, který ho konzumuje, je co nejmenší a implementace o něm často
+vůbec neví. Přesně naopak než Symfony, kde interface a jeho implementace bydlí vedle sebe.
+
 ## Časté chyby
 
 | Chyba | Proč vzniká | Jak to udělat správně |
@@ -232,72 +232,52 @@ z nejčastějších, co jako začátečník uvidíš — teď víš, že řešen
 | `any` v signatuře vlastní funkce | snaha o univerzálnost | konkrétní typ nebo generika (lekce 15) |
 | `var n Notifier = Recorder{}` | přehlédnutý pointer receiver | `&Recorder{}`, nebo změň receiver na hodnotu |
 
+## AI kvíz
+
+Po přečtení teorie spusť v Cursoru **`/go-deep-quiz 12`**. AI tě ~5 minut prověří mentální model (ne hotové cvičení). Slabiny si uloží do [`GAPS.md`](../../GAPS.md).
+
 ## Úkol
 
-Pracuj v `exercise/`. Postupuj A → B → C, po každé části spusť test.
+Pracuj v `exercise/`. Po doplnění spouštěj testy:
 
-### A — rozcvička (~10 min)
+Stupně jdou od jednodušších ke složitějším — po každém stupni spusť review, než jdeš dál.
 
-1. `func (r Rect) Area() float64` — obsah obdélníku (`W * H`).
-2. `func (c Circle) Area() float64` — obsah kruhu (`math.Pi * R²`).
-3. `TotalArea(shapes []Shape) float64` — součet obsahů. Prvky rovné `nil` **přeskoč**,
-   ať funkce nepanikuje. `nil` i prázdný slice dají 0.
+### Jednoduchý
 
-Všimni si, že u `Rect` ani `Circle` nikde nepíšeš, že implementují `Shape`.
-
-např. `Rect{W: 3, H: 4}.Area()` → `12`
-
-### B — jádro (~35 min)
-
-1. `Describe(v any) string` — přes **type switch** vrať:
-   - `nil` → `"nil"`
-   - `int` → `"int:42"` (formát `int:%d`)
-   - `string` → `string:"ahoj"` (formát `string:%q`, tedy s uvozovkami)
-   - `bool` → `"bool:true"` / `"bool:false"`
-   - `[]int` → `"[]int:len=3"`
-   - cokoli jiného → `"other:float64"` (formát `other:%T`)
-2. `func (r *Recorder) Notify(msg string) error` — když je `r.Err` nenulová, vrať ji
-   a zprávu **nezaznamenej**. Jinak zprávu ulož a vrať `nil`. Zero value `Recorder`
-   musí fungovat bez konstruktoru.
-3. `func (r *Recorder) Messages() []string` — vrací zaznamenané zprávy v pořadí vložení.
-   Musí vrátit **kopii**, aby volající nemohl přepsat vnitřní stav (`slices.Clone`).
-4. `NotifyAll(ns []Notifier, msg string) error` — pošle zprávu všem, `nil` prvky přeskočí,
-   při první chybě skončí a vrátí ji. Bez chyb vrací `nil`.
-
-`Recorder` je vzor, který budeš v Go používat pořád: místo mockovacího frameworku
-napíšeš deset řádků fake implementace.
-
-např. `Describe(42)` → `"int:42"`
-
-### C — rozšíření (~25 min)
-
-Tohle je nejdůležitější část lekce.
-
-1. `func (e *MyErr) Area() float64` — vrací 0. Receiver **musí** být pointer a metoda
-   nesmí sahat na pole, aby šla zavolat i na `nil`.
-2. `ReturnsNilPointer() Shape` — vrátí interface hodnotu, jejíž dynamický typ je `*MyErr`
-   a dynamická hodnota `nil`. Test ověří, že výsledek se **nerovná** `nil`, přestože
-   ukazatel uvnitř nil je. Nesmíš tedy vracet `nil` literál.
-3. `IsNilInterface(s Shape) bool` — vrací `true`, jen když je celá interface hodnota
-   `nil`, tedy prosté `s == nil`.
-
-Až test projde, zkus si v hlavě zodpovědět: jak bys tuhle past odhalil v cizím kódu při
-review? (Nápověda: hledej lokální proměnnou konkrétního pointer typu, která se vrací
-jako interface.)
-
-např. `ReturnsNilPointer() == nil` → `false`
+Funkce: `Area`, `Area`, `TotalArea`
 
 ```bash
-make lesson L=12
+make lesson L=12 PART=1
 ```
 
-Až budeš hotový, porovnej se `solutions/` (spoiler).
+Pak **`/go-deep-review 12 easy`**.
 
-## Ověření
+### Střední
 
-Po dokončení úkolů spusť v Cursoru **`/go-deep-review`** a zadej třeba jen `12`. AI tě postupně projde body níže, doptá se a ověří pochopení — nestačí jen zelené testy.
+Funkce: `Describe`, `Notify`, `Messages`
 
-- [ ] `make lesson L=12` prochází
+```bash
+make lesson L=12 PART=2
+```
+
+Pak **`/go-deep-review 12 medium`**.
+
+### Obtížný
+
+Funkce: `NotifyAll`, `Area`, `ReturnsNilPointer`, `IsNilInterface`
+
+```bash
+make lesson L=12 PART=3
+```
+
+Pak **`/go-deep-review 12 hard`**.
+
+Až budou stupně hotové, porovnej se `solutions/` (spoiler).
+
+## Závěrečné otázky
+
+Spusť **`/go-deep-review 12 final`**. AI projde body níže, doptá se a ověří pochopení. Celé cvičení ověří `make lesson L=12` (+ `make race L=12`, pokud to lekce vyžaduje).
+
 - [ ] Umíš vysvětlit, proč `ReturnsNilPointer() != nil`
 - [ ] Umíš vysvětlit, proč se interface deklaruje u konzumenta
 - [ ] Umíš vysvětlit rozdíl mezi method setem `T` a `*T`
@@ -308,6 +288,7 @@ Po dokončení úkolů spusť v Cursoru **`/go-deep-review`** a zadej třeba jen
 
 `ZAKÁZÁNO` — viz [docs/ai-playbook.md](../../docs/ai-playbook.md).
 
+Mentor, kvíz i review (dialog) jsou vždy OK; v tomto režimu AI nesmí psát kód cvičení.
 ## Další čtení
 
 1. [Effective Go — Interfaces and methods](https://go.dev/doc/effective_go#interfaces_and_types)

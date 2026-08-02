@@ -33,16 +33,17 @@ for dir in "${dirs[@]}"; do
 	# smaž staré zrcadlené testy, ať po přejmenování nezůstane sirotek
 	find "$dst_dir" -name '*_test.go' -delete
 
-	shopt -s nullglob
-	for src in "$src_dir"/*_test.go; do
-		dst="$dst_dir/$(basename "$src")"
+	while IFS= read -r -d '' src; do
+		rel="${src#"$src_dir"/}"
+		dst="$dst_dir/$rel"
+		mkdir -p "$(dirname "$dst")"
 		sed \
 			-e 's|^package exercise_test$|package solutions_test|' \
+			-e 's|^package exercise$|package solutions|' \
 			-e "s|/${lesson}/exercise\"|/${lesson}/solutions\"|" \
 			"$src" >"$dst"
 		count=$((count + 1))
-	done
-	shopt -u nullglob
+	done < <(find "$src_dir" -name '*_test.go' -print0)
 done
 
 echo "zrcadleno $count testovacích souborů"

@@ -387,16 +387,16 @@ func TestErrorResponses(t *testing.T) {
 		wantStatus  int
 		wantCode    string
 	}{
-		{"neznámá cesta", http.MethodGet, "/nope", "", "", http.StatusNotFound, "not_found"},
-		{"neexistující poznámka", http.MethodGet, "/notes/9999", "", "", http.StatusNotFound, "not_found"},
-		{"špatná metoda na kolekci", http.MethodPatch, "/notes", "application/json", `{}`, http.StatusMethodNotAllowed, "method_not_allowed"},
-		{"špatná metoda na položce", http.MethodPost, "/notes/1", "application/json", `{}`, http.StatusMethodNotAllowed, "method_not_allowed"},
-		{"chybějící Content-Type", http.MethodPost, "/notes", "", `{"text":"x"}`, http.StatusUnsupportedMediaType, "unsupported_media_type"},
-		{"špatný Content-Type", http.MethodPost, "/notes", "text/plain", `{"text":"x"}`, http.StatusUnsupportedMediaType, "unsupported_media_type"},
-		{"rozbitý JSON", http.MethodPost, "/notes", "application/json", `{"text":`, http.StatusBadRequest, "bad_request"},
-		{"prázdný text", http.MethodPost, "/notes", "application/json", `{"text":"   "}`, http.StatusBadRequest, "validation_failed"},
-		{"chybějící text", http.MethodPost, "/notes", "application/json", `{}`, http.StatusBadRequest, "validation_failed"},
-		{"příliš dlouhý text", http.MethodPost, "/notes", "application/json", `{"text":"` + strings.Repeat("a", 501) + `"}`, http.StatusBadRequest, "validation_failed"},
+		{"unknown path", http.MethodGet, "/nope", "", "", http.StatusNotFound, "not_found"},
+		{"missing note", http.MethodGet, "/notes/9999", "", "", http.StatusNotFound, "not_found"},
+		{"wrong method on collection", http.MethodPatch, "/notes", "application/json", `{}`, http.StatusMethodNotAllowed, "method_not_allowed"},
+		{"wrong method on item", http.MethodPost, "/notes/1", "application/json", `{}`, http.StatusMethodNotAllowed, "method_not_allowed"},
+		{"missing Content-Type", http.MethodPost, "/notes", "", `{"text":"x"}`, http.StatusUnsupportedMediaType, "unsupported_media_type"},
+		{"wrong Content-Type", http.MethodPost, "/notes", "text/plain", `{"text":"x"}`, http.StatusUnsupportedMediaType, "unsupported_media_type"},
+		{"broken JSON", http.MethodPost, "/notes", "application/json", `{"text":`, http.StatusBadRequest, "bad_request"},
+		{"empty text", http.MethodPost, "/notes", "application/json", `{"text":"   "}`, http.StatusBadRequest, "validation_failed"},
+		{"missing text", http.MethodPost, "/notes", "application/json", `{}`, http.StatusBadRequest, "validation_failed"},
+		{"text too long", http.MethodPost, "/notes", "application/json", `{"text":"` + strings.Repeat("a", 501) + `"}`, http.StatusBadRequest, "validation_failed"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

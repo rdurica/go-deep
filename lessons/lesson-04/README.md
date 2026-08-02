@@ -10,43 +10,6 @@
 - Popsat, jak se od Go 1.22 chová proměnná cyklu a proč byla dřív klasickou pastí.
 - Napsat funkci, která vrací funkci, a použít funkci jako parametr bez interface.
 
-## PHP → Go most
-
-V PHP se z funkce vrací jedna hodnota. Když jich potřebuješ víc, vrací se pole nebo DTO,
-a když něco selže, letí výjimka.
-
-```php
-function minMax(array $nums): array
-{
-    if ($nums === []) {
-        throw new InvalidArgumentException('empty');
-    }
-    return ['min' => min($nums), 'max' => max($nums)];
-}
-
-['min' => $min, 'max' => $max] = minMax($nums);
-```
-
-V Go se prostě vrátí víc hodnot a chybějící výsledek se signalizuje `bool`:
-
-```go
-func MinMax(nums []int) (min, max int, ok bool) {
-	if len(nums) == 0 {
-		return 0, 0, false
-	}
-	// ...
-}
-
-min, max, ok := MinMax(nums)
-if !ok {
-	// prázdný vstup
-}
-```
-
-Co se mění v uvažování: přestaneš vymýšlet obalové struktury pro „dvě věci najednou".
-Zároveň platí, že návratových hodnot mají být nejvýš tři a poslední je `error` nebo `bool` —
-`(int, string, bool, error, time.Time)` je signál, že funkce dělá moc věcí.
-
 ## Teorie
 
 ### Multiple return values
@@ -243,6 +206,43 @@ přes `var f func(int) int`, aby na sebe mohly odkazovat). Go nemá garantovanou
 koncové rekurze, takže hluboká rekurze roste na zásobníku — ten sice roste dynamicky, ale má
 strop. U průchodu stromem je rekurze v pořádku, u iterace přes milion prvků použij cyklus.
 
+## Rozdíly proti PHP
+
+V PHP se z funkce vrací jedna hodnota. Když jich potřebuješ víc, vrací se pole nebo DTO,
+a když něco selže, letí výjimka.
+
+```php
+function minMax(array $nums): array
+{
+    if ($nums === []) {
+        throw new InvalidArgumentException('empty');
+    }
+    return ['min' => min($nums), 'max' => max($nums)];
+}
+
+['min' => $min, 'max' => $max] = minMax($nums);
+```
+
+V Go se prostě vrátí víc hodnot a chybějící výsledek se signalizuje `bool`:
+
+```go
+func MinMax(nums []int) (min, max int, ok bool) {
+	if len(nums) == 0 {
+		return 0, 0, false
+	}
+	// ...
+}
+
+min, max, ok := MinMax(nums)
+if !ok {
+	// prázdný vstup
+}
+```
+
+Co se mění v uvažování: přestaneš vymýšlet obalové struktury pro „dvě věci najednou".
+Zároveň platí, že návratových hodnot mají být nejvýš tři a poslední je `error` nebo `bool` —
+`(int, string, bool, error, time.Time)` je signál, že funkce dělá moc věcí.
+
 ## Časté chyby
 
 | Chyba | Proč vzniká | Jak to udělat správně |
@@ -254,58 +254,52 @@ strop. U průchodu stromem je rekurze v pořádku, u iterace přes milion prvků
 | Volání `nil` funkce z parametru | zero value funkce je `nil` | ošetři `if f == nil` nebo dokumentuj povinnost |
 | Sdílený stav closure z víc goroutin | closure vypadá nevinně | zachycená proměnná je sdílená paměť, chraň ji |
 
+## AI kvíz
+
+Po přečtení teorie spusť v Cursoru **`/go-deep-quiz 04`**. AI tě ~5 minut prověří mentální model (ne hotové cvičení). Slabiny si uloží do [`GAPS.md`](../../GAPS.md).
+
 ## Úkol
 
-Pracuj v `exercise/`. Postupuj A → B → C, po každé části spusť test.
+Pracuj v `exercise/`. Po doplnění spouštěj testy:
 
-### A — rozcvička (~10 min)
+Stupně jdou od jednodušších ke složitějším — po každém stupni spusť review, než jdeš dál.
 
-1. `Sum(nums ...int) int` — variadický součet. Bez argumentů vrací `0`.
-2. `MinMax(nums []int) (min, max int, ok bool)` — nejmenší a největší prvek. Pro prázdný
-   nebo `nil` vstup vrať `0, 0, false`. Signatura má pojmenované návratové hodnoty; v těle
-   piš explicitní `return`. Funkce nesmí měnit vstupní slice (tedy žádné třídění na místě).
+### Jednoduchý
 
-např. `Sum(2, 3)` → `5`
-
-### B — jádro (~35 min)
-
-1. `Counter() func() int` — vrátí funkci, která při každém volání vrátí o jedna víc. První
-   volání vrací `1`. Dva čítače získané dvěma voláními `Counter()` na sobě musí být nezávislé.
-2. `Apply(nums []int, f func(int) int) []int` — vrátí **nový** slice se stejnou délkou, kde
-   je na každý prvek použita `f`. Vstup se nemění a vrácený slice nesmí sdílet podkladové
-   pole se vstupem. Pro `nil` a prázdný vstup vrať slice délky `0`.
-3. `Compose(fs ...func(int) int) func(int) int` — složí funkce **zleva doprava**, tedy
-   `Compose(f, g)(x)` je `g(f(x))`. Bez argumentů vrať identitu (`func(x int) int { return x }`).
-
-např. `Apply([]int{1, 2, 3}, double)` → `[2, 4, 6]`
-
-### C — rozšíření (~25 min)
-
-`Memoize(f func(int) int) (func(int) int, func() int)` vrátí dvojici:
-
-- memoizovanou variantu `f` — pro stejný argument vrátí uloženou hodnotu a `f` znovu nevolá,
-- funkci, která vrátí počet **skutečných** volání `f`.
-
-Obě vrácené funkce se dělí o stejný stav (cache a čítač), a přesně to je pointa úkolu:
-closure nad sdílenou proměnnou. Cache si udělej mapou `map[int]int` — mapy jsou detailně až
-v lekci 08, pro teď stačí `make(map[int]int)`, zápis `m[k] = v` a comma-ok čtení
-`v, ok := m[k]`.
-
-Každé volání `Memoize` musí vytvořit nezávislou instanci s vlastní cache.
-
-např. `memo(4)` po `Memoize(x*x)` → `16` (opakovaně, `calls()` = `1`)
+Funkce: `Sum`, `MinMax`
 
 ```bash
-make lesson L=04
+make lesson L=04 PART=1
 ```
 
-Až budeš hotový, porovnej se `solutions/` (spoiler).
+Pak **`/go-deep-review 04 easy`**.
 
-## Ověření
+### Střední
 
-Po dokončení úkolů spusť v Cursoru **`/go-deep-review`** a zadej třeba jen `04`. AI tě postupně projde body níže, doptá se a ověří pochopení — nestačí jen zelené testy.
+Funkce: `Counter`, `Apply`
 
-- [ ] `make lesson L=04` prochází
+```bash
+make lesson L=04 PART=2
+```
+
+Pak **`/go-deep-review 04 medium`**.
+
+### Obtížný
+
+Funkce: `Compose`, `Memoize`
+
+```bash
+make lesson L=04 PART=3
+```
+
+Pak **`/go-deep-review 04 hard`**.
+
+Až budou stupně hotové, porovnej se `solutions/` (spoiler).
+
+## Závěrečné otázky
+
+Spusť **`/go-deep-review 04 final`**. AI projde body níže, doptá se a ověří pochopení. Celé cvičení ověří `make lesson L=04` (+ `make race L=04`, pokud to lekce vyžaduje).
+
 - [ ] Umíš vysvětlit, kdy vrátit `(T, error)` a kdy `(T, bool)`
 - [ ] Umíš vysvětlit, proč je naked return v dlouhé funkci problém
 - [ ] Umíš popsat, jak se chová proměnná cyklu v Go 1.22 a jak se chovala dřív
@@ -316,6 +310,7 @@ Po dokončení úkolů spusť v Cursoru **`/go-deep-review`** a zadej třeba jen
 
 `ZAKÁZÁNO` — viz [docs/ai-playbook.md](../../docs/ai-playbook.md).
 
+Mentor, kvíz i review (dialog) jsou vždy OK; v tomto režimu AI nesmí psát kód cvičení.
 ## Další čtení
 
 1. [Tour of Go — Function values a Closures](https://go.dev/tour/moretypes/24)

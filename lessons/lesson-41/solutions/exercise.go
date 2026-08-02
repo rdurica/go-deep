@@ -3,6 +3,7 @@ package solutions
 
 import "sync"
 
+// --- Stupeň: jednoduchý ---
 // Generate pošle všechna čísla do vráceného kanálu a kanál sám zavře.
 func Generate(nums ...int) <-chan int {
 	out := make(chan int)
@@ -47,6 +48,7 @@ func Merge(chs ...<-chan int) <-chan int {
 	return out
 }
 
+// --- Stupeň: střední ---
 // Split rozdělí hodnoty ze vstupního kanálu mezi n výstupních kanálů.
 func Split(ch <-chan int, n int) []<-chan int {
 	if n < 1 {
@@ -85,7 +87,8 @@ func NewBroker(buffer int) *Broker {
 	return &Broker{buffer: buffer}
 }
 
-// Subscribe zaregistruje nového odběratele a vrátí jeho kanál.
+// Subscribe zaregistruje odběratele. Po Close vrací rovnou zavřený kanál.
+// Kanál odběratele má kapacitu buffer z NewBroker. Souběžně bezpečné s Publish/Close.
 func (b *Broker) Subscribe() <-chan string {
 	b.mu.Lock()
 	defer b.mu.Unlock()
@@ -99,6 +102,7 @@ func (b *Broker) Subscribe() <-chan string {
 	return ch
 }
 
+// --- Stupeň: obtížný ---
 // Publish rozešle zprávu všem odběratelům.
 func (b *Broker) Publish(msg string) {
 	b.mu.Lock()
@@ -125,7 +129,8 @@ func (b *Broker) Dropped() int {
 	return b.dropped
 }
 
-// Close ukončí brokera a zavře kanály všech odběratelů.
+// Close zavře kanály všech odběratelů; opakované volání nepanikuje.
+// Další Subscribe → zavřený kanál; Publish po Close nic nedělá.
 func (b *Broker) Close() {
 	b.mu.Lock()
 	defer b.mu.Unlock()

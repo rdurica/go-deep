@@ -9,36 +9,6 @@
 - Založit vlastní modul od nuly a pochopit, proč se importuje cestou, ne názvem balíčku.
 - Číst chybové hlášky kompilátoru, které v PHP nemají obdobu (nepoužitá proměnná, nepoužitý import).
 
-## PHP → Go most
-
-V PHP je jednotka distribuce **balíček na Packagistu** a jednotka běhu **soubor, který
-načte autoloader**. Kód spustíš tak, že na něj ukážeš webserverem nebo `php script.php`.
-Není žádný build krok, chyby typu překlepu ve jménu funkce najdeš až za běhu.
-
-V Go je jednotka distribuce **modul** (jeden `go.mod` = jeden modul, klidně se stovkami
-balíčků) a jednotka kompilace **balíček** (adresář se soubory `package foo`). Než něco
-poběží, projde to kompilátorem, který je nepříjemně přísný.
-
-```php
-// composer.json
-{
-  "name": "acme/billing",
-  "autoload": { "psr-4": { "Acme\\Billing\\": "src/" } }
-}
-```
-
-```go
-// go.mod
-module github.com/acme/billing
-
-go 1.26
-```
-
-Rozdíl, který tě bude první týden štvát nejvíc: **cesta importu je odvozená z cesty
-v modulu, ne z názvu balíčku**. `import "github.com/acme/billing/invoice"` naimportuje
-adresář `invoice/`, ve kterém je `package invoice`. Žádný autoloader, žádné mapování
-namespace → adresář v konfiguraci. Adresář *je* mapování.
-
 ## Teorie
 
 ### Modul, balíček, soubor
@@ -177,6 +147,36 @@ Ve větších projektech je zvyk dávat binárky pod `cmd/<jméno>/` (např. `cm
 a knihovní kód držet mimo `cmd/`. Pro hello-world v úkolu C stačí `main.go` v kořeni
 modulu — `cmd/` je konvence pro přehlednost, ne povinnost u jednoho souboru.
 
+## Rozdíly proti PHP
+
+V PHP je jednotka distribuce **balíček na Packagistu** a jednotka běhu **soubor, který
+načte autoloader**. Kód spustíš tak, že na něj ukážeš webserverem nebo `php script.php`.
+Není žádný build krok, chyby typu překlepu ve jménu funkce najdeš až za běhu.
+
+V Go je jednotka distribuce **modul** (jeden `go.mod` = jeden modul, klidně se stovkami
+balíčků) a jednotka kompilace **balíček** (adresář se soubory `package foo`). Než něco
+poběží, projde to kompilátorem, který je nepříjemně přísný.
+
+```php
+// composer.json
+{
+  "name": "acme/billing",
+  "autoload": { "psr-4": { "Acme\\Billing\\": "src/" } }
+}
+```
+
+```go
+// go.mod
+module github.com/acme/billing
+
+go 1.26
+```
+
+Rozdíl, který tě bude první týden štvát nejvíc: **cesta importu je odvozená z cesty
+v modulu, ne z názvu balíčku**. `import "github.com/acme/billing/invoice"` naimportuje
+adresář `invoice/`, ve kterém je `package invoice`. Žádný autoloader, žádné mapování
+namespace → adresář v konfiguraci. Adresář *je* mapování.
+
 ## Časté chyby
 
 | Chyba | Proč vzniká | Jak to udělat správně |
@@ -187,78 +187,52 @@ modulu — `cmd/` je konvence pro přehlednost, ne povinnost u jednoho souboru.
 | Balíček `utils` / `helpers` | PHP `App\Util` | pojmenuj podle domény (lekce 19) |
 | Ignorovaný `gofmt` | „naformátuju to potom" | format on save |
 
+## AI kvíz
+
+Po přečtení teorie spusť v Cursoru **`/go-deep-quiz 01`**. AI tě ~5 minut prověří mentální model (ne hotové cvičení). Slabiny si uloží do [`GAPS.md`](../../GAPS.md).
+
 ## Úkol
 
-Pracuj v `exercise/`. Postupuj A → B → C, po každé části spusť test.
+Pracuj v `exercise/`. Po doplnění spouštěj testy:
 
-### A — rozcvička (~10 min)
+Stupně jdou od jednodušších ke složitějším — po každém stupni spusť review, než jdeš dál.
 
-Implementuj `Greet(name string) string`. Pro prázdné jméno (i po odstranění bílých znaků)
-vrať `"Hello, Go!"`, jinak `"Hello, <name>!"` s ořezanými bílými znaky.
-Hodí se `strings` (ořez) a `fmt` (složení výsledku) — viz sekce o importech výše.
+### Jednoduchý
 
-např. `Greet("Radek")` → `"Hello, Radek!"`
-
-### B — jádro (~25 min)
-
-Doplň dvě funkce v `exercise/exercise.go` (místo `// TODO: úkol B`).
-#### `SumAll(nums ...int) int`
-Sečti libovolný počet celých čísel předaných jako argumenty.
-- `...int` znamená variadickou funkci: voláš ji jako `SumAll(1, 2, 3)`, ne jako slice.
-- Bez argumentů vrať `0`.
-- Záporná čísla sečti normálně (např. `SumAll(-4, 2)` → `-2`).
-Příklady:
-- `SumAll()` → `0`
-- `SumAll(5)` → `5`
-- `SumAll(1, 2, 3)` → `6`
-#### `Describe(vals []int) string`
-Vrať textový popis slice čísel.
-- Pokud je `vals` `nil` nebo prázdný (`len == 0`), vrať přesně `"empty"`.
-- Jinak vrať řetězec **přesně** ve tvaru:
-  `"count=<počet> sum=<součet> max=<maximum>"`
-  (mezery a pořadí polí musí sedět — testy porovnávají celý string).
-Příklady:
-- `Describe(nil)` → `"empty"`
-- `Describe([]int{})` → `"empty"`
-- `Describe([]int{1, 2, 3})` → `"count=3 sum=6 max=3"`
-- `Describe([]int{9, 2, 3})` → `"count=3 sum=14 max=9"`
-- `Describe([]int{-5, -2})` → `"count=2 sum=-7 max=-2"`
-Cíl části B: potkat se s variadickou funkcí, `range` cyklem a `fmt.Sprintf`
-(import `"fmt"` — stejný blok jako u úkolu A).
-Schválně si zkus nechat nepoužitou proměnnou a přečti si hlášku kompilátoru.
-
-### C — rozšíření (~25 min, ověřuje se checklistem)
-
-Tohle je hlavní část lekce. Bez testu, ale nepřeskakuj ji.
-
-1. Mimo tento repozitář si založ vlastní modul:
+Funkce: `Greet`
 
 ```bash
-mkdir -p ~/scratch/hello && cd ~/scratch/hello
-go mod init example.com/hello
+make lesson L=01 PART=1
 ```
 
-2. Vytvoř `main.go` s `package main` a funkcí `main`, která něco vypíše (viz sekce o entry
-   pointu výše). Spusť `go run .`.
-3. Přidej podadresář `greet/` s `package greet` a exportovanou funkcí. Zavolej ji z `main.go`
-   plným importem `example.com/hello/greet`. Všimni si, že cesta začíná názvem modulu.
-4. Zkus záměrně: přejmenovat funkci na malé písmeno a importovat ji. Přečti si chybu.
-5. Spusť `go build .` a podívej se, jaká binárka vznikla a jak je velká.
-6. Zavolej `go doc strings.TrimSpace` a `go doc -all strings | head -40`.
+Pak **`/go-deep-review 01 easy`**.
 
-např. `go run .` s importem `example.com/hello/greet` → výpis z `main`
+### Střední
+
+Funkce: `SumAll`
 
 ```bash
-make lesson L=01
+make lesson L=01 PART=2
 ```
 
-Až budeš hotový, porovnej se `solutions/` (spoiler).
+Pak **`/go-deep-review 01 medium`**.
 
-## Ověření
+### Obtížný
 
-Po dokončení úkolů spusť v Cursoru **`/go-deep-review`** a zadej třeba jen `01`. AI tě postupně projde body níže, doptá se a ověří pochopení — nestačí jen zelené testy.
+Funkce: `Describe`
 
-- [ ] `make lesson L=01` prochází
+```bash
+make lesson L=01 PART=3
+```
+
+Pak **`/go-deep-review 01 hard`**.
+
+Až budou stupně hotové, porovnej se `solutions/` (spoiler).
+
+## Závěrečné otázky
+
+Spusť **`/go-deep-review 01 final`**. AI projde body níže, doptá se a ověří pochopení. Celé cvičení ověří `make lesson L=01` (+ `make race L=01`, pokud to lekce vyžaduje).
+
 - [ ] Umíš vysvětlit rozdíl mezi modulem, balíčkem a souborem
 - [ ] Umíš vysvětlit, proč se importuje cestou a ne názvem balíčku
 - [ ] Umíš napsat `import` blok a zavolat `fmt.Sprintf` / `strings.TrimSpace`
@@ -273,6 +247,7 @@ Po dokončení úkolů spusť v Cursoru **`/go-deep-review`** a zadej třeba jen
 Ve fázi 0 a 1 si cvičení píšeš sám. AI smí odpovídat na koncepční otázky
 („proč je nepoužitý import chyba?"), ale nesmí produkovat kód cvičení.
 
+Mentor, kvíz i review (dialog) jsou vždy OK; v tomto režimu AI nesmí psát kód cvičení.
 ## Další čtení
 
 1. [How to Write Go Code](https://go.dev/doc/code) — oficiální úvod do modulů

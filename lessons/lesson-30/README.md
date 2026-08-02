@@ -12,36 +12,6 @@
 - Ukončit server tak, aby rozpracované požadavky doběhly, a vysvětlit, proč to
   v kontejneru potřebuješ.
 
-## PHP → Go most
-
-V Symfony máš `HttpClientInterface`, timeouty v konfiguraci a retry přes dekorátor.
-O ukončení procesu se stará PHP-FPM — request skončí, worker se vrátí do poolu, a když
-přijde SIGTERM, FPM sám počká na dokončení běžících requestů.
-
-```php
-$response = $this->client->request('GET', $url, ['timeout' => 3.0]);
-$data = $response->toArray();   // vyhodí výjimku na 4xx/5xx
-```
-
-V Go je klient obyčejný struct, který si nastavíš, a **nic ti nevyhodí výjimku**.
-Status kód je jen číslo v odpovědi, o timeout se musíš postarat sám a graceful shutdown
-si napíšeš:
-
-```go
-resp, err := client.Do(req)     // err jen při chybě sítě, ne při 500
-if err != nil {
-	return err
-}
-defer resp.Body.Close()
-if resp.StatusCode != http.StatusOK {
-	return fmt.Errorf("unexpected status %s", resp.Status)
-}
-```
-
-Změna v uvažování: v PHP je životní cyklus procesu problém runtime, v Go je součástí
-tvého kódu. Tři věci, které za tebe dělal FPM — timeout, uzavření zdrojů a čekání na
-dokončení — jsou teď tvoje odpovědnost.
-
 ## Teorie
 
 ### `http.DefaultClient` nemá timeout
@@ -226,6 +196,36 @@ Tři detaily, na kterých se to obvykle rozbije:
 3. `Shutdown` **nesmí** dostat už zrušený kontext (typicky ten, kterým jsi shutdown
    spustil), jinak neposkytne žádnou grace periodu.
 
+## Rozdíly proti PHP
+
+V Symfony máš `HttpClientInterface`, timeouty v konfiguraci a retry přes dekorátor.
+O ukončení procesu se stará PHP-FPM — request skončí, worker se vrátí do poolu, a když
+přijde SIGTERM, FPM sám počká na dokončení běžících requestů.
+
+```php
+$response = $this->client->request('GET', $url, ['timeout' => 3.0]);
+$data = $response->toArray();   // vyhodí výjimku na 4xx/5xx
+```
+
+V Go je klient obyčejný struct, který si nastavíš, a **nic ti nevyhodí výjimku**.
+Status kód je jen číslo v odpovědi, o timeout se musíš postarat sám a graceful shutdown
+si napíšeš:
+
+```go
+resp, err := client.Do(req)     // err jen při chybě sítě, ne při 500
+if err != nil {
+	return err
+}
+defer resp.Body.Close()
+if resp.StatusCode != http.StatusOK {
+	return fmt.Errorf("unexpected status %s", resp.Status)
+}
+```
+
+Změna v uvažování: v PHP je životní cyklus procesu problém runtime, v Go je součástí
+tvého kódu. Tři věci, které za tebe dělal FPM — timeout, uzavření zdrojů a čekání na
+dokončení — jsou teď tvoje odpovědnost.
+
 ## Časté chyby
 
 | Chyba | Proč vzniká | Jak to udělat správně |
@@ -238,63 +238,52 @@ Tři detaily, na kterých se to obvykle rozbije:
 | Retry i na `POST` a na 4xx | „zkusit to znovu neuškodí“ | trvalé chyby nevracet do retry smyčky |
 | `os.Exit` po signálu | FPM to dřív řešil za tebe | `signal.NotifyContext` + `srv.Shutdown` |
 
+## AI kvíz
+
+Po přečtení teorie spusť v Cursoru **`/go-deep-quiz 30`**. AI tě ~5 minut prověří mentální model (ne hotové cvičení). Slabiny si uloží do [`GAPS.md`](../../GAPS.md).
+
 ## Úkol
 
-Pracuj v `exercise/`. Postupuj A → B → C, po každé části spusť test.
+Pracuj v `exercise/`. Po doplnění spouštěj testy:
 
-### A — rozcvička (~15 min)
+Stupně jdou od jednodušších ke složitějším — po každém stupni spusť review, než jdeš dál.
 
-1. `NewHTTPClient(timeout time.Duration) *http.Client` — klient s daným timeoutem
-   a vlastním `*http.Transport`, který má kladné `MaxIdleConnsPerHost`.
-2. `FetchJSON[T any](ctx context.Context, c *http.Client, url string) (T, error)` —
-   sestav `GET` požadavek s kontextem, odešli ho, tělo v `defer` dočti a zavři. Status
-   mimo 2xx vrať jako `*StatusError` (test ho hledá přes `errors.As`). Tělo čti nejvýš
-   `MaxBodyBytes`; při překročení vrať chybu obalující `ErrBodyTooLarge`. Nakonec
-   rozparsuj JSON do `T`. Při chybě vrať nulovou hodnotu `T`.
+### Jednoduchý
 
-např. `FetchJSON[user](..., url)` → `{ID:7, Name:"radek"}`
-
-### B — jádro (~35 min)
-
-`Retry(ctx context.Context, attempts int, base time.Duration, fn func(ctx context.Context) error) error`:
-
-- `attempts < 1` → chyba obalující `ErrNoAttempts`, `fn` se nevolá vůbec.
-- Před každým pokusem zkontroluj `ctx.Err()`; při zrušeném kontextu `fn` nevolej a vrať
-  chybu, přes kterou projde `errors.Is(err, context.Canceled)`.
-- `fn` vrátí `nil` → vrať `nil`.
-- `fn` vrátí chybu, ve které je (i zabalený) `*PermanentError` → vrať ji hned, bez
-  dalšího pokusu.
-- Jinak počkej `base`, `2*base`, `4*base`… s jitterem a zkus to znovu. Čekání musí
-  reagovat na zrušení kontextu.
-- Po vyčerpání pokusů vrať chybu obalující poslední chybu z `fn` přes `%w`.
-
-např. `Retry(..., fn → nil)` → `nil` (1 volání)
-
-### C — rozšíření (~20 min)
-
-`RunServer(ctx context.Context, srv *http.Server, ln net.Listener) error`:
-
-- spusť `srv.Serve(ln)` v goroutině;
-- když `Serve` skončí sám, vrať jeho chybu — ale `http.ErrServerClosed` ber jako `nil`;
-- když se zruší `ctx`, zavolej `srv.Shutdown` s **novým** kontextem s timeoutem
-  `ShutdownGracePeriod`, počkej na dokončení a vrať `nil` při čistém ukončení.
-
-Test spustí server na `127.0.0.1:0`, pošle požadavek, uprostřed jeho zpracování zruší
-kontext a ověří, že požadavek doběhl a `RunServer` se vrátil.
-
-např. cancel `ctx` uprostřed požadavku → tělo `"hotovo"`, `RunServer` → `nil`
+Funkce: `Error`, `Error`
 
 ```bash
-make lesson L=30
+make lesson L=30 PART=1
 ```
 
-Až budeš hotový, porovnej se `solutions/` (spoiler).
+Pak **`/go-deep-review 30 easy`**.
 
-## Ověření
+### Střední
 
-Po dokončení úkolů spusť v Cursoru **`/go-deep-review`** a zadej třeba jen `30`. AI tě postupně projde body níže, doptá se a ověří pochopení — nestačí jen zelené testy.
+Funkce: `Unwrap`, `Permanent`
 
-- [ ] `make lesson L=30` prochází
+```bash
+make lesson L=30 PART=2
+```
+
+Pak **`/go-deep-review 30 medium`**.
+
+### Obtížný
+
+Funkce: `NewHTTPClient`, `Retry`, `RunServer`
+
+```bash
+make lesson L=30 PART=3
+```
+
+Pak **`/go-deep-review 30 hard`**.
+
+Až budou stupně hotové, porovnej se `solutions/` (spoiler).
+
+## Závěrečné otázky
+
+Spusť **`/go-deep-review 30 final`**. AI projde body níže, doptá se a ověří pochopení. Celé cvičení ověří `make lesson L=30` (+ `make race L=30`, pokud to lekce vyžaduje).
+
 - [ ] Umíš vysvětlit, co všechno pokrývá `http.Client.Timeout`
 - [ ] Umíš vysvětlit, proč se tělo odpovědi musí dočíst, ne jen zavřít
 - [ ] Umíš vysvětlit, k čemu je jitter v backoffu

@@ -10,30 +10,6 @@
 - Odstranit typické alokace v horké cestě a doložit zlepšení číslem.
 - Vystavit `net/http/pprof` na vlastním muxu a vysvětlit, proč nikdy ne na veřejném portu.
 
-## PHP → Go most
-
-V Symfony si zapneš Blackfire nebo profiler z web debug toolbaru, klikneš na požadavek
-a dostaneš strom volání. Je to externí nástroj a v produkci ho zapínáš výjimečně.
-
-```php
-// obvyklá "optimalizace" v PHP: cache navrch a hotovo
-$result = $this->cache->get($key, fn () => $this->slowThing());
-```
-
-V Go je profiler součástí runtime a jeho zapnutí stojí jednotky procent výkonu:
-
-```go
-import _ "net/http/pprof"      // registruje /debug/pprof/* na DefaultServeMux
-```
-
-```bash
-go tool pprof http://127.0.0.1:6060/debug/pprof/profile?seconds=30
-```
-
-Co se mění v uvažování: **nejdřív změř, potom mysli, teprve pak optimalizuj.** V PHP je
-první reflex přidat cache, protože měřit je drahé. V Go je měření tak levné, že přidat
-cache bez profilu je čirá lenost — a obvykle to řeší jiný problém, než jaký máš.
-
 ## Teorie
 
 ### Kdy profilovat
@@ -164,6 +140,30 @@ Go má generační-less mark-and-sweep GC laděný dvěma knoflíky:
 Snížit počet alokací je skoro vždy lepší než ladit GC. Méně objektů znamená kratší značkovací
 fázi i menší RSS zároveň.
 
+## Rozdíly proti PHP
+
+V Symfony si zapneš Blackfire nebo profiler z web debug toolbaru, klikneš na požadavek
+a dostaneš strom volání. Je to externí nástroj a v produkci ho zapínáš výjimečně.
+
+```php
+// obvyklá "optimalizace" v PHP: cache navrch a hotovo
+$result = $this->cache->get($key, fn () => $this->slowThing());
+```
+
+V Go je profiler součástí runtime a jeho zapnutí stojí jednotky procent výkonu:
+
+```go
+import _ "net/http/pprof"      // registruje /debug/pprof/* na DefaultServeMux
+```
+
+```bash
+go tool pprof http://127.0.0.1:6060/debug/pprof/profile?seconds=30
+```
+
+Co se mění v uvažování: **nejdřív změř, potom mysli, teprve pak optimalizuj.** V PHP je
+první reflex přidat cache, protože měřit je drahé. V Go je měření tak levné, že přidat
+cache bez profilu je čirá lenost — a obvykle to řeší jiný problém, než jaký máš.
+
 ## Časté chyby
 
 | Chyba | Proč vzniká | Jak to udělat správně |
@@ -175,75 +175,52 @@ fázi i menší RSS zároveň.
 | Heap profil bez `runtime.GC()` | „snímek je snímek" | bez GC vidíš i objekty, které už nikdo nedrží |
 | `ReadMemStats` v horké cestě | vypadá jako levné čtení | zastavuje svět, patří do metrik s periodou |
 
+## AI kvíz
+
+Po přečtení teorie spusť v Cursoru **`/go-deep-quiz 53`**. AI tě ~5 minut prověří mentální model (ne hotové cvičení). Slabiny si uloží do [`GAPS.md`](../../GAPS.md).
+
 ## Úkol
 
-Pracuj v `exercise/`. Pomalé referenční varianty (`SumDigitsSlow`, `CountWordsSlow`) jsou
-předvyplněné — jsou to typické nálezy z profilu. Tvým úkolem je napsat rychlé verze.
+Pracuj v `exercise/`. Po doplnění spouštěj testy:
 
-### A — rozcvička (~10 min)
+Stupně jdou od jednodušších ke složitějším — po každém stupni spusť review, než jdeš dál.
 
-`SumDigits(s string) int` — součet desítkových číslic v řetězci. Musí dát pro každý vstup
-stejný výsledek jako `SumDigitsSlow` (test to ověřuje na náhodných datech) a přitom
-**nesmí alokovat vůbec** (`testing.AllocsPerRun == 0`).
+### Jednoduchý
 
-Nápověda: `for _, r := range s` dekóduje UTF-8. Číslice `0`–`9` jsou jednobajtové, takže
-je nemusíš dekódovat vůbec.
-
-např. `SumDigits("a1b2c3")` → `6`
-
-### B — jádro (~35 min)
-
-1. `CountWords(text string) map[string]int` — počty výskytů slov, kde slovo je souvislý
-   úsek znaků, pro které `IsWordRune` vrátí `true` (písmena a číslice). Klíč je vždy
-   malými písmeny. Prázdný text dá prázdnou, ale **nenilovou** mapu.
-
-   Výsledek se musí přesně shodovat s `CountWordsSlow`, ale test požaduje **méně alokací**
-   a nejvýš 12 celkem. Dvě věci, které to zařídí: předalokovat mapu podle odhadu počtu
-   slov a nekonvertovat na malá písmena celý text, ale jen slova, která velké písmeno
-   opravdu obsahují. Řezy `text[start:i]` nic nekopírují — jsou to jen okna do původního
-   řetězce.
-
-2. `JoinIDs(ids []int) string` — čísla spojená čárkou, prázdný vstup dá prázdný řetězec.
-   Test povoluje nejvýš **2 alokace** pro 64 čísel. `strconv.Itoa` v cyklu tenhle limit
-   nesplní; `strings.Builder` s `Grow` a `strconv.AppendInt` do lokálního pole ano.
-
-např. `JoinIDs([]int{1, 2, 3})` → `"1,2,3"`
-
-### C — rozšíření (~25 min)
-
-Programové profilování a jeho vystavení přes HTTP.
-
-1. `CaptureCPUProfile(w io.Writer, f func()) error` — spustí CPU profil, zavolá `f`,
-   profil korektně ukončí i při panice uvnitř `f` (tedy `defer`). Chybějící writer i
-   chybějící funkce jsou chyba; chyba ze `StartCPUProfile` se obaluje.
-2. `CaptureHeapProfile(w io.Writer) error` — před snímkem vynutí GC a zapíše heap profil
-   ve strojovém formátu (debug 0). Chybějící writer je chyba.
-3. `PprofHandler() http.Handler` — vrátí **vlastní** `http.ServeMux` s endpointy
-   `/debug/pprof/`, `/debug/pprof/cmdline`, `/debug/pprof/profile`, `/debug/pprof/symbol`
-   a `/debug/pprof/trace`. Nesmí to být `http.DefaultServeMux` — test kontroluje, že
-   `/metrics` vrátí 404.
-
-Test ověřuje, že oba profily začínají gzip hlavičkou a nejsou prázdné, a že handler
-odpovídá 200 na `/debug/pprof/`, `/debug/pprof/heap` i `/debug/pprof/goroutine?debug=1`.
-
-např. `PprofHandler()` GET `/debug/pprof/` → `200`, GET `/metrics` → `404`
+Funkce: `SumDigitsSlow`, `CountWordsSlow`, `IsWordRune`
 
 ```bash
-make lesson L=53
-go test -run xxx -bench . -benchmem .
-go test -run xxx -bench BenchmarkCountWords -cpuprofile cpu.out . && go tool pprof -top cpu.out
+make lesson L=53 PART=1
 ```
 
-Referenční řešení: `SumDigits` 10882 → 158 ns/op a 444 → 0 alokací,
-`CountWords` 12006 → 3542 ns/op a 52 → 10 alokací.
+Pak **`/go-deep-review 53 easy`**.
 
-Až budeš hotový, porovnej se `solutions/` (spoiler).
+### Střední
 
-## Ověření
+Funkce: `SumDigits`, `CountWords`, `JoinIDs`
 
-Po dokončení úkolů spusť v Cursoru **`/go-deep-review`** a zadej třeba jen `53`. AI tě postupně projde body níže, doptá se a ověří pochopení — nestačí jen zelené testy.
+```bash
+make lesson L=53 PART=2
+```
 
-- [ ] `make lesson L=53` prochází
+Pak **`/go-deep-review 53 medium`**.
+
+### Obtížný
+
+Funkce: `CaptureCPUProfile`, `CaptureHeapProfile`, `PprofHandler`
+
+```bash
+make lesson L=53 PART=3
+```
+
+Pak **`/go-deep-review 53 hard`**.
+
+Až budou stupně hotové, porovnej se `solutions/` (spoiler).
+
+## Závěrečné otázky
+
+Spusť **`/go-deep-review 53 final`**. AI projde body níže, doptá se a ověří pochopení. Celé cvičení ověří `make lesson L=53` (+ `make race L=53`, pokud to lekce vyžaduje).
+
 - [ ] Umíš vysvětlit rozdíl mezi flat a cum ve výstupu `top`
 - [ ] Umíš říct, kdy sáhnout po heap a kdy po allocs profilu
 - [ ] Umíš vysvětlit, proč `import _ "net/http/pprof"` může být bezpečnostní chyba

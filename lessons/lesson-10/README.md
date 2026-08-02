@@ -10,40 +10,6 @@
 - Napsat `recover` na správném místě a vysvětlit, proč nefunguje přes hranici goroutiny.
 - Vysvětlit, proč `defer f.Close()` u zapisovaného souboru není dost.
 
-## PHP → Go most
-
-V PHP máš `finally`, které se provede vždycky, a bloky se čtou shora dolů.
-
-```php
-$fh = fopen($path, 'w');
-try {
-    fwrite($fh, $data);
-} catch (\Throwable $e) {
-    $logger->error($e->getMessage());
-    throw $e;
-} finally {
-    fclose($fh);   // úklid je dole, daleko od otevření
-}
-```
-
-Go nemá `finally` jako blok. Má `defer`, což je **odložené volání registrované u zdroje**.
-Úklid píšeš hned vedle získání zdroje, ne o třicet řádků níž.
-
-```go
-f, err := os.Create(path)
-if err != nil {
-	return err
-}
-defer f.Close()   // úklid hned u otevření, provede se při návratu
-
-_, err = f.Write(data)
-return err
-```
-
-Přenos návyku: `try/catch` v PHP je běžný nástroj řízení toku. V Go je `panic/recover`
-**výjimečný** nástroj — chyby se vracejí jako hodnoty (lekce 14). `defer` naopak budeš
-psát pořád, ale ne k chytání chyb, nýbrž k úklidu.
-
 ## Teorie
 
 ### Sémantika `defer`
@@ -295,6 +261,40 @@ a u loggeru na hranici serveru vždycky zajímá — musíš si ho vyžádat sá
 Nejdůležitější rozdíl je kulturní: v PHP je normální řídit tok výjimkami. V Go je
 `panic` v cestě běžného požadavku code smell.
 
+## Rozdíly proti PHP
+
+V PHP máš `finally`, které se provede vždycky, a bloky se čtou shora dolů.
+
+```php
+$fh = fopen($path, 'w');
+try {
+    fwrite($fh, $data);
+} catch (\Throwable $e) {
+    $logger->error($e->getMessage());
+    throw $e;
+} finally {
+    fclose($fh);   // úklid je dole, daleko od otevření
+}
+```
+
+Go nemá `finally` jako blok. Má `defer`, což je **odložené volání registrované u zdroje**.
+Úklid píšeš hned vedle získání zdroje, ne o třicet řádků níž.
+
+```go
+f, err := os.Create(path)
+if err != nil {
+	return err
+}
+defer f.Close()   // úklid hned u otevření, provede se při návratu
+
+_, err = f.Write(data)
+return err
+```
+
+Přenos návyku: `try/catch` v PHP je běžný nástroj řízení toku. V Go je `panic/recover`
+**výjimečný** nástroj — chyby se vracejí jako hodnoty (lekce 14). `defer` naopak budeš
+psát pořád, ale ne k chytání chyb, nýbrž k úklidu.
+
 ## Časté chyby
 
 | Chyba | Proč vzniká | Jak to udělat správně |
@@ -307,76 +307,52 @@ Nejdůležitější rozdíl je kulturní: v PHP je normální řídit tok výjim
 | `recover` v goroutině, která ji nespustila | očekávání „catch chytí všechno" | `recover` v každé goroutině zvlášť |
 | Zotavení a pokračování v poloviční práci | zvyk pokračovat po `catch` | po `recover` stav zahoď nebo vrať chybu |
 
+## AI kvíz
+
+Po přečtení teorie spusť v Cursoru **`/go-deep-quiz 10`**. AI tě ~5 minut prověří mentální model (ne hotové cvičení). Slabiny si uloží do [`GAPS.md`](../../GAPS.md).
+
 ## Úkol
 
-Pracuj v `exercise/`. Postupuj A → B → C, po každé části spusť test.
+Pracuj v `exercise/`. Po doplnění spouštěj testy:
 
-### A — rozcvička (~10 min)
+Stupně jdou od jednodušších ke složitějším — po každém stupni spusť review, než jdeš dál.
 
-`DeferOrder() []string` — funkce s **pojmenovanou** návratovou hodnotou, která
-zaregistruje tři odložené uzávěry. Každý přidá do výsledku svůj řetězec, v pořadí
-registrace `"first"`, `"second"`, `"third"`. Návratová hodnota tedy bude
-`["third", "second", "first"]`, protože se defery provádějí v LIFO pořadí.
+### Jednoduchý
 
-Poznámka: bez pojmenované návratové hodnoty by tohle nešlo napsat, protože `return`
-by zafixoval prázdný slice dřív, než defery doběhnou. Zkus si obě varianty.
-
-např. `DeferOrder()` → `["third", "second", "first"]`
-
-### B — jádro (~35 min)
-
-1. `SumWithLog(nums []int) (total int, steps []string)` — sečte čísla a vede u toho
-   protokol:
-   - pro každé číslo přičti a přidej krok ve tvaru `"+3=6"` (přičtená hodnota,
-     rovnítko, mezisoučet po přičtení),
-   - **před cyklem** zaregistruj `defer`, který na konec protokolu přidá `"total=6"`
-     s konečným součtem. Musí to být uzávěr, aby viděl finální hodnotu, a musí měnit
-     pojmenovanou návratovou hodnotu `steps`.
-
-   Pro `[]int{1, 2, 3}` tedy dostaneš `6` a `["+1=1", "+2=3", "+3=6", "total=6"]`.
-   Pro prázdný vstup `0` a `["total=0"]`.
-
-2. `SafeDivide(a, b int) (result int, err error)` — vydělí `a / b`. Dělení nulou
-   v Go panikuje; tvým úkolem je paniku odchytit přes `recover` v odloženém uzávěru
-   a převést ji na `error` (stačí `fmt.Errorf`, error model je až lekce 14). Při chybě
-   musí být `result` nula. Nesmíš dělitele testovat přes `if b == 0` — smysl cvičení je
-   napsat `recover`, ne se panice vyhnout.
-
-3. `CloseAll(closers []func() error) error` — zavolá **všechny** funkce ze slice, i když
-   některá vrátí chybu, a vrátí **první** vzniklou chybu (nebo `nil`). `nil` položky
-   přeskoč. Prázdný i `nil` vstup vrací `nil`.
-
-např. `SumWithLog([]int{1, 2, 3})` → `6, ["+1=1", "+2=3", "+3=6", "total=6"]`
-
-### C — rozšíření (~25 min)
-
-Doplň `type Stack struct` (obsah si navrhni sám, hodí se `items []int`) s metodami:
-
-- `func (s *Stack) Push(v int)` — vloží prvek navrch.
-- `func (s *Stack) Pop() int` — odebere a vrátí vrchní prvek. Nad prázdným zásobníkem
-  **paniká** s hodnotou `"pop from empty stack"`. Je to legitimní panika: volat `Pop`
-  na prázdném zásobníku je chyba programátora, ne provozní stav.
-- `func (s *Stack) Len() int` — počet prvků. Musí fungovat i na `nil` pointeru.
-- `func TryPop(s *Stack) (v int, ok bool)` — bezpečná varianta: zavolá `Pop` a paniku
-  odchytí přes `recover`. Při panice vrací `0, false`.
-
-Test ověřuje, že zásobník je **po zotavení dál použitelný** — po neúspěšném `TryPop`
-musí `Push` a `Pop` fungovat normálně. To je právě ta hranice, kde je `recover`
-v pořádku: nezotavuješ se z poloviční mutace, jen ze zjištění „nic tam nebylo".
-
-např. `TryPop` na prázdném zásobníku → `0, false`
+Funkce: `DeferOrder`, `SumWithLog`
 
 ```bash
-make lesson L=10
+make lesson L=10 PART=1
 ```
 
-Až budeš hotový, porovnej se `solutions/` (spoiler).
+Pak **`/go-deep-review 10 easy`**.
 
-## Ověření
+### Střední
 
-Po dokončení úkolů spusť v Cursoru **`/go-deep-review`** a zadej třeba jen `10`. AI tě postupně projde body níže, doptá se a ověří pochopení — nestačí jen zelené testy.
+Funkce: `SafeDivide`, `CloseAll`, `Push`, `Pop`
 
-- [ ] `make lesson L=10` prochází
+```bash
+make lesson L=10 PART=2
+```
+
+Pak **`/go-deep-review 10 medium`**.
+
+### Obtížný
+
+Funkce: `Len`, `TryPop`
+
+```bash
+make lesson L=10 PART=3
+```
+
+Pak **`/go-deep-review 10 hard`**.
+
+Až budou stupně hotové, porovnej se `solutions/` (spoiler).
+
+## Závěrečné otázky
+
+Spusť **`/go-deep-review 10 final`**. AI projde body níže, doptá se a ověří pochopení. Celé cvičení ověří `make lesson L=10` (+ `make race L=10`, pokud to lekce vyžaduje).
+
 - [ ] Umíš z hlavy říct, co vypíše `i := 0; defer fmt.Println(i); i = 42`
 - [ ] Umíš vysvětlit, proč je `defer` v cyklu problém a jak ho vyřešit
 - [ ] Umíš vysvětlit, jak `defer` mění pojmenovanou návratovou hodnotu
@@ -388,6 +364,7 @@ Po dokončení úkolů spusť v Cursoru **`/go-deep-review`** a zadej třeba jen
 
 `ZAKÁZÁNO` — viz [docs/ai-playbook.md](../../docs/ai-playbook.md).
 
+Mentor, kvíz i review (dialog) jsou vždy OK; v tomto režimu AI nesmí psát kód cvičení.
 ## Další čtení
 
 1. [Go blog — Defer, Panic, and Recover](https://go.dev/blog/defer-panic-and-recover)

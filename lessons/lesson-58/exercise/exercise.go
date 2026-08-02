@@ -16,9 +16,11 @@ const (
 	SeverityError
 )
 
-// String implementuje fmt.Stringer.
+// --- Stupeň: jednoduchý ---
+// String vrací INFO, WARN nebo ERROR.
+// Hodnota mimo rozsah konstant vrací prázdný řetězec.
 func (s Severity) String() string {
-	// TODO: úkol A
+	// TODO
 	return ""
 }
 
@@ -29,10 +31,11 @@ type CheckItem struct {
 	Severity Severity
 }
 
-// MergeChecklists spojí základní a osobní checklist. Osobní položka se stejným ID
-// přepíše základní, pořadí základních položek zůstává zachované.
+// MergeChecklists spojí základní a osobní checklist; zachová pořadí base.
+// Stejné ID v personal přepíše položku na původním místě v base; nové ID z personal na konec.
+// Duplicita uvnitř base: platí první výskyt; prázdné ID zahodí; prázdný vstup prázdný výsledek.
 func MergeChecklists(base, personal []CheckItem) []CheckItem {
-	// TODO: úkol A
+	// TODO
 	return nil
 }
 
@@ -49,9 +52,10 @@ const (
 	RoleDone
 )
 
-// String implementuje fmt.Stringer.
+// String vrací none, spec, tests, impl, review nebo done; mimo rozsah "none".
+// RoleNone je zero value, tedy session ještě nezačala.
 func (r Role) String() string {
-	// TODO: úkol B
+	// TODO
 	return ""
 }
 
@@ -81,40 +85,48 @@ type Session struct {
 	timeline []Event
 }
 
-// NewSession vytvoří session. Hodiny se předávají jako závislost kvůli testovatelnosti;
-// nil znamená time.Now.
+// --- Stupeň: střední ---
+// NewSession vytvoří session; nil now znamená time.Now.
+// Časy událostí v timeline ber vždy z těchto hodin.
 func NewSession(now func() time.Time) *Session {
-	// TODO: úkol B
+	// TODO
 	return nil
 }
 
-// Current vrací aktuální roli.
+// Current vrací aktuální roli pairing session.
+// Po Finish vrací RoleDone.
 func (s *Session) Current() Role {
-	// TODO: úkol B
-	return *new(Role)
+	// TODO
+	return RoleNone
 }
 
-// Start zahájí session v dané roli.
+// Start zahájí session v roli spec, tests, impl nebo review a zapíše událost RoleNone→r s důvodem "start".
+// RoleNone, RoleDone a hodnoty mimo rozsah → ErrInvalidRole. Druhé volání ErrAlreadyStarted.
 func (s *Session) Start(r Role) error {
-	// TODO: úkol B
+	// TODO
 	return nil
 }
 
-// Handoff předá session další roli. Důvod je povinný.
+// Handoff předá session o jeden krok vpřed nebo zpět v řadě spec→tests→impl→review.
+// Prázdný důvod → ErrMissingReason; před Start → ErrNotStarted; po Finish → ErrFinished.
+// Jiný přechod (včetně RoleDone/RoleNone/sebe sama) → ErrInvalidTransition bez změny stavu.
 func (s *Session) Handoff(to Role, reason string) error {
-	// TODO: úkol B
+	// TODO
 	return nil
 }
 
-// Finish uzavře session. Jde to jen z role review.
+// --- Stupeň: obtížný ---
+// Finish uzavře session jen z role review; jinak ErrInvalidTransition; podruhé ErrFinished.
+// Zapíše událost RoleReview → RoleDone s důvodem "hotovo".
 func (s *Session) Finish() error {
-	// TODO: úkol B
+	// TODO
 	return nil
 }
 
 // Timeline vrací kopii historie přechodů.
+// Volající nesmí přepsat interní slice.
 func (s *Session) Timeline() []Event {
-	// TODO: úkol B
+	// TODO
 	return nil
 }
 
@@ -134,14 +146,17 @@ type Score struct {
 	Review         []string
 }
 
-// RecommendLesson vrací doporučení k zopakování podle kategorie zmeškaného nálezu.
+// RecommendLesson vrací doporučení ke zopakování podle kategorie (case-insensitive).
+// Pokryté kategorie: errors, context, concurrency, http, design, testing; neznámá výchozí text.
 func RecommendLesson(category string) string {
-	// TODO: úkol C
+	// TODO
 	return ""
 }
 
-// ScoreReview porovná nalezené nálezy s nastraženými a spočítá precision a recall.
+// ScoreReview spočítá precision, recall a doporučení pro review dril; párování podle ID.
+// Duplicitní ID počítá jednou; prázdné ID ignoruj. Precision = TP/(TP+FP), při 0 FP je 0.
+// Recall = TP/počet nastražených, při 0 nastražených je 1. Review = doporučení pro zmeškané kategorie, abecedně.
 func ScoreReview(found, planted []Finding) Score {
-	// TODO: úkol C
-	return *new(Score)
+	// TODO
+	return Score{}
 }

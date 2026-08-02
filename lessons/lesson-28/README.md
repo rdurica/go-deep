@@ -12,47 +12,6 @@
 - Napsat konfigurační typ, který se nedá omylem vypsat do logu i s heslem.
 - Testovat načítání konfigurace bez globálního stavu procesu.
 
-## PHP → Go most
-
-V Symfony máš na konfiguraci tři vrstvy: `.env` soubory, `config/services.yaml`
-s `parameters` a v kódu injektované `%env(int:PORT)%`. Framework je poskládá,
-zvaliduje a doručí do konstruktoru.
-
-```php
-# config/services.yaml
-parameters:
-    app.port: '%env(int:PORT)%'
-    app.read_timeout: '%env(int:READ_TIMEOUT)%'
-
-# src/Http/Server.php
-public function __construct(
-    private int $port,
-    private int $readTimeout,
-) {}
-```
-
-V Go žádná taková vrstva není. Konfiguraci si přečteš, převedeš a zvaliduješ **ty**,
-obvykle jednou funkcí na začátku `main`:
-
-```go
-type Config struct {
-	Port        int
-	ReadTimeout time.Duration
-}
-
-cfg, err := Load(os.Getenv)
-if err != nil {
-	log.Fatalf("config: %v", err)
-}
-srv := NewServer(cfg)
-```
-
-Změna v uvažování: v Symfony je konfigurace **infrastruktura frameworku**, v Go je to
-**obyčejný kód**, který se dá číst, testovat a krokovat. Zmizí ti magie `%env(int:...)%`,
-ale taky zmizí situace, kdy aplikace nastartuje s poloviční konfigurací a rozbije se až
-u prvního requestu. Druhý přenos návyku: `.env` soubor v Go nečteme. Proměnné do procesu
-dostane Docker, systemd, Kubernetes nebo `direnv` — aplikace jen čte prostředí.
-
 ## Teorie
 
 ### Proč prostředí a ne konfigurační soubor
@@ -226,6 +185,47 @@ u, _ := url.Parse("postgres://app:s3cr3t@db:5432/app")
 fmt.Println(u.Redacted()) // postgres://app:xxxxx@db:5432/app
 ```
 
+## Rozdíly proti PHP
+
+V Symfony máš na konfiguraci tři vrstvy: `.env` soubory, `config/services.yaml`
+s `parameters` a v kódu injektované `%env(int:PORT)%`. Framework je poskládá,
+zvaliduje a doručí do konstruktoru.
+
+```php
+# config/services.yaml
+parameters:
+    app.port: '%env(int:PORT)%'
+    app.read_timeout: '%env(int:READ_TIMEOUT)%'
+
+# src/Http/Server.php
+public function __construct(
+    private int $port,
+    private int $readTimeout,
+) {}
+```
+
+V Go žádná taková vrstva není. Konfiguraci si přečteš, převedeš a zvaliduješ **ty**,
+obvykle jednou funkcí na začátku `main`:
+
+```go
+type Config struct {
+	Port        int
+	ReadTimeout time.Duration
+}
+
+cfg, err := Load(os.Getenv)
+if err != nil {
+	log.Fatalf("config: %v", err)
+}
+srv := NewServer(cfg)
+```
+
+Změna v uvažování: v Symfony je konfigurace **infrastruktura frameworku**, v Go je to
+**obyčejný kód**, který se dá číst, testovat a krokovat. Zmizí ti magie `%env(int:...)%`,
+ale taky zmizí situace, kdy aplikace nastartuje s poloviční konfigurací a rozbije se až
+u prvního requestu. Druhý přenos návyku: `.env` soubor v Go nečteme. Proměnné do procesu
+dostane Docker, systemd, Kubernetes nebo `direnv` — aplikace jen čte prostředí.
+
 ## Časté chyby
 
 | Chyba | Proč vzniká | Jak to udělat správně |
@@ -237,66 +237,52 @@ fmt.Println(u.Redacted()) // postgres://app:xxxxx@db:5432/app
 | `log.Printf("%+v", cfg)` | ladicí výpis se nikdy nesmaže | `String()` maskující tajemství |
 | `PORT` jako `string` do `net.Listen` | prostředí je stringové, tak proč ne | převeď a zvaliduj hned v `Load` |
 
+## AI kvíz
+
+Po přečtení teorie spusť v Cursoru **`/go-deep-quiz 28`**. AI tě ~5 minut prověří mentální model (ne hotové cvičení). Slabiny si uloží do [`GAPS.md`](../../GAPS.md).
+
 ## Úkol
 
-Pracuj v `exercise/`. Postupuj A → B → C, po každé části spusť test.
+Pracuj v `exercise/`. Po doplnění spouštěj testy:
 
-### A — rozcvička (~10 min)
+Stupně jdou od jednodušších ke složitějším — po každém stupni spusť review, než jdeš dál.
 
-1. `LookupString(getenv func(string) string, key, def string) string` — vrátí hodnotu
-   klíče, nebo `def`, pokud je hodnota prázdná.
-2. `LookupInt(getenv func(string) string, key string, def int) (int, error)` — totéž pro
-   `int`. Prázdná hodnota dá `def` a `nil`. Nečíselná hodnota vrátí `0` a chybu, která
-   obaluje `ErrInvalid` a v textu obsahuje jméno klíče.
+### Jednoduchý
 
-Obě funkce berou `getenv` jako parametr místo toho, aby volaly `os.Getenv`. Test díky
-tomu běží paralelně a nedotýká se prostředí procesu.
-
-např. `LookupString(env, "ADDR", "0.0.0.0")` → `"127.0.0.1"` (když `ADDR=127.0.0.1`)
-
-### B — jádro (~35 min)
-
-`Load(getenv func(string) string) (Config, error)` sestaví `Config` z těchto klíčů:
-
-| Klíč | Pole | Výchozí | Pravidlo |
-|------|------|---------|----------|
-| `ADDR` | `Addr` | `0.0.0.0` | — |
-| `PORT` | `Port` | `8080` | musí být 1–65535 |
-| `READ_TIMEOUT` | `ReadTimeout` | `5s` | `time.ParseDuration`, musí být kladný |
-| `DEBUG` | `Debug` | `false` | `strconv.ParseBool` |
-| `DATABASE_URL` | `DatabaseURL` | — | povinné |
-| `API_KEY` | `APIKey` | — | povinné |
-
-Klíčová vlastnost: `Load` **nesmí skončit u první chyby**. Posbírej všechny problémy
-a vrať je spojené přes `errors.Join`, aby `errors.Is(err, ErrMissing)` i
-`errors.Is(err, ErrInvalid)` fungovalo a text obsahoval jména všech vadných klíčů.
-Při chybě vrať nulový `Config`.
-
-např. `Load(validEnv)` → `Port:8080, Addr:"0.0.0.0", ReadTimeout:5s, Debug:false`
-
-### C — rozšíření (~20 min)
-
-1. `func (c Config) String() string` — vypíše konfiguraci tak, aby se do výstupu nedostal
-   `APIKey` ani heslo z `DatabaseURL`. Test to kontroluje pro `String()`, `%v`, `%+v`
-   i `%s`. Netajné hodnoty (port, host databáze) naopak ve výstupu zůstat musí. URL bez
-   hesla se nemění.
-2. `LoadFromEnviron(environ []string) (Config, error)` — dostane slice ve formátu
-   `os.Environ()`, tedy `"KEY=VALUE"`. Rozděl na **prvním** `=` (hodnota může další `=`
-   obsahovat), přeskoč položky bez `=` a s prázdným klíčem, a výsledek předej `Load`.
-
-např. `Config.String()` → obsahuje `8080` a `db:5432`, ne API klíč ani heslo
+Funkce: `LookupString`
 
 ```bash
-make lesson L=28
+make lesson L=28 PART=1
 ```
 
-Až budeš hotový, porovnej se `solutions/` (spoiler).
+Pak **`/go-deep-review 28 easy`**.
 
-## Ověření
+### Střední
 
-Po dokončení úkolů spusť v Cursoru **`/go-deep-review`** a zadej třeba jen `28`. AI tě postupně projde body níže, doptá se a ověří pochopení — nestačí jen zelené testy.
+Funkce: `LookupInt`, `Load`
 
-- [ ] `make lesson L=28` prochází
+```bash
+make lesson L=28 PART=2
+```
+
+Pak **`/go-deep-review 28 medium`**.
+
+### Obtížný
+
+Funkce: `String`, `LoadFromEnviron`
+
+```bash
+make lesson L=28 PART=3
+```
+
+Pak **`/go-deep-review 28 hard`**.
+
+Až budou stupně hotové, porovnej se `solutions/` (spoiler).
+
+## Závěrečné otázky
+
+Spusť **`/go-deep-review 28 final`**. AI projde body níže, doptá se a ověří pochopení. Celé cvičení ověří `make lesson L=28` (+ `make race L=28`, pokud to lekce vyžaduje).
+
 - [ ] Umíš vysvětlit, kdy potřebuješ `os.LookupEnv` místo `os.Getenv`
 - [ ] Umíš vysvětlit, proč je fail-fast při startu lepší než chyba za běhu
 - [ ] Umíš vysvětlit, co dělá `errors.Join` s `errors.Is`

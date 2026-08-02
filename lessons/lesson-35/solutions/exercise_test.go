@@ -18,7 +18,7 @@ func user(id, email string) exercise.User {
 	return exercise.User{ID: id, Email: email, Name: "Uživatel " + id, Active: true}
 }
 
-func TestMemoryRepoUlozACti(t *testing.T) {
+func TestMemoryRepoStoreAndLoad(t *testing.T) {
 	ctx := context.Background()
 	repo := exercise.NewMemoryRepo()
 
@@ -48,16 +48,9 @@ func TestMemoryRepoUlozACti(t *testing.T) {
 	if got != updated {
 		t.Errorf("Get = %+v, chci %+v", got, updated)
 	}
-
-	if err := repo.Delete(ctx, "u-1"); err != nil {
-		t.Fatalf("Delete = %v", err)
-	}
-	if _, err := repo.Get(ctx, "u-1"); !errors.Is(err, exercise.ErrNotFound) {
-		t.Errorf("Get po Delete = %v, chci ErrNotFound", err)
-	}
 }
 
-func TestMemoryRepoNenalezeno(t *testing.T) {
+func TestMemoryRepoNotFound(t *testing.T) {
 	ctx := context.Background()
 	repo := exercise.NewMemoryRepo()
 
@@ -67,9 +60,20 @@ func TestMemoryRepoNenalezeno(t *testing.T) {
 	if err := repo.Delete(ctx, "nic"); !errors.Is(err, exercise.ErrNotFound) {
 		t.Errorf("Delete(nic) = %v, chci ErrNotFound", err)
 	}
+
+	alice := user("u-del", "del@example.com")
+	if err := repo.Save(ctx, alice); err != nil {
+		t.Fatalf("Save = %v", err)
+	}
+	if err := repo.Delete(ctx, "u-del"); err != nil {
+		t.Fatalf("Delete existujícího = %v", err)
+	}
+	if _, err := repo.Get(ctx, "u-del"); !errors.Is(err, exercise.ErrNotFound) {
+		t.Errorf("Get po Delete = %v, chci ErrNotFound", err)
+	}
 }
 
-func TestMemoryRepoNeplatnyUzivatel(t *testing.T) {
+func TestMemoryRepoInvalidUser(t *testing.T) {
 	ctx := context.Background()
 	repo := exercise.NewMemoryRepo()
 
@@ -77,9 +81,9 @@ func TestMemoryRepoNeplatnyUzivatel(t *testing.T) {
 		name string
 		u    exercise.User
 	}{
-		{"prázdné ID", exercise.User{Email: "a@example.com"}},
+		{"empty ID", exercise.User{Email: "a@example.com"}},
 		{"ID jen z mezer", exercise.User{ID: "  ", Email: "a@example.com"}},
-		{"prázdný e-mail", exercise.User{ID: "u-1"}},
+		{"empty email", exercise.User{ID: "u-1"}},
 		{"e-mail jen z mezer", exercise.User{ID: "u-1", Email: "\t"}},
 	}
 	for _, tt := range tests {
@@ -91,7 +95,7 @@ func TestMemoryRepoNeplatnyUzivatel(t *testing.T) {
 	}
 }
 
-func TestMemoryRepoListJeSerazeny(t *testing.T) {
+func TestMemoryRepoListIsSorted(t *testing.T) {
 	ctx := context.Background()
 	repo := exercise.NewMemoryRepo()
 
@@ -121,7 +125,7 @@ func TestMemoryRepoListJeSerazeny(t *testing.T) {
 	}
 }
 
-func TestMemoryRepoRespektujeContext(t *testing.T) {
+func TestMemoryRepoRespectsContext(t *testing.T) {
 	repo := exercise.NewMemoryRepo()
 	if err := repo.Save(context.Background(), user("u-1", "a@example.com")); err != nil {
 		t.Fatalf("Save = %v", err)
@@ -144,7 +148,7 @@ func TestMemoryRepoRespektujeContext(t *testing.T) {
 	}
 }
 
-func TestMemoryRepoSoubezne(t *testing.T) {
+func TestMemoryRepoConcurrent(t *testing.T) {
 	ctx := context.Background()
 	repo := exercise.NewMemoryRepo()
 
@@ -188,14 +192,14 @@ func TestBuildSelect(t *testing.T) {
 		wantArgs  []any
 	}{
 		{
-			name:      "bez filtru",
+			name:      "no filter",
 			table:     "users",
 			cols:      []string{"id", "email"},
 			wantQuery: "SELECT id, email FROM users",
 			wantArgs:  nil,
 		},
 		{
-			name:      "jeden filtr",
+			name:      "one filter",
 			table:     "users",
 			cols:      []string{"id"},
 			filters:   map[string]any{"active": true},
@@ -203,7 +207,7 @@ func TestBuildSelect(t *testing.T) {
 			wantArgs:  []any{true},
 		},
 		{
-			name:      "víc filtrů se řadí abecedně",
+			name:      "multiple filters sort alphabetically",
 			table:     "users",
 			cols:      []string{"id", "name"},
 			filters:   map[string]any{"name": "Alice", "active": true, "email": "a@example.com"},
@@ -211,7 +215,7 @@ func TestBuildSelect(t *testing.T) {
 			wantArgs:  []any{true, "a@example.com", "Alice"},
 		},
 		{
-			name:      "jiná tabulka",
+			name:      "other table",
 			table:     "orders",
 			cols:      []string{"id", "total_cents"},
 			filters:   map[string]any{"user_id": "u-1"},
@@ -243,7 +247,7 @@ func TestBuildSelect(t *testing.T) {
 	}
 }
 
-func TestBuildSelectChyby(t *testing.T) {
+func TestBuildSelectErrors(t *testing.T) {
 	tests := []struct {
 		name    string
 		table   string
@@ -251,13 +255,13 @@ func TestBuildSelectChyby(t *testing.T) {
 		filters map[string]any
 		want    error
 	}{
-		{"neznámá tabulka", "sessions", []string{"id"}, nil, exercise.ErrUnknownTable},
-		{"prázdná tabulka", "", []string{"id"}, nil, exercise.ErrUnknownTable},
-		{"žádné sloupce", "users", nil, nil, exercise.ErrNoColumns},
-		{"prázdný slice sloupců", "users", []string{}, nil, exercise.ErrNoColumns},
-		{"neznámý sloupec", "users", []string{"password"}, nil, exercise.ErrUnknownColumn},
-		{"sloupec z jiné tabulky", "users", []string{"total_cents"}, nil, exercise.ErrUnknownColumn},
-		{"neznámý sloupec ve filtru", "users", []string{"id"}, map[string]any{"password": "x"}, exercise.ErrUnknownColumn},
+		{"unknown table", "sessions", []string{"id"}, nil, exercise.ErrUnknownTable},
+		{"empty table", "", []string{"id"}, nil, exercise.ErrUnknownTable},
+		{"no columns", "users", nil, nil, exercise.ErrNoColumns},
+		{"empty columns slice", "users", []string{}, nil, exercise.ErrNoColumns},
+		{"unknown column", "users", []string{"password"}, nil, exercise.ErrUnknownColumn},
+		{"column from other table", "users", []string{"total_cents"}, nil, exercise.ErrUnknownColumn},
+		{"unknown column in filter", "users", []string{"id"}, map[string]any{"password": "x"}, exercise.ErrUnknownColumn},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -272,15 +276,15 @@ func TestBuildSelectChyby(t *testing.T) {
 	}
 }
 
-func TestBuildSelectOdolavaInjection(t *testing.T) {
-	t.Run("injection ve jméně tabulky", func(t *testing.T) {
+func TestBuildSelectResistsInjection(t *testing.T) {
+	t.Run("injection in table name", func(t *testing.T) {
 		_, _, err := exercise.BuildSelect("users; DROP TABLE users --", []string{"id"}, nil)
 		if !errors.Is(err, exercise.ErrUnknownTable) {
 			t.Errorf("BuildSelect = %v, chci ErrUnknownTable", err)
 		}
 	})
 
-	t.Run("injection ve jméně sloupce", func(t *testing.T) {
+	t.Run("injection in column name", func(t *testing.T) {
 		for _, col := range []string{"id, password", "id; DROP TABLE users", "1=1", "*"} {
 			_, _, err := exercise.BuildSelect("users", []string{col}, nil)
 			if !errors.Is(err, exercise.ErrUnknownColumn) {
@@ -289,7 +293,7 @@ func TestBuildSelectOdolavaInjection(t *testing.T) {
 		}
 	})
 
-	t.Run("injection ve jméně filtru", func(t *testing.T) {
+	t.Run("injection in filter name", func(t *testing.T) {
 		filters := map[string]any{"email": "a@example.com", "1=1 OR id": "x"}
 		_, _, err := exercise.BuildSelect("users", []string{"id"}, filters)
 		if !errors.Is(err, exercise.ErrUnknownColumn) {
@@ -297,7 +301,7 @@ func TestBuildSelectOdolavaInjection(t *testing.T) {
 		}
 	})
 
-	t.Run("injection v hodnotě skončí v argumentech", func(t *testing.T) {
+	t.Run("injection in value ends in args", func(t *testing.T) {
 		payload := "' OR 1=1 --"
 		q, args, err := exercise.BuildSelect("users", []string{"id"}, map[string]any{"email": payload})
 		if err != nil {
@@ -331,12 +335,12 @@ func TestPlan(t *testing.T) {
 		applied []int
 		want    []int
 	}{
-		{"nic neaplikováno", nil, []int{1, 2, 3}},
-		{"prázdný slice", []int{}, []int{1, 2, 3}},
-		{"první hotová", []int{1}, []int{2, 3}},
-		{"díra uprostřed", []int{1, 3}, []int{2}},
-		{"všechno hotové", []int{1, 2, 3}, nil},
-		{"duplicitní záznam v applied", []int{1, 1, 2}, []int{3}},
+		{"nothing applied", nil, []int{1, 2, 3}},
+		{"empty slice", []int{}, []int{1, 2, 3}},
+		{"first done", []int{1}, []int{2, 3}},
+		{"gap in middle", []int{1, 3}, []int{2}},
+		{"all done", []int{1, 2, 3}, nil},
+		{"duplicate in applied", []int{1, 1, 2}, []int{3}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -359,7 +363,7 @@ func TestPlan(t *testing.T) {
 	}
 }
 
-func TestPlanChyby(t *testing.T) {
+func TestPlanErrors(t *testing.T) {
 	tests := []struct {
 		name    string
 		applied []int
@@ -367,28 +371,28 @@ func TestPlanChyby(t *testing.T) {
 		want    error
 	}{
 		{
-			name: "duplicitní verze",
+			name: "duplicate version",
 			all:  []exercise.Migration{mig(1, "create_users"), mig(1, "create_users_again")},
 			want: exercise.ErrDuplicateVersion,
 		},
 		{
-			name:    "drift — aplikovaná verze chybí",
+			name:    "drift — applied version missing",
 			applied: []int{1, 7},
 			all:     []exercise.Migration{mig(1, "create_users"), mig(2, "add_index")},
 			want:    exercise.ErrDrift,
 		},
 		{
-			name: "nekladná verze",
+			name: "non-positive version",
 			all:  []exercise.Migration{mig(0, "nula")},
 			want: exercise.ErrInvalidMigration,
 		},
 		{
-			name: "záporná verze",
+			name: "negative version",
 			all:  []exercise.Migration{mig(-1, "zapor")},
 			want: exercise.ErrInvalidMigration,
 		},
 		{
-			name: "prázdné jméno",
+			name: "empty name",
 			all:  []exercise.Migration{mig(1, "   ")},
 			want: exercise.ErrInvalidMigration,
 		},
@@ -406,7 +410,7 @@ func TestPlanChyby(t *testing.T) {
 	}
 }
 
-func TestPlanPrazdnySeznam(t *testing.T) {
+func TestPlanEmptyList(t *testing.T) {
 	got, err := exercise.Plan(nil, nil)
 	if err != nil {
 		t.Fatalf("Plan(nil, nil) = %v, chci nil", err)

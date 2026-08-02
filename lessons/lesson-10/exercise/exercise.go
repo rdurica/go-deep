@@ -7,50 +7,60 @@ type Stack struct {
 	items []int
 }
 
-// DeferOrder registruje tři defery zapisující do výsledku a vrací jejich
-// skutečné pořadí provedení.
+// --- Stupeň: jednoduchý ---
+// DeferOrder registruje tři defery, které přidají "first", "second", "third" do výsledku.
+// Vrací skutečné pořadí provedení (LIFO): ["third", "second", "first"].
 func DeferOrder() (order []string) {
-	// TODO: úkol A
+	// TODO
 	return
 }
 
-// SumWithLog sečte čísla a vede o tom protokol. Poslední krok doplní defer.
+// SumWithLog sečte čísla a vede protokol kroků ve tvaru "+3=6".
+// Defer před cyklem přidá na konec "total=<součet>" s finální hodnotou.
+// Prázdný vstup: 0 a ["total=0"].
 func SumWithLog(nums []int) (total int, steps []string) {
-	// TODO: úkol B
+	// TODO
 	return
 }
 
-// SafeDivide vydělí a/b a paniku z dělení nulou převede přes recover na error.
+// --- Stupeň: střední ---
+// SafeDivide vydělí a/b celočíselně.
+// Dělení nulou panikuje — odchytni to recover v deferu a převeď na error (fmt.Errorf).
+// Při chybě result je 0. Nesmíš dělitele testovat předem přes if b == 0.
 func SafeDivide(a, b int) (result int, err error) {
-	// TODO: úkol B
+	// TODO
 	return
 }
 
-// CloseAll zavolá všechny funkce a vrátí první vzniklou chybu.
+// CloseAll zavolá všechny closers, i když některá vrátí chybu, a vrátí první chybu.
+// Nil položky přeskočí. Prázdný i nil vstup vrací nil.
 func CloseAll(closers []func() error) error {
-	// TODO: úkol B
+	// TODO
 	return nil
 }
 
-// Push vloží prvek navrch zásobníku.
+// Push vloží prvek navrch zásobníku (na konec vnitřního slice).
 func (s *Stack) Push(v int) {
-	// TODO: úkol C
+	// TODO
 }
 
-// Pop odebere a vrátí vrchní prvek. Nad prázdným zásobníkem paniká.
+// Pop odebere a vrátí vrchní prvek.
+// Nad prázdným zásobníkem paniká s hodnotou "pop from empty stack" (chyba programátora).
 func (s *Stack) Pop() int {
-	// TODO: úkol C
+	// TODO
 	return 0
 }
 
-// Len vrací počet prvků. Funguje i na nil pointeru.
+// --- Stupeň: obtížný ---
+// Len vrací počet prvků. Musí fungovat i na nil pointeru (*Stack)(nil) → 0.
 func (s *Stack) Len() int {
-	// TODO: úkol C
+	// TODO
 	return 0
 }
 
-// TryPop je bezpečná varianta Pop: paniku odchytí a vrátí (0, false).
+// TryPop je bezpečná varianta: zavolá Pop a paniku odchytí přes recover.
+// Při panice vrací 0, false. Po neúspěšném TryPop musí Push/Pop dál fungovat.
 func TryPop(s *Stack) (v int, ok bool) {
-	// TODO: úkol C
+	// TODO
 	return
 }

@@ -47,6 +47,24 @@ func seededStore(t *testing.T) *exercise.Store {
 	return store
 }
 
+func TestStoreAddGet(t *testing.T) {
+	store := exercise.NewStore()
+	a := store.Add("Apple")
+	if a.ID != "1" || a.Name != "Apple" {
+		t.Errorf("Add = %+v, chci ID=1 Name=Apple", a)
+	}
+	got, ok := store.Get("1")
+	if !ok {
+		t.Fatal(`Get("1") = false, chci true`)
+	}
+	if got != a {
+		t.Errorf("Get = %+v, chci %+v", got, a)
+	}
+	if _, ok := store.Get("missing"); ok {
+		t.Error(`Get("missing") = true, chci false`)
+	}
+}
+
 func TestItemsRouterGetItem(t *testing.T) {
 	router := exercise.ItemsRouter(seededStore(t))
 
@@ -61,7 +79,7 @@ func TestItemsRouterGetItem(t *testing.T) {
 	}
 }
 
-func TestItemsRouterGetItemNenalezeno(t *testing.T) {
+func TestItemsRouterGetItemNotFound(t *testing.T) {
 	router := exercise.ItemsRouter(seededStore(t))
 
 	rec := do(t, router, http.MethodGet, "/items/999", "")
@@ -78,7 +96,7 @@ func TestItemsRouterGetItemNenalezeno(t *testing.T) {
 	}
 }
 
-func TestItemsRouterKorenJePresnaShoda(t *testing.T) {
+func TestItemsRouterRootIsExactMatch(t *testing.T) {
 	router := exercise.ItemsRouter(seededStore(t))
 
 	rec := do(t, router, http.MethodGet, "/", "")
@@ -97,7 +115,7 @@ func TestItemsRouterKorenJePresnaShoda(t *testing.T) {
 	}
 }
 
-func TestItemsRouterSpatnaMetodaJe405(t *testing.T) {
+func TestItemsRouterWrongMethodIs405(t *testing.T) {
 	router := exercise.ItemsRouter(seededStore(t))
 
 	tests := []struct {
@@ -134,15 +152,15 @@ func TestParseListQuery(t *testing.T) {
 		wantQ     string
 		wantErr   bool
 	}{
-		{"prázdný dotaz", "", 0, "", false},
+		{"empty query", "", 0, "", false},
 		{"jen q", "q=ban", 0, "ban", false},
 		{"limit a q", "limit=5&q=ban", 5, "ban", false},
 		{"limit 1", "limit=1", 1, "", false},
-		{"prázdný limit", "limit=", 0, "", false},
-		{"nečíselný limit", "limit=abc", 0, "", true},
-		{"záporný limit", "limit=-3", 0, "", true},
-		{"nulový limit", "limit=0", 0, "", true},
-		{"desetinný limit", "limit=1.5", 0, "", true},
+		{"empty limit", "limit=", 0, "", false},
+		{"non-numeric limit", "limit=abc", 0, "", true},
+		{"negative limit", "limit=-3", 0, "", true},
+		{"zero limit", "limit=0", 0, "", true},
+		{"decimal limit", "limit=1.5", 0, "", true},
 	}
 
 	for _, tt := range tests {
@@ -177,7 +195,7 @@ func TestItemsRouterList(t *testing.T) {
 		target    string
 		wantNames []string
 	}{
-		{"bez parametrů", "/items", []string{"Apple", "Banana", "Cherry"}},
+		{"no params", "/items", []string{"Apple", "Banana", "Cherry"}},
 		{"limit 2", "/items?limit=2", []string{"Apple", "Banana"}},
 		{"filtr q", "/items?q=an", []string{"Banana"}},
 		{"filtr q je case-insensitive", "/items?q=AN", []string{"Banana"}},
@@ -206,7 +224,7 @@ func TestItemsRouterList(t *testing.T) {
 	}
 }
 
-func TestItemsRouterListNevalidniLimit(t *testing.T) {
+func TestItemsRouterListInvalidLimit(t *testing.T) {
 	router := exercise.ItemsRouter(seededStore(t))
 
 	for _, target := range []string{"/items?limit=abc", "/items?limit=-1", "/items?limit=0"} {
@@ -249,15 +267,15 @@ func TestItemsRouterCreate(t *testing.T) {
 	}
 }
 
-func TestItemsRouterCreateChyby(t *testing.T) {
+func TestItemsRouterCreateErrors(t *testing.T) {
 	tests := []struct {
 		name string
 		body string
 	}{
-		{"rozbitý JSON", `{"name":`},
-		{"prázdné jméno", `{"name":""}`},
-		{"jméno jen z mezer", `{"name":"   "}`},
-		{"chybějící jméno", `{}`},
+		{"broken JSON", `{"name":`},
+		{"empty name", `{"name":""}`},
+		{"name only spaces", `{"name":"   "}`},
+		{"missing name", `{}`},
 	}
 
 	for _, tt := range tests {
@@ -308,7 +326,7 @@ func tempTree(t *testing.T) (root, secret string) {
 	return root, secret
 }
 
-func TestSafeJoinPovoluje(t *testing.T) {
+func TestSafeJoinAllows(t *testing.T) {
 	root, _ := tempTree(t)
 
 	got, err := exercise.SafeJoin(root, "sub/hello.txt")
@@ -320,7 +338,7 @@ func TestSafeJoinPovoluje(t *testing.T) {
 	}
 }
 
-func TestSafeJoinOdmita(t *testing.T) {
+func TestSafeJoinRejects(t *testing.T) {
 	root, _ := tempTree(t)
 
 	bad := []string{
@@ -345,7 +363,7 @@ func TestSafeJoinOdmita(t *testing.T) {
 	}
 }
 
-func TestFilesHandlerServirujeSoubor(t *testing.T) {
+func TestFilesHandlerServesFile(t *testing.T) {
 	root, _ := tempTree(t)
 
 	req := httptest.NewRequest(http.MethodGet, "/files/sub/hello.txt", nil)
@@ -362,7 +380,7 @@ func TestFilesHandlerServirujeSoubor(t *testing.T) {
 	}
 }
 
-func TestFilesHandlerNeexistujiciSoubor(t *testing.T) {
+func TestFilesHandlerMissingFile(t *testing.T) {
 	root, _ := tempTree(t)
 
 	req := httptest.NewRequest(http.MethodGet, "/files/chybi.txt", nil)
@@ -376,7 +394,7 @@ func TestFilesHandlerNeexistujiciSoubor(t *testing.T) {
 	}
 }
 
-func TestFilesHandlerOdmitneTraversal(t *testing.T) {
+func TestFilesHandlerRejectsTraversal(t *testing.T) {
 	root, _ := tempTree(t)
 	handler := exercise.FilesHandler(root)
 

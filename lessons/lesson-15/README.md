@@ -9,45 +9,6 @@
 - Rozhodnout, kdy generika **ne**použít, a obhájit to pravidlem tří výskytů.
 - Nahradit vlastní pomocníky funkcemi z balíčků `slices`, `maps` a `cmp`.
 
-## PHP → Go most
-
-PHP typový systém generika nemá. Řeší se to docblockem pro statickou analýzu a doufáním:
-
-```php
-/**
- * @template T
- * @param list<T> $items
- * @param callable(T): bool $keep
- * @return list<T>
- */
-function filter(array $items, callable $keep): array
-{
-    return array_values(array_filter($items, $keep));
-}
-```
-
-PHPStan to pochopí, ale runtime ne — v `$items` může být cokoli a chyba spadne až
-za běhu. Go od verze 1.18 má generika **v jazyce**, takže je kontroluje kompilátor:
-
-```go
-func Filter[T any](s []T, keep func(T) bool) []T {
-	out := make([]T, 0, len(s))
-	for _, v := range s {
-		if keep(v) {
-			out = append(out, v)
-		}
-	}
-	return out
-}
-
-nums := Filter([]int{1, 2, 3}, func(n int) bool { return n%2 == 1 }) // []int
-```
-
-Co se mění v uvažování: v PHP je generický typ **anotace pro nástroj**, v Go je to
-**součást typu**. Zároveň platí varování v opačném směru: Go generika jsou schválně
-skromná. Nejsou tu od toho, abys s nimi postavil framework — jsou tu, abys nemusel psát
-`MapStringToInt`, `MapStringToString` a `MapIntToString` třikrát.
-
 ## Teorie
 
 ### Jak se dřív žilo bez generik
@@ -241,6 +202,45 @@ Dvě kopie kódu jsou levnější než špatná abstrakce. Konkrétní důvody, 
 Pozitivní znamení naopak jsou: kontejnery (`Stack`, `Cache`, `Set`), operace nad slice
 a mapami, funkce, které zachovávají typ vstupu na výstupu.
 
+## Rozdíly proti PHP
+
+PHP typový systém generika nemá. Řeší se to docblockem pro statickou analýzu a doufáním:
+
+```php
+/**
+ * @template T
+ * @param list<T> $items
+ * @param callable(T): bool $keep
+ * @return list<T>
+ */
+function filter(array $items, callable $keep): array
+{
+    return array_values(array_filter($items, $keep));
+}
+```
+
+PHPStan to pochopí, ale runtime ne — v `$items` může být cokoli a chyba spadne až
+za běhu. Go od verze 1.18 má generika **v jazyce**, takže je kontroluje kompilátor:
+
+```go
+func Filter[T any](s []T, keep func(T) bool) []T {
+	out := make([]T, 0, len(s))
+	for _, v := range s {
+		if keep(v) {
+			out = append(out, v)
+		}
+	}
+	return out
+}
+
+nums := Filter([]int{1, 2, 3}, func(n int) bool { return n%2 == 1 }) // []int
+```
+
+Co se mění v uvažování: v PHP je generický typ **anotace pro nástroj**, v Go je to
+**součást typu**. Zároveň platí varování v opačném směru: Go generika jsou schválně
+skromná. Nejsou tu od toho, abys s nimi postavil framework — jsou tu, abys nemusel psát
+`MapStringToInt`, `MapStringToString` a `MapIntToString` třikrát.
+
 ## Časté chyby
 
 | Chyba | Proč vzniká | Jak to udělat správně |
@@ -254,66 +254,52 @@ a mapami, funkce, které zachovávají typ vstupu na výstupu.
 | `var x Number` | constraint vypadá jako interface | constraint s množinou typů jde použít jen jako constraint |
 | Generický „BaseRepository" | přenos vrstveného návrhu z PHP | konkrétní typ za rozumnou cenu duplikace |
 
+## AI kvíz
+
+Po přečtení teorie spusť v Cursoru **`/go-deep-quiz 15`**. AI tě ~5 minut prověří mentální model (ne hotové cvičení). Slabiny si uloží do [`GAPS.md`](../../GAPS.md).
+
 ## Úkol
 
-Pracuj v `exercise/`. Postupuj A → B → C, po každé části spusť test.
+Pracuj v `exercise/`. Po doplnění spouštěj testy:
 
-### A — rozcvička (~10 min)
+Stupně jdou od jednodušších ke složitějším — po každém stupni spusť review, než jdeš dál.
 
-1. `Map[T, U any](s []T, f func(T) U) []U` — nový slice s výsledky `f` pro každý prvek.
-   Zachová pořadí i délku. Pro `nil` vstup vrať prázdný výsledek.
-2. `Filter[T any](s []T, keep func(T) bool) []T` — prvky, pro které `keep` vrátí `true`,
-   v původním pořadí.
+### Jednoduchý
 
-Zkus si funkce zavolat jednou explicitně (`Map[int, string](...)`) a jednou s odvozením.
-V testu jsou schválně použité na `int`, `string` i na vlastní typ `UserID`.
-
-např. `Map([1, 2, 3], strconv.Itoa)` → `["1", "2", "3"]`
-
-### B — jádro (~35 min)
-
-1. `Sum[T Number](s []T) T` — součet. Prázdný nebo `nil` vstup dá nulu **daného typu**.
-   `Number` je v `exercise.go` už připravený — přečti si, co v něm dělá vlnovka, protože
-   test volá `Sum` i nad `[]Celsius` (`type Celsius float64`) a `[]UserID` (`type UserID int`).
-2. `Max[T cmp.Ordered](s []T) (T, bool)` — největší prvek a `true`. Pro prázdný vstup
-   `(zero value, false)`. Nepoužívej `slices.Max`, ta na prázdném vstupu panikuje —
-   napiš si to sám a všimni si, jak získáš zero value.
-3. `Keys[K comparable, V any](m map[K]V) []K` — klíče mapy. Pořadí není definované
-   (test si výsledek seřadí). `nil` mapa dá prázdný výsledek. Rozmysli si, proč
-   `K` musí být `comparable` a `V` stačí `any`.
-
-např. `Sum([1, 2, 3])` → `6`
-
-### C — rozšíření (~25 min)
-
-1. `Stack[T any]` — implementuj `Push`, `Pop() (T, bool)`, `Peek() (T, bool)` a `Len`.
-   Zero value `var s Stack[int]` musí být rovnou použitelná (žádný konstruktor).
-   `Pop` a `Peek` na prázdném zásobníku vrací zero value a `false`. Při `Pop` přepiš
-   uvolněné místo zero value, ať zásobník nedrží referenci na odebranou hodnotu.
-2. `Cache[K comparable, V any]` s limitem velikosti:
-   - `NewCache[K, V](max int) *Cache[K, V]` — hodnoty `max < 1` ber jako `1`,
-   - `Get(key K) (V, bool)`,
-   - `Set(key K, value V)` — při překročení limitu vypadne **nejdéle uložený** záznam
-     (FIFO podle prvního vložení). Přepis existujícího klíče jen změní hodnotu
-     a pořadí **nemění**,
-   - `Len() int` — počet uložených záznamů.
-
-Testy instanciují oba typy nejméně dvakrát různými typy, včetně vlastní struktury
-a pojmenovaného typu `UserID` jako klíče.
-
-např. po `Push(1)`, `Push(2)`: `Pop()` → `2, true`
+Funkce: `Push`, `Pop`
 
 ```bash
-make lesson L=15
+make lesson L=15 PART=1
 ```
 
-Až budeš hotový, porovnej se `solutions/` (spoiler).
+Pak **`/go-deep-review 15 easy`**.
 
-## Ověření
+### Střední
 
-Po dokončení úkolů spusť v Cursoru **`/go-deep-review`** a zadej třeba jen `15`. AI tě postupně projde body níže, doptá se a ověří pochopení — nestačí jen zelené testy.
+Funkce: `Peek`, `Len`
 
-- [ ] `make lesson L=15` prochází
+```bash
+make lesson L=15 PART=2
+```
+
+Pak **`/go-deep-review 15 medium`**.
+
+### Obtížný
+
+Funkce: `Get`, `Set`, `Len`
+
+```bash
+make lesson L=15 PART=3
+```
+
+Pak **`/go-deep-review 15 hard`**.
+
+Až budou stupně hotové, porovnej se `solutions/` (spoiler).
+
+## Závěrečné otázky
+
+Spusť **`/go-deep-review 15 final`**. AI projde body níže, doptá se a ověří pochopení. Celé cvičení ověří `make lesson L=15` (+ `make race L=15`, pokud to lekce vyžaduje).
+
 - [ ] Umíš vysvětlit rozdíl mezi `int` a `~int` v constraintu
 - [ ] Umíš vysvětlit, proč metoda nemůže mít vlastní type parametry
 - [ ] Umíš získat zero value type parametru
@@ -324,6 +310,7 @@ Po dokončení úkolů spusť v Cursoru **`/go-deep-review`** a zadej třeba jen
 
 `ZAKÁZÁNO` — viz [docs/ai-playbook.md](../../docs/ai-playbook.md).
 
+Mentor, kvíz i review (dialog) jsou vždy OK; v tomto režimu AI nesmí psát kód cvičení.
 ## Další čtení
 
 1. [Go blog — An Introduction To Generics](https://go.dev/blog/intro-generics)

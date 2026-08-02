@@ -9,39 +9,6 @@
 - Rozhodnout, kdy je rozhodnutí hodné ADR, a napsat ho tak, aby ho za rok někdo pochopil bez tebe.
 - Sestavit promptovací kontext pro Go (verze, závislosti, error model, hranice balíčků) a poznat halucinované API dřív, než ho pustíš do repozitáře.
 
-## PHP → Go most
-
-V Symfony projektu bývá „specifikace" ticket a pár testů, které dopíšeš po implementaci.
-Framework za tebe drží spoustu rozhodnutí: kde je controller, jak vypadá validace, co je
-service. Když pak řekneš agentovi „přidej endpoint na záložky", má z konvencí bundle
-dost kontextu, aby trefil něco použitelného.
-
-```php
-// Symfony: konvence nese půlku specifikace
-#[Route('/bookmarks', methods: ['POST'])]
-public function create(#[MapRequestPayload] CreateBookmark $dto): JsonResponse
-```
-
-V Go žádné konvence tohohle typu nejsou. `net/http` ti nenapoví, jestli chceš
-`map[string]any`, nebo typovaný request; jestli chyby vracíš jako problem details, nebo
-jako holý text; jestli je store interface u konzumenta, nebo v balíčku domény.
-
-```go
-// Go: rozhodnutí, která nikdo neudělá za tebe
-type CreateRequest struct {
-	URL   string   `json:"url"`
-	Title string   `json:"title"`
-	Tags  []string `json:"tags"`
-}
-
-func (s *Server) createBookmark(w http.ResponseWriter, r *http.Request) { /* ... */ }
-```
-
-Změna v uvažování: **prázdné místo po frameworku musí vyplnit spec, ne model.** Když ho
-nevyplníš ty, vyplní ho agent tím, co viděl nejčastěji na GitHubu — a to bývá Go psané
-jako Java. Spec je v Go dražší než v Symfony, protože nese víc informace. Zároveň se ti
-mnohonásobně vrátí, protože přesně tahle informace je to, co model nemá.
-
 ## Teorie
 
 ### Spec jako akceptační kritéria, ne jako přání
@@ -98,6 +65,50 @@ jsme zvážili a proč ne). Formát je záměrně nudný a strojově čitelný:
 
 - Status: Accepted
 - Date: 2024-05-01
+
+## Rozdíly proti PHP
+
+V Symfony projektu bývá „specifikace" ticket a pár testů, které dopíšeš po implementaci.
+Framework za tebe drží spoustu rozhodnutí: kde je controller, jak vypadá validace, co je
+service. Když pak řekneš agentovi „přidej endpoint na záložky", má z konvencí bundle
+dost kontextu, aby trefil něco použitelného.
+
+```php
+// Symfony: konvence nese půlku specifikace
+#[Route('/bookmarks', methods: ['POST'])]
+public function create(#[MapRequestPayload] CreateBookmark $dto): JsonResponse
+```
+
+V Go žádné konvence tohohle typu nejsou. `net/http` ti nenapoví, jestli chceš
+`map[string]any`, nebo typovaný request; jestli chyby vracíš jako problem details, nebo
+jako holý text; jestli je store interface u konzumenta, nebo v balíčku domény.
+
+```go
+// Go: rozhodnutí, která nikdo neudělá za tebe
+type CreateRequest struct {
+	URL   string   `json:"url"`
+	Title string   `json:"title"`
+	Tags  []string `json:"tags"`
+}
+
+func (s *Server) createBookmark(w http.ResponseWriter, r *http.Request) { /* ... */ }
+```
+
+Změna v uvažování: **prázdné místo po frameworku musí vyplnit spec, ne model.** Když ho
+nevyplníš ty, vyplní ho agent tím, co viděl nejčastěji na GitHubu — a to bývá Go psané
+jako Java. Spec je v Go dražší než v Symfony, protože nese víc informace. Zároveň se ti
+mnohonásobně vrátí, protože přesně tahle informace je to, co model nemá.
+
+## Časté chyby
+
+| Chyba | Proč vzniká | Jak to udělat správně |
+|-------|-------------|------------------------|
+| Spec bez kritéria selhání | zvyk psát tickety pro lidi, kteří doptají | každé kritérium formuluj jako pozorovatelné chování |
+| Testy až po generování | v Symfony byl framework kostrou, tady není | acceptance test je součást zadání, ne úklid |
+| Iterace přes prózu | „ještě to není ono" je rychlejší napsat | přidej assert a nech padat test |
+| ADR na každou drobnost | reflex dokumentovat vše | ADR jen na drahá, omezující nebo nečekaná rozhodnutí |
+| Prompt bez verze a zákazu závislostí | předpoklad, že model zná náš kontext | verze Go, „bez závislostí" a error model do každého promptu |
+| Důvěra v hezky vypadající volání stdlib | kód vypadá idiomaticky | `go build`, `go doc`, `go vet` na každý vygenerovaný soubor |
 
 ## Context
 
@@ -168,116 +179,52 @@ Nebezpečnější varianta halucinace je API, které **existuje, ale znamená n�
 `io.ReadAll` na tělo požadavku bez limitu. Tohle kompilátor nechytí; chytí to jen tvoje
 znalost stdlib z fází 1–6 a review z lekce 57.
 
-## Časté chyby
+## AI kvíz
 
-| Chyba | Proč vzniká | Jak to udělat správně |
-|-------|-------------|------------------------|
-| Spec bez kritéria selhání | zvyk psát tickety pro lidi, kteří doptají | každé kritérium formuluj jako pozorovatelné chování |
-| Testy až po generování | v Symfony byl framework kostrou, tady není | acceptance test je součást zadání, ne úklid |
-| Iterace přes prózu | „ještě to není ono" je rychlejší napsat | přidej assert a nech padat test |
-| ADR na každou drobnost | reflex dokumentovat vše | ADR jen na drahá, omezující nebo nečekaná rozhodnutí |
-| Prompt bez verze a zákazu závislostí | předpoklad, že model zná náš kontext | verze Go, „bez závislostí" a error model do každého promptu |
-| Důvěra v hezky vypadající volání stdlib | kód vypadá idiomaticky | `go build`, `go doc`, `go vet` na každý vygenerovaný soubor |
+Po přečtení teorie spusť v Cursoru **`/go-deep-quiz 56`**. AI tě ~5 minut prověří mentální model (ne hotové cvičení). Slabiny si uloží do [`GAPS.md`](../../GAPS.md).
 
 ## Úkol
 
-Pracuj v `exercise/`. Postupuj A → B → C, po každé části spusť test.
+Pracuj v `exercise/`. Po doplnění spouštěj testy:
 
-Stavíš nástroje, které spec-first workflow drží při životě: generátor a parser ADR
-a analyzátor kvality zadání.
+Stupně jdou od jednodušších ke složitějším — po každém stupni spusť review, než jdeš dál.
 
-### A — rozcvička (~10 min)
+### Jednoduchý
 
-1. `Status` — implementuj `String()` (`"Unknown"`, `"Proposed"`, `"Accepted"`,
-   `"Rejected"`, `"Superseded"`; hodnota mimo rozsah `"Unknown"`) a
-   `ParseStatus(s string) (Status, error)` — case-insensitive, s oříznutím mezer, neznámý
-   vstup vrací chybu obalující `ErrInvalidStatus`.
-2. `Fold(s string) string` — malá písmena bez diakritiky (`"Akceptační Kritéria"` →
-   `"akceptacni kriteria"`). Znaky bez mapování nech být.
-3. `Slug(title string) string` — z `Fold` nech jen `[a-z0-9]`, ostatní skupiny znaků
-   nahraď jedinou pomlčkou, bez pomlčky na začátku a na konci (`"Použij stdlib router"` →
-   `"pouzij-stdlib-router"`, `"---"` → `""`).
-4. `(ADR).Filename() string` → `"0007-pouzij-stdlib-router.md"`. Číslo je na čtyři místa
-   doplněné nulami, delší číslo se nezkracuje. Prázdný slug nahraď `"adr"`.
-
-např. `Slug("Použij stdlib router")` → `"pouzij-stdlib-router"`
-
-### B — jádro (~35 min)
-
-1. `(ADR).Render() string` — přesně tenhle markdown (bez odsazení, `\n` na konci):
-
-```
-# 7. Použij stdlib router
-
-- Status: Accepted
-- Date: 2024-05-01
-
-## Context
-
-<Context>
-
-## Decision
-
-<Decision>
-
-## Consequences
-
-<Consequences>
-```
-
-   Datum formátuj `2006-01-02`, texty sekcí ořízni o okolní bílé znaky.
-
-2. `ParseADR(s string) (ADR, error)` — round-trip parser k `Render`. Musí zvládnout
-   víceřádkové sekce a `\r\n`. Chyby (vždy obalené, aby fungovalo `errors.Is`):
-   - hlavička nemá tvar `# <číslo>. <titulek>` → `ErrInvalidHeader` (i prázdný vstup),
-   - neznámý status → `ErrInvalidStatus`,
-   - datum v jiném formátu → `ErrInvalidDate`,
-   - chybí `- Status:`, `- Date:` nebo některá ze tří sekcí (nebo je prázdná) →
-     `ErrMissingSection`.
-
-3. `Index(adrs []ADR) string` — markdown tabulka se sloupci `Číslo | Titulek | Status |
-   Datum`, seřazená podle čísla, při shodě podle titulku. Prázdný vstup vrací
-   `"_Žádné ADR._\n"`. Pokud se nějaké číslo opakuje, přidej za tabulku prázdný řádek
-   a pro každé duplicitní číslo vzestupně řádek
-   `> pozor: duplicitní číslo 7 (2×)`.
-
-např. `Index(nil)` → `"_Žádné ADR._\n"`
-
-### C — rozšíření (~25 min)
-
-Analyzátor zadání. `SpecCheck` drží pravidla, `Rule` má `ID`, klíčová slova, závažnost
-a zprávu.
-
-1. `Severity.String()` → `"INFO"`, `"WARN"`, `"ERROR"`.
-2. `DefaultSpecCheck() SpecCheck` — pravidla v tomto pořadí:
-
-| ID | Klíčová slova (stačí jedno) | Závažnost | Zpráva |
-|----|------------------------------|-----------|--------|
-| `acceptance` | `akceptační kritéria`, `acceptance criteria`, `kritéria přijetí` | ERROR | `chybí akceptační kritéria` |
-| `edge-cases` | `hraniční případ`, `edge case` | ERROR | `chybí hraniční případy` |
-| `errors` | `chybový stav`, `chybové stavy`, `error handling` | ERROR | `chybí popis chybových stavů` |
-| `go-version` | `go 1.` | WARN | `chybí cílová verze Go` |
-| `deps` | `bez závislostí`, `žádné závislosti`, `pouze stdlib`, `stdlib only` | WARN | `chybí pravidlo o závislostech` |
-
-3. `(SpecCheck).Check(spec string) []Finding` — pro každé pravidlo, jehož žádné klíčové
-   slovo se v textu nevyskytuje, vrať nález. Porovnávej přes `Fold`, takže na velikosti
-   písmen ani diakritice nezáleží. Pořadí nálezů = pořadí pravidel. Bez pravidel žádné
-   nálezy.
-4. `CheckSpec(spec string) []Finding` — zkratka nad `DefaultSpecCheck()`.
-
-např. `CheckSpec("Napiš mi službu na záložky…")` → `5` nálezů (`acceptance`…`deps`)
+Funkce: `String`, `ParseStatus`, `Fold`, `Slug`
 
 ```bash
-make lesson L=56
+make lesson L=56 PART=1
 ```
 
-Až budeš hotový, porovnej se `solutions/` (spoiler).
+Pak **`/go-deep-review 56 easy`**.
 
-## Ověření
+### Střední
 
-Po dokončení úkolů spusť v Cursoru **`/go-deep-review`** a zadej třeba jen `56`. AI tě postupně projde body níže, doptá se a ověří pochopení — nestačí jen zelené testy.
+Funkce: `Filename`, `Render`, `ParseADR`, `Index`
 
-- [ ] `make lesson L=56` prochází
+```bash
+make lesson L=56 PART=2
+```
+
+Pak **`/go-deep-review 56 medium`**.
+
+### Obtížný
+
+Funkce: `String`, `DefaultSpecCheck`, `Check`, `CheckSpec`
+
+```bash
+make lesson L=56 PART=3
+```
+
+Pak **`/go-deep-review 56 hard`**.
+
+Až budou stupně hotové, porovnej se `solutions/` (spoiler).
+
+## Závěrečné otázky
+
+Spusť **`/go-deep-review 56 final`**. AI projde body níže, doptá se a ověří pochopení. Celé cvičení ověří `make lesson L=56` (+ `make race L=56`, pokud to lekce vyžaduje).
+
 - [ ] Umíš vysvětlit, proč se acceptance test píše před promptem, a ne po něm
 - [ ] Umíš rozhodnout, které ze tří konkrétních rozhodnutí zaslouží ADR
 - [ ] Umíš vyjmenovat pět věcí, které patří do promptu pro Go, a dvě, které tam nepatří

@@ -6,6 +6,7 @@ import (
 	"strings"
 )
 
+// --- Stupeň: jednoduchý ---
 // Greet vrací pozdrav pro dané jméno. Prázdné jméno (i po ořezu bílých znaků)
 // dá "Hello, Go!".
 func Greet(name string) string {
@@ -16,6 +17,7 @@ func Greet(name string) string {
 	return fmt.Sprintf("Hello, %s!", name)
 }
 
+// --- Stupeň: střední ---
 // SumAll sečte libovolný počet celých čísel.
 func SumAll(nums ...int) int {
 	total := 0
@@ -25,6 +27,7 @@ func SumAll(nums ...int) int {
 	return total
 }
 
+// --- Stupeň: obtížný ---
 // Describe popíše slice ve tvaru "count=3 sum=6 max=3".
 // Prázdný nebo nil slice vrací "empty".
 func Describe(vals []int) string {

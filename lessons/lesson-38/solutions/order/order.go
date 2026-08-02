@@ -36,6 +36,7 @@ const (
 	StatusCancelled
 )
 
+// --- Stupeň: jednoduchý ---
 // String implementuje fmt.Stringer.
 func (s Status) String() string {
 	switch s {
@@ -59,6 +60,7 @@ type Line struct {
 	UnitPriceCents int64
 }
 
+// --- Stupeň: střední ---
 // TotalCents vrací cenu položky v celých centech.
 func (l Line) TotalCents() int64 {
 	return int64(l.Quantity) * l.UnitPriceCents
@@ -116,6 +118,7 @@ func (o Order) TotalCents() int64 {
 	return total
 }
 
+// --- Stupeň: obtížný ---
 // Pay převede novou objednávku do stavu StatusPaid.
 func (o Order) Pay() (Order, error) {
 	return o.transition(StatusPaid, StatusNew)

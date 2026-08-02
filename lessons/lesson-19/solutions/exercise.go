@@ -64,6 +64,7 @@ type Invoice struct {
 	Lines    []InvoiceLine
 }
 
+// --- Stupeň: jednoduchý ---
 // ParseUserID převede textové ID na kladné celé číslo.
 func ParseUserID(raw string) (int, error) {
 	s := strings.TrimSpace(raw)
@@ -81,6 +82,7 @@ func ParseUserID(raw string) (int, error) {
 	return id, nil
 }
 
+// --- Stupeň: střední ---
 // ParseUserIDs převede čárkami oddělený seznam ID na slice čísel.
 func ParseUserIDs(raw string) ([]int, error) {
 	if strings.TrimSpace(raw) == "" {
@@ -99,6 +101,7 @@ func ParseUserIDs(raw string) ([]int, error) {
 	return ids, nil
 }
 
+// --- Stupeň: obtížný ---
 // ProcessOrders agreguje objednávky do souhrnu.
 func ProcessOrders(orders []Order) (Summary, error) {
 	var sum Summary

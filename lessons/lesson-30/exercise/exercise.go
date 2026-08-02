@@ -28,6 +28,7 @@ type StatusError struct {
 	Status     string
 }
 
+// --- Stupeň: jednoduchý ---
 // Error implementuje error.
 func (e *StatusError) Error() string {
 	return fmt.Sprintf("unexpected status %s", e.Status)
@@ -43,6 +44,7 @@ func (e *PermanentError) Error() string {
 	return "permanent: " + e.Err.Error()
 }
 
+// --- Stupeň: střední ---
 // Unwrap zpřístupní obalenou chybu pro errors.Is a errors.As.
 func (e *PermanentError) Unwrap() error {
 	return e.Err
@@ -53,26 +55,33 @@ func Permanent(err error) error {
 	return &PermanentError{Err: err}
 }
 
+// --- Stupeň: obtížný ---
 // NewHTTPClient vrátí klienta s timeoutem a vlastním transportem.
+// Transport s kladným MaxIdleConnsPerHost.
 func NewHTTPClient(timeout time.Duration) *http.Client {
-	// TODO: úkol A
+	// TODO
 	return nil
 }
 
 // FetchJSON stáhne URL a rozparsuje odpověď do T.
+// GET s kontextem; tělo v defer dočti a zavři; mimo 2xx → *StatusError (errors.As).
+// Tělo max MaxBodyBytes; překročení → chyba obalující ErrBodyTooLarge. Při chybě nulové T.
 func FetchJSON[T any](ctx context.Context, c *http.Client, url string) (T, error) {
-	// TODO: úkol A
+	// TODO
 	return *new(T), nil
 }
 
 // Retry volá fn dokud neuspěje, nejvýš attempts krát, s exponenciálním backoffem.
+// attempts < 1 → ErrNoAttempts; ctx zrušený → nevolej fn; *PermanentError → bez dalšího pokusu.
+// Backoff base, 2*base, 4*base… s jitterem; po vyčerpání obal poslední chybu %w.
 func Retry(ctx context.Context, attempts int, base time.Duration, fn func(ctx context.Context) error) error {
-	// TODO: úkol B
+	// TODO
 	return nil
 }
 
 // RunServer obsluhuje ln, dokud se nezruší ctx, pak server elegantně ukončí.
+// Serve v goroutině; ErrServerClosed → nil; při ctx.Done() Shutdown s novým kontextem ShutdownGracePeriod.
 func RunServer(ctx context.Context, srv *http.Server, ln net.Listener) error {
-	// TODO: úkol C
+	// TODO
 	return nil
 }

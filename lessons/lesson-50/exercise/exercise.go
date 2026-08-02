@@ -30,16 +30,18 @@ type Stats struct {
 	Elapsed time.Duration
 }
 
+// --- Stupeň: jednoduchý ---
 // Total vrací počet dokončených úloh, tedy Processed + Failed.
+// Nezahrnuje úlohy, které se ještě zpracovávají.
 func (s Stats) Total() int {
-	// TODO: úkol A
+	// TODO
 	return 0
 }
 
 // Throughput vrací průchodnost v úlohách za sekundu.
 // Pro nekladnou dobu běhu vrací 0.
 func (s Stats) Throughput() float64 {
-	// TODO: úkol A
+	// TODO
 	return 0
 }
 
@@ -52,19 +54,24 @@ type Metrics struct {
 	maxInFlight atomic.Int64
 }
 
-// Enter oznámí začátek jedné úlohy a aktualizuje maximum souběhu.
+// --- Stupeň: střední ---
+// Enter oznámí začátek úlohy a aktualizuje maximum souběhu přes CompareAndSwap ve smyčce.
+// Nulová Metrics je použitelná.
 func (m *Metrics) Enter() {
-	// TODO: úkol A
+	// TODO
 }
 
 // Leave oznámí konec jedné úlohy. Nenulové err se počítá jako chyba.
+// Volá se vždy po Enter, typicky přes defer.
 func (m *Metrics) Leave(err error) {
-	// TODO: úkol A
+	// TODO
 }
 
-// Snapshot vrátí aktuální metriky doplněné o dobu běhu.
+// --- Stupeň: obtížný ---
+// Snapshot vrátí Stats s Processed, Failed a MaxInFlight z atomik a Elapsed z parametru.
+// Nulová Metrics je použitelná.
 func (m *Metrics) Snapshot(elapsed time.Duration) Stats {
-	// TODO: úkol A
+	// TODO
 	return *new(Stats)
 }
 
@@ -94,27 +101,23 @@ type Config struct {
 	Handler func(context.Context, Item) (string, error)
 }
 
-// Process zpracuje celou dávku a vrátí výsledky ve stejném pořadí jako vstup.
-//
-// Chyby jednotlivých úloh zůstávají v Outcome. Návratová chyba znamená selhání
-// celé dávky: špatná konfigurace, zrušený kontext, nebo první chyba v režimu
-// FailFast (v tom případě je výsledek nil).
+// Process zpracuje dávku s limitem nejvýš cfg.Workers souběžných handlerů.
+// Fronta má kapacitu cfg.QueueSize (0 = předání z ruky do ruky). Výsledky v pořadí vstupu.
+// Chyby úloh patří do Outcome.Err (dávka kvůli nim neselže); FailFast zruší odvozený
+// kontext, počká na rozběhnuté goroutiny a vrátí (nil, stats, první chyba).
+// Zrušený ctx → ctx.Err(); neplatná konfigurace → ErrInvalidWorkers, ErrInvalidQueueSize,
+// ErrNilHandler; prázdná dávka → prázdný výsledek a nil.
+// Po návratu nesmí zůstat živá goroutina.
 func Process(ctx context.Context, cfg Config, items []Item) ([]Outcome, Stats, error) {
-	// TODO: úkol B
+	// TODO
 	return nil, *new(Stats), nil
 }
 
-// ProcessStream zpracuje neomezený proud úloh z kanálu in a výsledky posílá
-// do out, který na konci zavře.
-//
-// Mezi in a workery je vlastní fronta o kapacitě cfg.QueueSize, takže odesílatel
-// do in dostane backpressure, jakmile se zaplní. Funkce skončí, až se in zavře
-// a fronta se vyprázdní, nebo při zrušení kontextu, nebo při první chybě
-// v režimu FailFast.
+// ProcessStream čte úlohy z in (dokud se nezavře), výsledky posílá do out.
+// Mezi in a workery je fronta QueueSize (tlak až na odesílatele). out vlastníš a na konci
+// zavíráš i při chybě konfigurace. Zápis do out vždy přes select s ctx.Done().
+// FailFast a rušení kontextem jako u Process; neplatná konfigurace → stejné ErrInvalid*.
 func ProcessStream(ctx context.Context, cfg Config, in <-chan Item, out chan<- Outcome) (Stats, error) {
-	// TODO: úkol C
-	for range in {
-	}
-	close(out)
-	return *new(Stats), nil
+	// TODO
+	return Stats{}, nil
 }

@@ -32,7 +32,7 @@ func trace(events *[]string, name string) exercise.Middleware {
 	}
 }
 
-func TestChainPoradi(t *testing.T) {
+func TestChainOrder(t *testing.T) {
 	var events []string
 
 	handler := exercise.Chain(
@@ -51,7 +51,7 @@ func TestChainPoradi(t *testing.T) {
 	}
 }
 
-func TestChainBezMiddlewaru(t *testing.T) {
+func TestChainWithoutMiddleware(t *testing.T) {
 	rec := httptest.NewRecorder()
 
 	exercise.Chain(okHandler("holy handler")).
@@ -87,7 +87,7 @@ func runWithLogger(t *testing.T, h http.Handler, method, target string) (map[str
 	return entry, rec
 }
 
-func TestLoggingZapisujePole(t *testing.T) {
+func TestLoggingWritesFields(t *testing.T) {
 	entry, rec := runWithLogger(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusTeapot)
 		fmt.Fprint(w, "12345")
@@ -118,7 +118,7 @@ func TestLoggingZapisujePole(t *testing.T) {
 	}
 }
 
-func TestLoggingVychoziStatusJe200(t *testing.T) {
+func TestLoggingDefaultStatusIs200(t *testing.T) {
 	entry, _ := runWithLogger(t, okHandler("ahoj"), http.MethodGet, "/")
 
 	if got, ok := entry["status"].(float64); !ok || int(got) != http.StatusOK {
@@ -129,7 +129,7 @@ func TestLoggingVychoziStatusJe200(t *testing.T) {
 	}
 }
 
-func TestLoggingDruhyWriteHeaderNeprepiseStatus(t *testing.T) {
+func TestLoggingSecondWriteHeaderDoesNotOverwriteStatus(t *testing.T) {
 	entry, rec := runWithLogger(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusCreated)
 		w.WriteHeader(http.StatusInternalServerError) // nadbytečné volání, musí se ignorovat
@@ -144,7 +144,7 @@ func TestLoggingDruhyWriteHeaderNeprepiseStatus(t *testing.T) {
 	}
 }
 
-func TestRecoveryZPanikyUdela500(t *testing.T) {
+func TestRecoveryTurnsPanicInto500(t *testing.T) {
 	handler := exercise.Recovery()(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		panic("něco se pokazilo")
 	}))
@@ -171,7 +171,7 @@ func TestRecoveryZPanikyUdela500(t *testing.T) {
 	}
 }
 
-func TestRecoveryNechaProjitBezPaniky(t *testing.T) {
+func TestRecoveryPassesThroughWithoutPanic(t *testing.T) {
 	rec := httptest.NewRecorder()
 
 	exercise.Recovery()(okHandler("v pohodě")).
@@ -185,7 +185,7 @@ func TestRecoveryNechaProjitBezPaniky(t *testing.T) {
 	}
 }
 
-func TestRecoveryNespolkneErrAbortHandler(t *testing.T) {
+func TestRecoveryDoesNotSwallowErrAbortHandler(t *testing.T) {
 	defer func() {
 		recovered := recover()
 		if recovered != http.ErrAbortHandler {
@@ -208,7 +208,7 @@ func idCapturingHandler(got *string, found *bool) http.Handler {
 	})
 }
 
-func TestRequestIDPropagujeHlavicku(t *testing.T) {
+func TestRequestIDPropagatesHeader(t *testing.T) {
 	var fromCtx string
 	var found bool
 
@@ -231,7 +231,7 @@ func TestRequestIDPropagujeHlavicku(t *testing.T) {
 	}
 }
 
-func TestRequestIDGenerujeUnikatniID(t *testing.T) {
+func TestRequestIDGeneratesUniqueID(t *testing.T) {
 	var fromCtx string
 	var found bool
 	handler := exercise.RequestID()(idCapturingHandler(&fromCtx, &found))
@@ -254,7 +254,7 @@ func TestRequestIDGenerujeUnikatniID(t *testing.T) {
 	}
 }
 
-func TestRequestIDFromPrazdnyKontext(t *testing.T) {
+func TestRequestIDFromEmptyContext(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
 
 	if id, ok := exercise.RequestIDFrom(req.Context()); ok {
@@ -262,7 +262,7 @@ func TestRequestIDFromPrazdnyKontext(t *testing.T) {
 	}
 }
 
-func TestTimeoutRychlyHandlerProjde(t *testing.T) {
+func TestTimeoutFastHandlerPasses(t *testing.T) {
 	rec := httptest.NewRecorder()
 
 	exercise.Timeout(time.Second)(okHandler("hotovo")).
@@ -276,7 +276,7 @@ func TestTimeoutRychlyHandlerProjde(t *testing.T) {
 	}
 }
 
-func TestTimeoutNastaviDeadline(t *testing.T) {
+func TestTimeoutSetsDeadline(t *testing.T) {
 	var hasDeadline bool
 
 	exercise.Timeout(time.Second)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -288,7 +288,7 @@ func TestTimeoutNastaviDeadline(t *testing.T) {
 	}
 }
 
-func TestTimeoutPomalyHandlerDostane503(t *testing.T) {
+func TestTimeoutSlowHandlerGets503(t *testing.T) {
 	done := make(chan struct{})
 
 	slow := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -314,23 +314,60 @@ func TestTimeoutPomalyHandlerDostane503(t *testing.T) {
 	}
 }
 
-func TestChainViceMiddlewaruDohromady(t *testing.T) {
-	var buf bytes.Buffer
-	logger := slog.New(slog.NewJSONHandler(&buf, nil))
+func TestChainMultipleMiddlewareTogether(t *testing.T) {
+	var events []string
+	var loggedStatus int
+
+	// Anonymní middleware — ne Logging/Recovery/RequestID stuby.
+	setID := func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			events = append(events, "id:pred")
+			w.Header().Set(exercise.RequestIDHeader, "req-9")
+			next.ServeHTTP(w, r)
+			events = append(events, "id:po")
+		})
+	}
+	observeStatus := func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			events = append(events, "log:pred")
+			rec := httptest.NewRecorder()
+			next.ServeHTTP(rec, r)
+			loggedStatus = rec.Code
+			for k, vv := range rec.Header() {
+				for _, v := range vv {
+					w.Header().Add(k, v)
+				}
+			}
+			w.WriteHeader(rec.Code)
+			_, _ = w.Write(rec.Body.Bytes())
+			events = append(events, "log:po")
+		})
+	}
+	recoverPanic := func(next http.Handler) http.Handler {
+		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			events = append(events, "rec:pred")
+			defer func() {
+				if recover() != nil {
+					w.WriteHeader(http.StatusInternalServerError)
+					_, _ = w.Write([]byte(`{"error":"internal"}`))
+				}
+			}()
+			next.ServeHTTP(w, r)
+			events = append(events, "rec:po")
+		})
+	}
 
 	handler := exercise.Chain(
 		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			panic("boom")
 		}),
-		exercise.RequestID(),
-		exercise.Logging(logger),
-		exercise.Recovery(),
+		setID,
+		observeStatus,
+		recoverPanic,
 	)
 
 	req := httptest.NewRequest(http.MethodGet, "/pad", nil)
-	req.Header.Set(exercise.RequestIDHeader, "req-9")
 	rec := httptest.NewRecorder()
-
 	handler.ServeHTTP(rec, req)
 
 	if rec.Code != http.StatusInternalServerError {
@@ -339,13 +376,12 @@ func TestChainViceMiddlewaruDohromady(t *testing.T) {
 	if got := rec.Header().Get(exercise.RequestIDHeader); got != "req-9" {
 		t.Errorf("hlavička %s = %q, chci %q", exercise.RequestIDHeader, got, "req-9")
 	}
-
-	var entry map[string]any
-	line := strings.TrimSpace(buf.String())
-	if err := json.Unmarshal([]byte(line), &entry); err != nil {
-		t.Fatalf("log není platný JSON: %v (%q)", err, line)
+	if loggedStatus != http.StatusInternalServerError {
+		t.Errorf("status viděný prostředním middlewarem = %d, chci %d (recovery je vnitřnější)",
+			loggedStatus, http.StatusInternalServerError)
 	}
-	if got, ok := entry["status"].(float64); !ok || int(got) != http.StatusInternalServerError {
-		t.Errorf("zalogovaný status = %v, chci %d (Recovery je pod Logging)", entry["status"], http.StatusInternalServerError)
+	want := []string{"id:pred", "log:pred", "rec:pred", "log:po", "id:po"}
+	if strings.Join(events, ",") != strings.Join(want, ",") {
+		t.Errorf("pořadí = %v, chci %v", events, want)
 	}
 }

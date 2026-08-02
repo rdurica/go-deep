@@ -18,6 +18,7 @@ const (
 	SeverityError
 )
 
+// --- Stupeň: jednoduchý ---
 // String implementuje fmt.Stringer.
 func (s Severity) String() string {
 	switch s {
@@ -124,6 +125,7 @@ type Session struct {
 	timeline []Event
 }
 
+// --- Stupeň: střední ---
 // NewSession vytvoří session. Hodiny se předávají jako závislost kvůli testovatelnosti;
 // nil znamená time.Now.
 func NewSession(now func() time.Time) *Session {
@@ -180,6 +182,7 @@ func (s *Session) Handoff(to Role, reason string) error {
 	return nil
 }
 
+// --- Stupeň: obtížný ---
 // Finish uzavře session. Jde to jen z role review.
 func (s *Session) Finish() error {
 	if !s.started {

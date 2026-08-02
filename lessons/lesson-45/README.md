@@ -10,40 +10,6 @@
 - Napsat obecný stupeň přes typové parametry a rozhodnout, kdy se to vyplatí.
 - Poznat případ, kdy pipeline **nepsat**, a podložit to benchmarkem.
 
-## PHP → Go most
-
-Zpracování dat po krocích v PHP typicky vypadá jako řetěz volání nad polem nebo jako
-generátor s `yield`:
-
-```php
-function normalize(iterable $rows): Generator {
-    foreach ($rows as $row) {
-        yield trim($row);
-    }
-}
-
-foreach (format(enrich(normalize($rows))) as $out) {
-    echo $out;
-}
-```
-
-Vypadá to skoro stejně jako Go pipeline a jeden zásadní rozdíl to skrývá: PHP generátor
-je **líný a jednovláknový**. Nic neběží, dokud si o hodnotu neřekneš, a všechny kroky
-běží v jediném vlákně, jeden po druhém.
-
-```go
-out := format(ctx, enrich(ctx, normalize(ctx, in)))
-for res := range out {
-    fmt.Println(res)
-}
-```
-
-V Go každý stupeň **už běží** — je to samostatná goroutina, která pracuje, zatímco ty
-čteš z konce. Tři důsledky, na které v PHP nemusíš myslet: stupně běží skutečně současně
-(a mají tedy smysl u I/O), musíš řešit, kdo kanály zavírá, a když přestaneš odebírat,
-stupně **nezmizí** — zůstanou viset. PHP generátor po `break` prostě zapomeneš a GC ho
-uklidí. Goroutinu zablokovanou na zápisu do kanálu neuklidí nikdo.
-
 ## Teorie
 
 ### Anatomie stupně
@@ -230,6 +196,40 @@ Rozdíl bývá dva až tři řády. Pipeline se vyplatí, když je práce ve stu
 drahá** (I/O, volání API, dekomprese, výpočet) nebo když skutečně potřebuješ streamovat
 data, která se nevejdou do paměti. Pro `[]int` v paměti je to jen složitější smyčka.
 
+## Rozdíly proti PHP
+
+Zpracování dat po krocích v PHP typicky vypadá jako řetěz volání nad polem nebo jako
+generátor s `yield`:
+
+```php
+function normalize(iterable $rows): Generator {
+    foreach ($rows as $row) {
+        yield trim($row);
+    }
+}
+
+foreach (format(enrich(normalize($rows))) as $out) {
+    echo $out;
+}
+```
+
+Vypadá to skoro stejně jako Go pipeline a jeden zásadní rozdíl to skrývá: PHP generátor
+je **líný a jednovláknový**. Nic neběží, dokud si o hodnotu neřekneš, a všechny kroky
+běží v jediném vlákně, jeden po druhém.
+
+```go
+out := format(ctx, enrich(ctx, normalize(ctx, in)))
+for res := range out {
+    fmt.Println(res)
+}
+```
+
+V Go každý stupeň **už běží** — je to samostatná goroutina, která pracuje, zatímco ty
+čteš z konce. Tři důsledky, na které v PHP nemusíš myslet: stupně běží skutečně současně
+(a mají tedy smysl u I/O), musíš řešit, kdo kanály zavírá, a když přestaneš odebírat,
+stupně **nezmizí** — zůstanou viset. PHP generátor po `break` prostě zapomeneš a GC ho
+uklidí. Goroutinu zablokovanou na zápisu do kanálu neuklidí nikdo.
+
 ## Časté chyby
 
 | Chyba | Proč vzniká | Jak to udělat správně |
@@ -241,66 +241,52 @@ data, která se nevejdou do paměti. Pro `[]int` v paměti je to jen složitěj�
 | Velký buffer „pro plynulost" | reflex z fronty | nebufferovaný kanál dává backpressure; buffer jen s důvodem |
 | Pipeline nad malým slicem | vypadá to idiomaticky | změř to; pro levnou transformaci piš smyčku |
 
+## AI kvíz
+
+Po přečtení teorie spusť v Cursoru **`/go-deep-quiz 45`**. AI tě ~5 minut prověří mentální model (ne hotové cvičení). Slabiny si uloží do [`GAPS.md`](../../GAPS.md).
+
 ## Úkol
 
-Pracuj v `exercise/`. Postupuj A → B → C, po každé části spusť test.
+Pracuj v `exercise/`. Po doplnění spouštěj testy:
 
-### A — rozcvička (~10 min)
+Stupně jdou od jednodušších ke složitějším — po každém stupni spusť review, než jdeš dál.
 
-1. `Gen(ctx context.Context, nums ...int) <-chan int` — pošli čísla do kanálu a zavři ho.
-   Při zrušení kontextu skonči dřív.
-2. `Square(ctx context.Context, in <-chan int) <-chan int` — umocni každou hodnotu.
-   Zavírej jen svůj výstup a měj cestu ven přes `ctx.Done()`. Test tě chytí za to,
-   že po zrušení uprostřed proudu zůstane goroutina.
+### Jednoduchý
 
-např. `Square(ctx, Gen(ctx, 1, 2, 3, 4))` → `[1, 4, 9, 16]`
-
-### B — jádro (~35 min)
-
-1. `Stage[T, U any](ctx, in <-chan T, f func(T) U) <-chan U` — obecná verze `Square`.
-2. `FanIn[T any](ctx, chs ...<-chan T) <-chan T` — sloučení několika kanálů. Výstup se
-   zavře **právě jednou**, po vyčerpání všech vstupů. Volání bez vstupů vrací rovnou
-   zavřený kanál.
-3. `Take[T any](ctx, in <-chan T, n int) <-chan T` — propusť nejvýše `n` prvků a pak
-   výstup zavři. Když se vstup vyčerpá dřív, skonči s méně prvky. `n <= 0` znamená rovnou
-   zavřený kanál. Test staví pipeline nad stotisícovým generátorem, odebere pět prvků,
-   zruší kontext a kontroluje, že **nezbyla ani jedna goroutina**.
-
-např. `Take(ctx, Gen(ctx, 1, 2, 3, 4, 5), 3)` → `[1, 2, 3]`
-
-### C — rozšíření (~25 min)
-
-`Pipeline(ctx context.Context, in <-chan string) <-chan Result` — tři stupně:
-
-1. **normalizace** — `strings.TrimSpace`; prázdný výsledek znamená `Result` s `ErrEmpty`,
-2. **obohacení** (tenhle stupeň běž ve **fan-outu**, čtyři kopie nad jedním kanálem) —
-   vstup s číslicí dá `ErrDigits`, jinak převeď na velká písmena,
-3. **formátování** — úspěšné hodnotě přidej prefix `"ok:"`.
-
-Pravidla:
-
-- `Result.Input` vždy nese **původní** vstup (před ořezáním), aby šel výsledek spárovat.
-- Chybný `Result` další stupně jen propustí, nikdy ho nezpracovávají znovu.
-- Pořadí výsledků není zaručené (fan-out), test je porovnává jako množinu.
-- Když konzument přestane odebírat a zruší kontext, nesmí zůstat žádná goroutina.
-  Přesně to je poslední test lekce.
-
-např. `Pipeline(ctx, "alfa")` → `Result{Value: "ok:ALFA"}`
+Funkce: `Gen`
 
 ```bash
-make lesson L=45
-make race L=45
-cd lessons/lesson-45/exercise && go test -bench=Square -benchmem .
+make lesson L=45 PART=1
 ```
 
-Až budeš hotový, porovnej se `solutions/` (spoiler).
+Pak **`/go-deep-review 45 easy`**.
 
-## Ověření
+### Střední
 
-Po dokončení úkolů spusť v Cursoru **`/go-deep-review`** a zadej třeba jen `45`. AI tě postupně projde body níže, doptá se a ověří pochopení — nestačí jen zelené testy.
+Funkce: `Square`
 
-- [ ] `make lesson L=45` prochází
-- [ ] `make race L=45` prochází
+```bash
+make lesson L=45 PART=2
+```
+
+Pak **`/go-deep-review 45 medium`**.
+
+### Obtížný
+
+Funkce: `Pipeline`
+
+```bash
+make lesson L=45 PART=3
+```
+
+Pak **`/go-deep-review 45 hard`**.
+
+Až budou stupně hotové, porovnej se `solutions/` (spoiler).
+
+## Závěrečné otázky
+
+Spusť **`/go-deep-review 45 final`**. AI projde body níže, doptá se a ověří pochopení. Celé cvičení ověří `make lesson L=45` (+ `make race L=45`, pokud to lekce vyžaduje).
+
 - [ ] Umíš u každého kanálu v pipeline říct, kdo ho vytváří a kdo zavírá
 - [ ] Umíš vysvětlit, proč `break` v konzumentovi bez `cancel()` vyrobí leak
 - [ ] Umíš popsat, proč `FanIn` potřebuje `WaitGroup` a samostatnou goroutinu na `close`

@@ -10,50 +10,6 @@
 - Otestovat kód pracující se soubory bez toho, abys po sobě nechal smetí v repozitáři.
 - Vysvětlit, proč se v Go místo mocků píšou fake implementace, a napsat jednu.
 
-## PHP → Go most
-
-PHPUnit je framework: dědíš z `TestCase`, máš `setUp`, `tearDown`, data providery,
-`assertSame` a k tomu Mockery nebo Prophecy.
-
-```php
-final class MedianTest extends TestCase
-{
-    #[DataProvider('cases')]
-    public function testMedian(array $in, float $expected): void
-    {
-        self::assertSame($expected, median($in));
-    }
-}
-```
-
-V Go je testování součást toolchainu, ne knihovna. Žádná bázová třída, žádné anotace,
-žádné asserty:
-
-```go
-func TestMedian(t *testing.T) {
-	tests := []struct {
-		name string
-		in   []float64
-		want float64
-	}{
-		{"lichý počet", []float64{3, 1, 2}, 2},
-		{"sudý počet", []float64{4, 1, 3, 2}, 2.5},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got, _ := Median(tt.in); got != tt.want {
-				t.Errorf("Median(%v) = %v, chci %v", tt.in, got, tt.want)
-			}
-		})
-	}
-}
-```
-
-Co se mění v uvažování: **data provider je obyčejný slice a assert je obyčejný `if`.**
-Chybí ti `assertEquals`? Ve skutečnosti ti chybí jen jeho hláška — a tu si píšeš sám,
-takže je konkrétnější než cokoli, co by vygeneroval framework. Standardní tvar hlášky je
-`funkce(vstup) = dostal, chci chtěl`; drž se ho a nikdy nebudeš u červeného testu tápat.
-
 ## Teorie
 
 ### Konvence, které toolchain vynucuje
@@ -201,6 +157,50 @@ dvakrát s těmito argumenty"), fake ti dovolí ověřit **výsledek** („po zp
 uložené tyhle dva záznamy"). Druhé je odolnější vůči refaktoringu: přepíšeš vnitřek
 a test drží.
 
+## Rozdíly proti PHP
+
+PHPUnit je framework: dědíš z `TestCase`, máš `setUp`, `tearDown`, data providery,
+`assertSame` a k tomu Mockery nebo Prophecy.
+
+```php
+final class MedianTest extends TestCase
+{
+    #[DataProvider('cases')]
+    public function testMedian(array $in, float $expected): void
+    {
+        self::assertSame($expected, median($in));
+    }
+}
+```
+
+V Go je testování součást toolchainu, ne knihovna. Žádná bázová třída, žádné anotace,
+žádné asserty:
+
+```go
+func TestMedian(t *testing.T) {
+	tests := []struct {
+		name string
+		in   []float64
+		want float64
+	}{
+		{"lichý počet", []float64{3, 1, 2}, 2},
+		{"sudý počet", []float64{4, 1, 3, 2}, 2.5},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got, _ := Median(tt.in); got != tt.want {
+				t.Errorf("Median(%v) = %v, chci %v", tt.in, got, tt.want)
+			}
+		})
+	}
+}
+```
+
+Co se mění v uvažování: **data provider je obyčejný slice a assert je obyčejný `if`.**
+Chybí ti `assertEquals`? Ve skutečnosti ti chybí jen jeho hláška — a tu si píšeš sám,
+takže je konkrétnější než cokoli, co by vygeneroval framework. Standardní tvar hlášky je
+`funkce(vstup) = dostal, chci chtěl`; drž se ho a nikdy nebudeš u červeného testu tápat.
+
 ## Časté chyby
 
 | Chyba | Proč vzniká | Jak to udělat správně |
@@ -212,55 +212,49 @@ a test drží.
 | Mock frameworky pro každé rozhraní | reflex z Mockery/Prophecy | malé rozhraní + ruční fake |
 | Zapomenuté `-count=1` v CI | keš testů vypadá jako „už to prošlo" | `go test -count=1 ./...` |
 
+## AI kvíz
+
+Po přečtení teorie spusť v Cursoru **`/go-deep-quiz 17`**. AI tě ~5 minut prověří mentální model (ne hotové cvičení). Slabiny si uloží do [`GAPS.md`](../../GAPS.md).
+
 ## Úkol
 
-Lekce má dvě části: cvičení v `exercise/` a projekt **P01**. Cvičení je rozcvička na
-funkce, které v projektu použiješ.
+Pracuj v `exercise/`. Po doplnění spouštěj testy:
 
-Pracuj v `exercise/`. Postupuj A → B → C, po každé části spusť test.
+Stupně jdou od jednodušších ke složitějším — po každém stupni spusť review, než jdeš dál.
 
-### A — rozcvička (~10 min)
+### Jednoduchý
 
-Implementuj `Median(nums []float64) (float64, bool)`. Pro prázdný vstup vrať `0, false`.
-Pro lichý počet prostřední prvek seřazené posloupnosti, pro sudý průměr dvou prostředních.
-**Vstupní slice nesmíš přeuspořádat** — pracuj nad kopií (`slices.Clone`).
-
-Navíc: než se podíváš na dodaný test, napiš si **vlastní** table-driven test do
-`exercise/median_test.go` (balíček `exercise_test`, stejný pojmenovaný import jako
-v dodaném souboru). Vymysli aspoň pět případů včetně prázdného vstupu a duplicit.
-Teprve pak spusť `go test` a porovnej, které případy tě nenapadly.
-
-např. `Median([3, 1, 2])` → `2, true`
-
-### B — jádro (~35 min)
-
-1. `ParseRecords(r io.Reader) ([]Record, error)` — čti CSV přes `encoding/csv`. První
-   řádek musí být hlavička `name,amount,category` (case-insensitive, bílé znaky ořízni);
-   jinak chyba. Datové řádky mají přesně tři sloupce, jméno a kategorie nesmí být prázdné
-   ani po oříznutí a částka musí být číslo. Chyba obsahuje **číslo řádku** (hlavička je 1).
-   Vstup jen s hlavičkou je v pořádku a vrací prázdný výsledek, úplně prázdný vstup je chyba.
-2. `SumByCategory(recs []Record) map[string]float64` — součet částek po kategoriích.
-   Pro prázdný vstup vrať prázdnou, ale **nenilovou** mapu.
-
-např. `SumByCategory(sample)["food"]` → `320.75`
-
-### C — rozšíření (~20 min)
-
-1. `TopN(recs []Record, n int) []Record` — n záznamů s nejvyšší částkou. Řazení je
-   **stabilní**: při shodných částkách zůstává původní pořadí. `n <= 0` → prázdný výsledek,
-   `n > len(recs)` → všechny záznamy. Vstupní slice nemění.
-2. `LoadFile(path string) ([]Record, error)` — otevři soubor, zavři ho přes `defer`
-   a deleguj na `ParseRecords`. Chyby obaluj přes `%w` a doplň cestu.
-
-např. `TopN(recs, 1)[0].Name` → `"Grace"`
+Funkce: `Median`
 
 ```bash
-make lesson L=17
+make lesson L=17 PART=1
 ```
 
-Až budeš hotový, porovnej se `solutions/` (spoiler).
+Pak **`/go-deep-review 17 easy`**.
 
-### Projekt P01 — csvstats
+### Střední
+
+Funkce: `ParseRecords`, `SumByCategory`
+
+```bash
+make lesson L=17 PART=2
+```
+
+Pak **`/go-deep-review 17 medium`**.
+
+### Obtížný
+
+Funkce: `TopN`, `LoadFile`
+
+```bash
+make lesson L=17 PART=3
+```
+
+Pak **`/go-deep-review 17 hard`**.
+
+Až budou stupně hotové, porovnej se `solutions/` (spoiler).
+
+## Projekt P01 — csvstats
 
 Zadání a akceptační kritéria jsou v
 [projects/p01-csv-cli/ACCEPTANCE.md](../../projects/p01-csv-cli/ACCEPTANCE.md).
@@ -272,12 +266,10 @@ i **golden test** — výstup tabulky se porovnává se souborem v `testdata/`.
 cd projects/p01-csv-cli && go test ./...
 ```
 
-## Ověření
+## Závěrečné otázky
 
-Po dokončení úkolů spusť v Cursoru **`/go-deep-review`** a zadej třeba jen `17`. AI tě postupně projde body níže, doptá se a ověří pochopení — nestačí jen zelené testy.
+Spusť **`/go-deep-review 17 final`**. AI projde body níže, doptá se a ověří pochopení. Celé cvičení ověří `make lesson L=17` (+ `make race L=17`, pokud to lekce vyžaduje).
 
-- [ ] `make lesson L=17` prochází
-- [ ] `cd projects/p01-csv-cli && go test ./...` prochází
 - [ ] Umíš vysvětlit rozdíl mezi `package foo` a `package foo_test` a kdy který zvolit
 - [ ] Umíš vysvětlit, proč `t.Helper()` mění místo, kde se hlásí chyba
 - [ ] Umíš vysvětlit, kdy patří `t.Fatal` a kdy `t.Error`
@@ -288,6 +280,7 @@ Po dokončení úkolů spusť v Cursoru **`/go-deep-review`** a zadej třeba jen
 
 `ZAKÁZÁNO` — viz [docs/ai-playbook.md](../../docs/ai-playbook.md).
 
+Mentor, kvíz i review (dialog) jsou vždy OK; v tomto režimu AI nesmí psát kód cvičení.
 ## Další čtení
 
 1. [pkg.go.dev — testing](https://pkg.go.dev/testing)

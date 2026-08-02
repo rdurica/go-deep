@@ -13,10 +13,10 @@ func TestSum(t *testing.T) {
 		in   []int
 		want int
 	}{
-		{"bez argumentů", nil, 0},
+		{"no args", nil, 0},
 		{"jeden", []int{7}, 7},
-		{"víc", []int{1, 2, 3, 4}, 10},
-		{"záporné", []int{-5, 5, -3}, -3},
+		{"more", []int{1, 2, 3, 4}, 10},
+		{"negative", []int{-5, 5, -3}, -3},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -43,12 +43,12 @@ func TestMinMax(t *testing.T) {
 		wantOK  bool
 	}{
 		{"nil", nil, 0, 0, false},
-		{"prázdný", []int{}, 0, 0, false},
-		{"jeden prvek", []int{42}, 42, 42, true},
-		{"seřazený", []int{1, 2, 3}, 1, 3, true},
-		{"neseřazený", []int{5, -2, 9, 0}, -2, 9, true},
-		{"samé stejné", []int{3, 3, 3}, 3, 3, true},
-		{"krajní hodnoty", []int{math.MaxInt, math.MinInt, 0}, math.MinInt, math.MaxInt, true},
+		{"empty", []int{}, 0, 0, false},
+		{"one element", []int{42}, 42, 42, true},
+		{"sorted", []int{1, 2, 3}, 1, 3, true},
+		{"unsorted", []int{5, -2, 9, 0}, -2, 9, true},
+		{"all same", []int{3, 3, 3}, 3, 3, true},
+		{"edge values", []int{math.MaxInt, math.MinInt, 0}, math.MinInt, math.MaxInt, true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -61,7 +61,7 @@ func TestMinMax(t *testing.T) {
 	}
 }
 
-func TestMinMaxNemeniVstup(t *testing.T) {
+func TestMinMaxDoesNotMutateInput(t *testing.T) {
 	in := []int{5, -2, 9, 0}
 	before := append([]int(nil), in...)
 	exercise.MinMax(in)
@@ -81,7 +81,7 @@ func TestCounter(t *testing.T) {
 	}
 }
 
-func TestCounterNezavislyStav(t *testing.T) {
+func TestCounterIndependentState(t *testing.T) {
 	a := exercise.Counter()
 	b := exercise.Counter()
 
@@ -106,9 +106,9 @@ func TestApply(t *testing.T) {
 		want []int
 	}{
 		{"nil", nil, []int{}},
-		{"prázdný", []int{}, []int{}},
-		{"běžný", []int{1, 2, 3}, []int{2, 4, 6}},
-		{"záporné", []int{-1, 0, 5}, []int{-2, 0, 10}},
+		{"empty", []int{}, []int{}},
+		{"common", []int{1, 2, 3}, []int{2, 4, 6}},
+		{"negative", []int{-1, 0, 5}, []int{-2, 0, 10}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -125,7 +125,7 @@ func TestApply(t *testing.T) {
 	}
 }
 
-func TestApplyNemeniVstup(t *testing.T) {
+func TestApplyDoesNotMutateInput(t *testing.T) {
 	in := []int{1, 2, 3}
 	got := exercise.Apply(in, func(x int) int { return x * 10 })
 
@@ -161,7 +161,7 @@ func TestCompose(t *testing.T) {
 	}
 }
 
-func TestComposeZachytavaPromennouCyklu(t *testing.T) {
+func TestComposeCapturesLoopVariable(t *testing.T) {
 	// Od Go 1.22 má každá iterace vlastní proměnnou d, takže každá closure
 	// zachytí jinou hodnotu. Se starou sémantikou by tenhle test spadl.
 	var fs []func(int) int
@@ -174,7 +174,7 @@ func TestComposeZachytavaPromennouCyklu(t *testing.T) {
 	}
 }
 
-func TestMemoizeVraciStejnyVysledek(t *testing.T) {
+func TestMemoizeReturnsSameResult(t *testing.T) {
 	square := func(x int) int { return x * x }
 	memo, _ := exercise.Memoize(square)
 
@@ -185,7 +185,7 @@ func TestMemoizeVraciStejnyVysledek(t *testing.T) {
 	}
 }
 
-func TestMemoizePocitaSkutecnaVolani(t *testing.T) {
+func TestMemoizeCountsActualCalls(t *testing.T) {
 	square := func(x int) int { return x * x }
 	memo, calls := exercise.Memoize(square)
 
@@ -207,7 +207,7 @@ func TestMemoizePocitaSkutecnaVolani(t *testing.T) {
 	}
 }
 
-func TestMemoizeSkutecneCachuje(t *testing.T) {
+func TestMemoizeActuallyCaches(t *testing.T) {
 	// Funkce, která pokaždé vrátí něco jiného — kdyby memoizace necachovala,
 	// druhé volání by dalo jinou hodnotu.
 	n := 0
@@ -224,7 +224,7 @@ func TestMemoizeSkutecneCachuje(t *testing.T) {
 	}
 }
 
-func TestMemoizeNezavisleInstance(t *testing.T) {
+func TestMemoizeIndependentInstances(t *testing.T) {
 	id := func(x int) int { return x }
 
 	memoA, callsA := exercise.Memoize(id)

@@ -11,34 +11,6 @@
 - Implementovat vzory „první výsledek vyhrává", debounce a heartbeat bez zbylých goroutin.
 - Poznat `select` v cyklu, ze kterého neexistuje východ.
 
-## PHP → Go most
-
-V PHP jsou timeouty konfigurací někoho jiného. Nastavíš `timeout` v HTTP klientovi,
-`max_execution_time` v php.ini, `lock_timeout` v databázi — a pak už jen doufáš.
-
-```php
-$response = $this->client->request('GET', $url, ['timeout' => 2.0]);
-// buď přijde odpověď, nebo výjimka. Nic mezi tím neřídíš.
-```
-
-Čekat na dvě věci najednou („první z těchto dvou API, co odpoví") v PHP prakticky nejde
-bez `curl_multi` nebo async knihovny. Go má na to jazykovou konstrukci:
-
-```go
-select {
-case resp := <-primary:
-    use(resp)
-case resp := <-fallback:
-    use(resp)
-case <-ctx.Done():
-    return ctx.Err()
-}
-```
-
-Změna v uvažování: timeout přestává být nastavení a stává se **větví ve tvém kódu**. Za
-každou blokující operací si od téhle lekce představuj otázku „a co když to nikdy
-nepřijde?". V PHP tu otázku za tebe zodpověděl runtime tím, že proces zabil. V Go ne.
-
 ## Teorie
 
 ### `select` a náhodný výběr
@@ -228,6 +200,34 @@ Když `in` nikdo nezavře a nikdo nic nepošle, goroutina tu visí navždy. Cykl
 musí mít **vždy** aspoň jednu z těchto větví: `case <-ctx.Done()`, `case <-done`, nebo
 čtení s `v, ok := <-in` a `return` při `ok == false`.
 
+## Rozdíly proti PHP
+
+V PHP jsou timeouty konfigurací někoho jiného. Nastavíš `timeout` v HTTP klientovi,
+`max_execution_time` v php.ini, `lock_timeout` v databázi — a pak už jen doufáš.
+
+```php
+$response = $this->client->request('GET', $url, ['timeout' => 2.0]);
+// buď přijde odpověď, nebo výjimka. Nic mezi tím neřídíš.
+```
+
+Čekat na dvě věci najednou („první z těchto dvou API, co odpoví") v PHP prakticky nejde
+bez `curl_multi` nebo async knihovny. Go má na to jazykovou konstrukci:
+
+```go
+select {
+case resp := <-primary:
+    use(resp)
+case resp := <-fallback:
+    use(resp)
+case <-ctx.Done():
+    return ctx.Err()
+}
+```
+
+Změna v uvažování: timeout přestává být nastavení a stává se **větví ve tvém kódu**. Za
+každou blokující operací si od téhle lekce představuj otázku „a co když to nikdy
+nepřijde?". V PHP tu otázku za tebe zodpověděl runtime tím, že proces zabil. V Go ne.
+
 ## Časté chyby
 
 | Chyba | Proč vzniká | Jak to udělat správně |
@@ -239,66 +239,52 @@ musí mít **vždy** aspoň jednu z těchto větví: `case <-ctx.Done()`, `case 
 | Cyklus se `select` bez ukončovací větve | soustředění na šťastnou cestu | vždy `ctx.Done()`, `done`, nebo `v, ok := <-in` |
 | Nebufferovaný kanál výsledků u „první vyhrává" | buffer se zdá zbytečný, když čtu jen jednou | buffer = počet odesílatelů, jinak poražení leakují |
 
+## AI kvíz
+
+Po přečtení teorie spusť v Cursoru **`/go-deep-quiz 42`**. AI tě ~5 minut prověří mentální model (ne hotové cvičení). Slabiny si uloží do [`GAPS.md`](../../GAPS.md).
+
 ## Úkol
 
-Pracuj v `exercise/`. Postupuj A → B → C, po každé části spusť test.
+Pracuj v `exercise/`. Po doplnění spouštěj testy:
 
-### A — rozcvička (~10 min)
+Stupně jdou od jednodušších ke složitějším — po každém stupni spusť review, než jdeš dál.
 
-1. `TrySend(ch chan<- int, v int) bool` — neblokující zápis přes `select` s `default`.
-   Pro plný, nebufferovaný bez čtenáře i `nil` kanál vrací `false`.
-2. `RecvWithTimeout(ch <-chan int, d time.Duration) (int, bool)` — přečti hodnotu,
-   nejdéle však po dobu `d`. Při timeoutu i u zavřeného kanálu vrať `(0, false)`.
-   Použij `time.NewTimer` a `defer timer.Stop()`, ne `time.After` — test funkci volá
-   dva tisíckrát po sobě.
+### Jednoduchý
 
-např. `RecvWithTimeout(ch, time.Second)` pro `ch←42` → `(42, true)`
-
-### B — jádro (~35 min)
-
-1. `First(ctx context.Context, fns ...func(context.Context) (string, error)) (string, error)` —
-   spusť všechny funkce souběžně a vrať první úspěšný výsledek. Podmínky:
-   - poražené zruš (odvozený `context.WithCancel`),
-   - než se vrátíš, **počkej, až všechny doběhnou** — po `First` nesmí zůstat goroutina,
-   - když selžou všechny, vrať jejich spojenou chybu (`errors.Join`), aby na ní fungovalo
-     `errors.Is` pro každou dílčí chybu,
-   - bez funkcí vrať chybu.
-2. `Debounce(in <-chan string, d time.Duration) <-chan string` — propusť hodnotu, až když
-   po dobu `d` nepřijde nic nového; z rychlé dávky tedy projde jen poslední hodnota.
-   Po zavření vstupu doruč čekající hodnotu (pokud nějaká je) a výstup zavři. Timer
-   vytvoř jednou a správně ho resetuj.
-
-např. `First(ctx, slow, fast, slow)` → `"rychlý"`
-
-### C — rozšíření (~25 min)
-
-`Heartbeat(ctx context.Context, interval time.Duration, work func()) <-chan time.Time` —
-každých `interval` zavolej `work` a pošli tep do vráceného kanálu. Podmínky:
-
-- po zrušení kontextu goroutina skončí a kanál **zavře**,
-- musí skončit i tehdy, když konzument přestal tepy odebírat (tedy žádné holé `out <- t`),
-- `work` může být `nil`,
-- `interval <= 0` se chová jako 1 ms,
-- už zrušený kontext znamená okamžitý konec bez jediného tepu.
-
-Test počítá tepy v daném okně s velkorysou tolerancí a hlavně kontroluje, že po zrušení
-nezůstane žádná goroutina navíc.
-
-např. `Heartbeat(už zrušený ctx, 10ms, nil)` → rovnou zavřený kanál (žádný tep)
+Funkce: `TrySend`
 
 ```bash
-make lesson L=42
-make race L=42
+make lesson L=42 PART=1
 ```
 
-Až budeš hotový, porovnej se `solutions/` (spoiler).
+Pak **`/go-deep-review 42 easy`**.
 
-## Ověření
+### Střední
 
-Po dokončení úkolů spusť v Cursoru **`/go-deep-review`** a zadej třeba jen `42`. AI tě postupně projde body níže, doptá se a ověří pochopení — nestačí jen zelené testy.
+Funkce: `RecvWithTimeout`, `First`
 
-- [ ] `make lesson L=42` prochází
-- [ ] `make race L=42` prochází
+```bash
+make lesson L=42 PART=2
+```
+
+Pak **`/go-deep-review 42 medium`**.
+
+### Obtížný
+
+Funkce: `Debounce`, `Heartbeat`
+
+```bash
+make lesson L=42 PART=3
+```
+
+Pak **`/go-deep-review 42 hard`**.
+
+Až budou stupně hotové, porovnej se `solutions/` (spoiler).
+
+## Závěrečné otázky
+
+Spusť **`/go-deep-review 42 final`**. AI projde body níže, doptá se a ověří pochopení. Celé cvičení ověří `make lesson L=42` (+ `make race L=42`, pokud to lekce vyžaduje).
+
 - [ ] Umíš vysvětlit, proč `select` vybírá mezi připravenými větvemi náhodně
 - [ ] Umíš říct, kdy je `time.After` v pořádku a kdy je to leak
 - [ ] Umíš správně resetovat `time.Timer` a víš, proč se předtím vyprazdňuje `timer.C`

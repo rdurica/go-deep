@@ -14,29 +14,6 @@ jeden kumulativní zpracovatel dávek a odevzdáš projekt **P04**.
 - Postavit zpracovatel dávek, který má limit, backpressure, rušení, sběr chyb a metriky.
 - Sebehodnotit se podle rubriky a vědět, které lekce si zopakovat.
 
-## PHP → Go most
-
-Na začátku fáze byla souběžnost něco, co v PHP dělá infrastruktura:
-
-```php
-// supervisor: numprocs=8; messenger; redis; retry v konfiguraci
-$this->bus->dispatch(new ProcessBatch($ids));
-```
-
-Teď je to něco, co navrhuješ ty — včetně limitu, frontování, rušení a metrik:
-
-```go
-results, stats, err := Process(ctx, Config{
-    Workers:   runtime.NumCPU(),
-    QueueSize: 64,
-    FailFast:  false,
-    Handler:   handleItem,
-}, items)
-```
-
-Ten druhý blok kódu má stejnou zodpovědnost jako celá `supervisor.conf` plus polovina
-`messenger.yaml`. To je ta výměna: dostaneš plnou kontrolu a s ní plnou odpovědnost.
-
 ## Recap fáze 5
 
 ### Otázky, na které musíš umět odpovědět
@@ -87,6 +64,29 @@ g, ctx := WithContext(parent)
 // … g.Go(…) …
 err := g.Wait()  // vrátí první chybu, ostatní dostaly zrušený ctx
 ```
+
+## Rozdíly proti PHP
+
+Na začátku fáze byla souběžnost něco, co v PHP dělá infrastruktura:
+
+```php
+// supervisor: numprocs=8; messenger; redis; retry v konfiguraci
+$this->bus->dispatch(new ProcessBatch($ids));
+```
+
+Teď je to něco, co navrhuješ ty — včetně limitu, frontování, rušení a metrik:
+
+```go
+results, stats, err := Process(ctx, Config{
+    Workers:   runtime.NumCPU(),
+    QueueSize: 64,
+    FailFast:  false,
+    Handler:   handleItem,
+}, items)
+```
+
+Ten druhý blok kódu má stejnou zodpovědnost jako celá `supervisor.conf` plus polovina
+`messenger.yaml`. To je ta výměna: dostaneš plnou kontrolu a s ní plnou odpovědnost.
 
 ## Deadlock vs leak vs závod
 
@@ -154,64 +154,47 @@ v `sender.go:88` chybí `select` s `ctx.Done()`.
 V testech stačí postup z lekce 40: změř `runtime.NumGoroutine()` před a po, s krátkým
 pollingem na stabilizaci.
 
-## Kumulativní úkol
+## AI kvíz
 
-Pracuj v `exercise/`. Postavíš zpracovatel dávek, který kombinuje pět témat fáze:
-omezenou souběžnost (46), backpressure (46), rušení kontextem (47), sběr chyb (46, 47)
-a metriky nad atomikou (48).
+Po přečtení teorie spusť v Cursoru **`/go-deep-quiz 50`**. AI tě ~5 minut prověří mentální model (ne hotové cvičení). Slabiny si uloží do [`GAPS.md`](../../GAPS.md).
 
-### A — metriky (~15 min)
+## Úkol
 
-1. `Stats.Total() int` — `Processed + Failed`.
-2. `Stats.Throughput() float64` — dokončené úlohy za sekundu, pro nekladnou `Elapsed`
-   vrací 0.
-3. `Metrics` s `Enter()`, `Leave(err error)` a `Snapshot(elapsed) Stats`. Nulová hodnota
-   musí být použitelná. `Enter` aktualizuje maximum souběhu — a pozor, `Load` a `Store`
-   nestačí, mezi ně se vejde jiná goroutina. Potřebuješ `CompareAndSwap` ve smyčce.
+Pracuj v `exercise/`. Po doplnění spouštěj testy:
 
-Test pouští osm goroutin, které se přes bariéru sejdou naráz, a kontroluje, že
-`MaxInFlight` je přesně osm a že se počty úspěchů a chyb neztrácejí.
+Stupně jdou od jednodušších ke složitějším — po každém stupni spusť review, než jdeš dál.
 
-např. `Stats{Processed: 50, Failed: 50, Elapsed: 2s}.Total()` → `100`, `Throughput()` → `50`
+### Jednoduchý
 
-### B — dávkový zpracovatel (~40 min)
-
-`Process(ctx, cfg Config, items []Item) ([]Outcome, Stats, error)`:
-
-- **Limit:** nejvýš `cfg.Workers` souběžných volání handleru (test měří `MaxInFlight`).
-- **Backpressure:** interní fronta o kapacitě `cfg.QueueSize`; nula znamená předání
-  z ruky do ruky.
-- **Pořadí:** výsledky ve stejném pořadí jako vstup — index, ne řazení.
-- **Chyby úloh:** patří do `Outcome.Err`, dávka kvůli nim neselže.
-- **FailFast:** když je zapnutý, první chyba zruší odvozený kontext, funkce počká na
-  doběhnutí rozběhnutých goroutin a vrátí `(nil, stats, ta chyba)`.
-- **Rušení:** zrušený kontext (i už na vstupu) vrací `ctx.Err()`.
-- **Validace:** `ErrInvalidWorkers`, `ErrInvalidQueueSize`, `ErrNilHandler`.
-- Prázdná dávka vrací prázdný výsledek a `nil`. Po návratu žádná živá goroutina.
-
-např. `Process(ctx, cfg, Item{Payload: "payload-00"})` → `Outcome{Value: "PAYLOAD-00"}`
-
-### C — proudová varianta (~25 min)
-
-`ProcessStream(ctx, cfg Config, in <-chan Item, out chan<- Outcome) (Stats, error)`:
-
-- čte úlohy z `in`, dokud se nezavře, výsledky posílá do `out`,
-- mezi `in` a workery je vlastní fronta o kapacitě `cfg.QueueSize`, takže se tlak přenese
-  až na odesílatele do `in` (přesně to test měří),
-- `out` **vlastníš**, takže ho na konci zavíráš — a to i tehdy, když skončíš na chybě
-  konfigurace,
-- zápis do `out` nikdy holý: vždy `select` s `ctx.Done()`, jinak si vyrobíš leak,
-  když konzument odejde,
-- `FailFast` a rušení kontextem se chovají stejně jako v části B.
-
-např. `ProcessStream(…)` po zavření `in` → zavře `out`, `Stats.Processed` = počet úloh
+Funkce: `Total`, `Throughput`
 
 ```bash
-make lesson L=50
-make race L=50
+make lesson L=50 PART=1
 ```
 
-Až budeš hotový, porovnej se `solutions/` (spoiler).
+Pak **`/go-deep-review 50 easy`**.
+
+### Střední
+
+Funkce: `Enter`, `Leave`
+
+```bash
+make lesson L=50 PART=2
+```
+
+Pak **`/go-deep-review 50 medium`**.
+
+### Obtížný
+
+Funkce: `Snapshot`, `Process`, `ProcessStream`
+
+```bash
+make lesson L=50 PART=3
+```
+
+Pak **`/go-deep-review 50 hard`**.
+
+Až budou stupně hotové, porovnej se `solutions/` (spoiler).
 
 ## Projekt P04
 
@@ -258,14 +241,11 @@ Za každou položku si dej body podle skutečnosti, ne podle dojmu. Maximum je 3
 | 14–20 | Vrať se k lekcím 40–43 a projdi je znovu včetně cvičení. Bez jistoty v základech je zbytek fáze jen recitace. |
 | 0–13 | Projdi celou fázi znovu. Nespěchej — concurrency je jediná část Go, kde nepochopení nezpůsobí chybu kompilace, ale incident v produkci. |
 
-## Ověření
+## Závěrečné otázky
 
-Po dokončení úkolů spusť v Cursoru **`/go-deep-review`** a zadej třeba jen `50`. AI tě postupně projde body níže, doptá se a ověří pochopení — nestačí jen zelené testy.
+Spusť **`/go-deep-review 50 final`**. AI projde body níže, doptá se a ověří pochopení. Celé cvičení ověří `make lesson L=50` (+ `make race L=50`, pokud to lekce vyžaduje).
 
-- [ ] `make lesson L=50` prochází
-- [ ] `make race L=50` prochází (žádné hlášení race detektoru)
 - [ ] `make project P=04` prochází
-- [ ] `cd projects/p04-worker-pool && go test -race -count=3 ./...` prochází
 - [ ] Umíš rozeznat deadlock, leak a závod podle příznaků a říct, čím se hledají
 - [ ] Umíš přečíst řádek goroutine dumpu a určit, na čem goroutina visí
 - [ ] Umíš vysvětlit rozdíl mezi graceful drainem a zrušením kontextem

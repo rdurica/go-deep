@@ -44,9 +44,9 @@ func TestSumDigits(t *testing.T) {
 	}
 }
 
-// TestSumDigitsShodaSPomalou porovnává rychlou verzi s referenční na náhodných datech,
+// TestSumDigitsMatchesSlow porovnává rychlou verzi s referenční na náhodných datech,
 // aby test nešlo splnit zadrátovanou tabulkou.
-func TestSumDigitsShodaSPomalou(t *testing.T) {
+func TestSumDigitsMatchesSlow(t *testing.T) {
 	rnd := rand.New(rand.NewSource(3))
 	abeceda := []rune("0123456789abcxyzžčř .,-")
 	for i := 0; i < 300; i++ {
@@ -62,7 +62,7 @@ func TestSumDigitsShodaSPomalou(t *testing.T) {
 	}
 }
 
-func TestSumDigitsNealokuje(t *testing.T) {
+func TestSumDigitsDoesNotAllocate(t *testing.T) {
 	in := "objednávka 2024 položek 1999 kusů 42"
 	if n := testing.AllocsPerRun(200, func() { sinkInt = exercise.SumDigits(in) }); n != 0 {
 		t.Errorf("SumDigits alokuje %.1f×, chci 0 — pracuj s bajty, ne s konverzemi", n)
@@ -82,7 +82,7 @@ func TestCountWords(t *testing.T) {
 	}
 }
 
-func TestCountWordsPrazdny(t *testing.T) {
+func TestCountWordsEmpty(t *testing.T) {
 	got := exercise.CountWords("")
 	if got == nil {
 		t.Fatal("CountWords(\"\") = nil mapa, chci prázdnou nenilovou")
@@ -92,7 +92,7 @@ func TestCountWordsPrazdny(t *testing.T) {
 	}
 }
 
-func TestCountWordsShodaSPomalou(t *testing.T) {
+func TestCountWordsMatchesSlow(t *testing.T) {
 	rnd := rand.New(rand.NewSource(11))
 	slova := []string{"Pes", "pes", "KOČKA", "kočka2", "Žába", "x", "42", "ř"}
 	oddelovace := []string{" ", ", ", ".\n", "!  ", " -- ", "\t"}
@@ -116,7 +116,7 @@ func TestCountWordsShodaSPomalou(t *testing.T) {
 	}
 }
 
-func TestCountWordsAlokace(t *testing.T) {
+func TestCountWordsAllocations(t *testing.T) {
 	slow := testing.AllocsPerRun(50, func() { sinkMap = exercise.CountWordsSlow(vzorekTextu) })
 	fast := testing.AllocsPerRun(50, func() { sinkMap = exercise.CountWords(vzorekTextu) })
 	if fast >= slow {
@@ -146,7 +146,7 @@ func TestJoinIDs(t *testing.T) {
 	}
 }
 
-func TestJoinIDsAlokace(t *testing.T) {
+func TestJoinIDsAllocations(t *testing.T) {
 	ids := make([]int, 64)
 	for i := range ids {
 		ids[i] = i * 137
@@ -175,7 +175,7 @@ func TestCaptureCPUProfile(t *testing.T) {
 	overGzip(t, "CPU", buf.Bytes())
 }
 
-func TestCaptureCPUProfileChybnyVstup(t *testing.T) {
+func TestCaptureCPUProfileInvalidInput(t *testing.T) {
 	var buf bytes.Buffer
 	if err := exercise.CaptureCPUProfile(&buf, nil); err == nil {
 		t.Error("CaptureCPUProfile(w, nil) = nil, chci chybu")
@@ -201,7 +201,7 @@ func TestCaptureHeapProfile(t *testing.T) {
 	}
 }
 
-func TestCaptureHeapProfileChybnyVstup(t *testing.T) {
+func TestCaptureHeapProfileInvalidInput(t *testing.T) {
 	if err := exercise.CaptureHeapProfile(nil); err == nil {
 		t.Error("CaptureHeapProfile(nil) = nil, chci chybu")
 	}
@@ -231,7 +231,7 @@ func TestPprofHandler(t *testing.T) {
 	}
 }
 
-func TestPprofHandlerNeznamaCesta(t *testing.T) {
+func TestPprofHandlerUnknownPath(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/metrics", nil)
 	rec := httptest.NewRecorder()
 	exercise.PprofHandler().ServeHTTP(rec, req)

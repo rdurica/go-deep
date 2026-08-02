@@ -41,24 +41,65 @@ func stringSource(ctx context.Context, values ...string) <-chan string {
 	return out
 }
 
-func TestGenAndSquare(t *testing.T) {
+// intsSource pošle nums do kanálu a respektuje ctx — lokální fixture bez Gen.
+func intsSource(ctx context.Context, nums ...int) <-chan int {
+	out := make(chan int)
+	go func() {
+		defer close(out)
+		for _, n := range nums {
+			select {
+			case out <- n:
+			case <-ctx.Done():
+				return
+			}
+		}
+	}()
+	return out
+}
+
+func TestGen(t *testing.T) {
 	before := runtime.NumGoroutine()
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	var got []int
-	for v := range exercise.Square(ctx, exercise.Gen(ctx, 1, 2, 3, 4)) {
+	for v := range exercise.Gen(ctx, 1, 2, 3, 4) {
+		got = append(got, v)
+	}
+
+	want := []int{1, 2, 3, 4}
+	if len(got) != len(want) {
+		t.Fatalf("Gen vrátil %v, chci %v", got, want)
+	}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Errorf("výsledek[%d] = %d, chci %d", i, got[i], want[i])
+		}
+	}
+
+	cancel()
+	waitNoLeak(t, before)
+}
+
+func TestSquare(t *testing.T) {
+	before := runtime.NumGoroutine()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	var got []int
+	for v := range exercise.Square(ctx, intsSource(ctx, 1, 2, 3, 4)) {
 		got = append(got, v)
 	}
 
 	want := []int{1, 4, 9, 16}
 	if len(got) != len(want) {
-		t.Fatalf("pipeline vrátila %v, chci %v", got, want)
+		t.Fatalf("Square vrátila %v, chci %v", got, want)
 	}
 	for i := range want {
 		if got[i] != want[i] {
-			t.Errorf("výsledek[%d] = %d, chci %d — pipeline musí zachovat pořadí", i, got[i], want[i])
+			t.Errorf("výsledek[%d] = %d, chci %d — Square musí zachovat pořadí", i, got[i], want[i])
 		}
 	}
 
@@ -111,7 +152,7 @@ func TestSquareStopsOnCancel(t *testing.T) {
 		nums[i] = i
 	}
 
-	out := exercise.Square(ctx, exercise.Gen(ctx, nums...))
+	out := exercise.Square(ctx, intsSource(ctx, nums...))
 	<-out
 	cancel()
 
@@ -124,7 +165,7 @@ func TestStage(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	words := exercise.Stage(ctx, exercise.Gen(ctx, 1, 2, 3), func(n int) string {
+	words := exercise.Stage(ctx, intsSource(ctx, 1, 2, 3), func(n int) string {
 		return fmt.Sprintf("#%d", n)
 	})
 
@@ -149,7 +190,7 @@ func TestStageStopsOnCancel(t *testing.T) {
 		nums[i] = i
 	}
 
-	out := exercise.Stage(ctx, exercise.Gen(ctx, nums...), func(n int) int { return n + 1 })
+	out := exercise.Stage(ctx, intsSource(ctx, nums...), func(n int) int { return n + 1 })
 	<-out
 	cancel()
 
@@ -162,9 +203,9 @@ func TestFanIn(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	a := exercise.Gen(ctx, 1, 2, 3)
-	b := exercise.Gen(ctx, 4, 5)
-	c := exercise.Gen(ctx, 6)
+	a := intsSource(ctx, 1, 2, 3)
+	b := intsSource(ctx, 4, 5)
+	c := intsSource(ctx, 6)
 
 	var got []int
 	for v := range exercise.FanIn(ctx, a, b, c) {
@@ -211,7 +252,7 @@ func TestTake(t *testing.T) {
 	defer cancel()
 
 	got := []int{}
-	for v := range exercise.Take(ctx, exercise.Gen(ctx, 1, 2, 3, 4, 5), 3) {
+	for v := range exercise.Take(ctx, intsSource(ctx, 1, 2, 3, 4, 5), 3) {
 		got = append(got, v)
 	}
 	if len(got) != 3 || got[0] != 1 || got[1] != 2 || got[2] != 3 {
@@ -229,7 +270,7 @@ func TestTakeMoreThanAvailable(t *testing.T) {
 	defer cancel()
 
 	got := []int{}
-	for v := range exercise.Take(ctx, exercise.Gen(ctx, 1, 2), 10) {
+	for v := range exercise.Take(ctx, intsSource(ctx, 1, 2), 10) {
 		got = append(got, v)
 	}
 	if len(got) != 2 {
@@ -246,7 +287,7 @@ func TestTakeNonPositive(t *testing.T) {
 	defer cancel()
 
 	for _, n := range []int{0, -1} {
-		out := exercise.Take(ctx, exercise.Gen(ctx, 1, 2, 3), n)
+		out := exercise.Take(ctx, intsSource(ctx, 1, 2, 3), n)
 		select {
 		case v, ok := <-out:
 			if ok {
@@ -261,6 +302,22 @@ func TestTakeNonPositive(t *testing.T) {
 	waitNoLeak(t, before)
 }
 
+// mapInts je lokální stupeň pipeline (bez Square/Stage stubů).
+func mapInts(ctx context.Context, in <-chan int, f func(int) int) <-chan int {
+	out := make(chan int)
+	go func() {
+		defer close(out)
+		for v := range in {
+			select {
+			case out <- f(v):
+			case <-ctx.Done():
+				return
+			}
+		}
+	}()
+	return out
+}
+
 // TestTakeStopsWholePipeline je jádro celé lekce: konzument odebere pár prvků
 // a odejde. Všechny stupně nad ním musí skončit.
 func TestTakeStopsWholePipeline(t *testing.T) {
@@ -273,9 +330,9 @@ func TestTakeStopsWholePipeline(t *testing.T) {
 		nums[i] = i
 	}
 
-	src := exercise.Gen(ctx, nums...)
-	squared := exercise.Square(ctx, src)
-	doubled := exercise.Stage(ctx, squared, func(n int) int { return 2 * n })
+	src := intsSource(ctx, nums...)
+	squared := mapInts(ctx, src, func(n int) int { return n * n })
+	doubled := mapInts(ctx, squared, func(n int) int { return 2 * n })
 	out := exercise.Take(ctx, doubled, 5)
 
 	count := 0
@@ -434,7 +491,7 @@ func BenchmarkSquarePipeline(b *testing.B) {
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
 		sum := 0
-		for v := range exercise.Square(ctx, exercise.Gen(ctx, nums...)) {
+		for v := range exercise.Square(ctx, intsSource(ctx, nums...)) {
 			sum += v
 		}
 		_ = sum

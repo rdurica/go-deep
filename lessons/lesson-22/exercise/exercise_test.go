@@ -8,7 +8,7 @@ import (
 	exercise "github.com/rdurica/go-deep/lessons/lesson-22/exercise"
 )
 
-func TestHandlerFuncSplnujeHandler(t *testing.T) {
+func TestHandlerFuncSatisfiesHandler(t *testing.T) {
 	// Přesně jako u http.HandlerFunc: obyčejná funkce se stane Handlerem.
 	var h exercise.Handler = exercise.HandlerFunc(func(path string) string {
 		return "ahoj " + path
@@ -19,7 +19,7 @@ func TestHandlerFuncSplnujeHandler(t *testing.T) {
 	}
 }
 
-func TestHandlerFuncPredavaCestu(t *testing.T) {
+func TestHandlerFuncPassesPath(t *testing.T) {
 	var seen []string
 	h := exercise.HandlerFunc(func(path string) string {
 		seen = append(seen, path)
@@ -54,7 +54,7 @@ func TestMuxZeroValue(t *testing.T) {
 	}
 }
 
-func TestMuxVyberVzoru(t *testing.T) {
+func TestMuxPatternSelection(t *testing.T) {
 	var mux exercise.Mux
 	mux.Register("/", echo("root"))
 	mux.Register("/api/", echo("api"))
@@ -76,7 +76,7 @@ func TestMuxVyberVzoru(t *testing.T) {
 	}
 }
 
-func TestMuxBezVzoruAPrazdnaCesta(t *testing.T) {
+func TestMuxNoPatternAndEmptyPath(t *testing.T) {
 	var mux exercise.Mux
 	mux.Register("/api/", echo("api"))
 
@@ -103,7 +103,7 @@ func TestMuxSetNotFound(t *testing.T) {
 	}
 }
 
-func TestMuxPaniky(t *testing.T) {
+func TestMuxPanics(t *testing.T) {
 	tests := map[string]func(){
 		"prázdný vzor": func() {
 			var mux exercise.Mux
@@ -136,7 +136,7 @@ func TestMuxPaniky(t *testing.T) {
 	}
 }
 
-func TestMuxJeHandler(t *testing.T) {
+func TestMuxIsHandler(t *testing.T) {
 	// *Mux má metodu Handle(string) string, takže sám splňuje Handler
 	// a jde vnořit do jiného Muxu — přesně jako http.ServeMux.
 	inner := &exercise.Mux{}
@@ -159,7 +159,7 @@ func TestMuxJeHandler(t *testing.T) {
 	}
 }
 
-func TestMarshalPodporovaneTypy(t *testing.T) {
+func TestMarshalSupportedTypes(t *testing.T) {
 	var nilSlice []string
 	var nilMap map[string]string
 
@@ -169,21 +169,21 @@ func TestMarshalPodporovaneTypy(t *testing.T) {
 		want string
 	}{
 		{"nil", nil, "null"},
-		{"prázdný string", "", `""`},
+		{"empty string", "", `""`},
 		{"string", "ahoj", `"ahoj"`},
 		{"string s uvozovkami", `he said "hi"`, `"he said \"hi\""`},
-		{"string se zpětným lomítkem", `a\b`, `"a\\b"`},
-		{"string s novým řádkem", "line1\nline2", `"line1\nline2"`},
-		{"string s tabulátorem", "a\tb", `"a\tb"`},
+		{"string with backslash", `a\b`, `"a\\b"`},
+		{"string with newline", "line1\nline2", `"line1\nline2"`},
+		{"string with tab", "a\tb", `"a\tb"`},
 		{"nula", 0, "0"},
-		{"kladné číslo", 42, "42"},
-		{"záporné číslo", -42, "-42"},
+		{"positive number", 42, "42"},
+		{"negative number", -42, "-42"},
 		{"slice", []string{"a", "b"}, `["a","b"]`},
 		{"slice s escapem", []string{`"`}, `["\""]`},
-		{"prázdný slice", []string{}, "[]"},
+		{"empty slice", []string{}, "[]"},
 		{"nil slice", nilSlice, "null"},
-		{"mapa se seřazenými klíči", map[string]string{"b": "2", "a": "1", "c": "3"}, `{"a":"1","b":"2","c":"3"}`},
-		{"prázdná mapa", map[string]string{}, "{}"},
+		{"map with sorted keys", map[string]string{"b": "2", "a": "1", "c": "3"}, `{"a":"1","b":"2","c":"3"}`},
+		{"empty map", map[string]string{}, "{}"},
 		{"nil mapa", nilMap, "null"},
 	}
 
@@ -200,7 +200,7 @@ func TestMarshalPodporovaneTypy(t *testing.T) {
 	}
 }
 
-func TestMarshalNepodporovaneTypy(t *testing.T) {
+func TestMarshalUnsupportedTypes(t *testing.T) {
 	tests := []struct {
 		in      any
 		wantSub string
@@ -226,7 +226,7 @@ func TestMarshalNepodporovaneTypy(t *testing.T) {
 	}
 }
 
-func TestMarshalVelkaMapaJeDeterministicka(t *testing.T) {
+func TestMarshalLargeMapIsDeterministic(t *testing.T) {
 	m := map[string]string{}
 	for _, k := range []string{"zeta", "alfa", "omega", "beta", "gama", "delta"} {
 		m[k] = strings.ToUpper(k)

@@ -111,13 +111,13 @@ func TestBookmarkValidate(t *testing.T) {
 		mutan func(b *exercise.Bookmark)
 		want  error
 	}{
-		{"prázdné ID", func(b *exercise.Bookmark) { b.ID = "  " }, exercise.ErrEmptyID},
-		{"neplatná URL", func(b *exercise.Bookmark) { b.URL = "go.dev" }, exercise.ErrInvalidURL},
-		{"nenormalizovaná URL", func(b *exercise.Bookmark) { b.URL = "https://go.dev/doc/" }, exercise.ErrInvalidURL},
-		{"prázdný titulek", func(b *exercise.Bookmark) { b.Title = "" }, exercise.ErrEmptyTitle},
-		{"dlouhý titulek", func(b *exercise.Bookmark) { b.Title = strings.Repeat("á", exercise.MaxTitleLen+1) }, exercise.ErrTitleTooLong},
-		{"neplatný tag", func(b *exercise.Bookmark) { b.Tags = []string{"Go"} }, exercise.ErrInvalidTag},
-		{"duplicitní tag", func(b *exercise.Bookmark) { b.Tags = []string{"go", "go"} }, exercise.ErrDuplicateTag},
+		{"empty ID", func(b *exercise.Bookmark) { b.ID = "  " }, exercise.ErrEmptyID},
+		{"invalid URL", func(b *exercise.Bookmark) { b.URL = "go.dev" }, exercise.ErrInvalidURL},
+		{"non-normalized URL", func(b *exercise.Bookmark) { b.URL = "https://go.dev/doc/" }, exercise.ErrInvalidURL},
+		{"empty title", func(b *exercise.Bookmark) { b.Title = "" }, exercise.ErrEmptyTitle},
+		{"long title", func(b *exercise.Bookmark) { b.Title = strings.Repeat("á", exercise.MaxTitleLen+1) }, exercise.ErrTitleTooLong},
+		{"invalid tag", func(b *exercise.Bookmark) { b.Tags = []string{"Go"} }, exercise.ErrInvalidTag},
+		{"duplicate tag", func(b *exercise.Bookmark) { b.Tags = []string{"go", "go"} }, exercise.ErrDuplicateTag},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -130,7 +130,7 @@ func TestBookmarkValidate(t *testing.T) {
 		})
 	}
 
-	t.Run("titulek na hraně projde", func(t *testing.T) {
+	t.Run("title at limit passes", func(t *testing.T) {
 		b := valid
 		b.Title = strings.Repeat("á", exercise.MaxTitleLen)
 		if err := b.Validate(); err != nil {
@@ -216,8 +216,8 @@ func TestStoreAddValidates(t *testing.T) {
 	if err := s.Add(exercise.Bookmark{ID: "x", URL: "nope", Title: "T"}); !errors.Is(err, exercise.ErrInvalidURL) {
 		t.Errorf("Add(neplatná záložka) = %v, chci ErrInvalidURL", err)
 	}
-	if got := s.Len(); got != 0 {
-		t.Errorf("Len() = %d, chci 0 — neplatná záložka se nemá uložit", got)
+	if _, err := s.Get("x"); !errors.Is(err, exercise.ErrNotFound) {
+		t.Errorf("Get(\"x\") = %v, chci ErrNotFound — neplatná záložka se nemá uložit", err)
 	}
 }
 
@@ -348,16 +348,16 @@ func TestSearchFilters(t *testing.T) {
 		q    exercise.Query
 		want []string
 	}{
-		{"bez filtru, od nejnovější", exercise.Query{}, []string{"b5", "b4", "b3", "b2", "b1"}},
-		{"jeden tag", exercise.Query{Tags: []string{"http"}}, []string{"b4", "b2"}},
-		{"tagy OR", exercise.Query{Tags: []string{"php", "design"}}, []string{"b5", "b3"}},
-		{"tagy AND", exercise.Query{Tags: []string{"go", "http"}, MatchAll: true}, []string{"b4", "b2"}},
+		{"no filter, newest first", exercise.Query{}, []string{"b5", "b4", "b3", "b2", "b1"}},
+		{"one tag", exercise.Query{Tags: []string{"http"}}, []string{"b4", "b2"}},
+		{"tags OR", exercise.Query{Tags: []string{"php", "design"}}, []string{"b5", "b3"}},
+		{"tags AND", exercise.Query{Tags: []string{"go", "http"}, MatchAll: true}, []string{"b4", "b2"}},
 		{"AND bez shody", exercise.Query{Tags: []string{"php", "go"}, MatchAll: true}, nil},
 		{"fulltext v titulku", exercise.Query{Text: "aliasing"}, []string{"b3", "b1"}},
 		{"fulltext ignoruje velikost", exercise.Query{Text: "GO"}, []string{"b2", "b1"}},
-		{"tag i fulltext", exercise.Query{Tags: []string{"go"}, Text: "aliasing"}, []string{"b1"}},
+		{"tag and fulltext", exercise.Query{Tags: []string{"go"}, Text: "aliasing"}, []string{"b1"}},
 		{"nic nenajde", exercise.Query{Text: "symfony"}, nil},
-		{"normalizovaný tag", exercise.Query{Tags: []string{" HTTP "}}, []string{"b4", "b2"}},
+		{"normalized tag", exercise.Query{Tags: []string{" HTTP "}}, []string{"b4", "b2"}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -449,11 +449,11 @@ func TestSearchValidation(t *testing.T) {
 		q    exercise.Query
 		want error
 	}{
-		{"záporný limit", exercise.Query{Limit: -1}, exercise.ErrInvalidQuery},
+		{"negative limit", exercise.Query{Limit: -1}, exercise.ErrInvalidQuery},
 		{"limit nad strop", exercise.Query{Limit: exercise.MaxLimit + 1}, exercise.ErrInvalidQuery},
-		{"neznámé řazení", exercise.Query{Sort: exercise.SortOrder(9)}, exercise.ErrInvalidQuery},
-		{"neplatný tag", exercise.Query{Tags: []string{"go lang"}}, exercise.ErrInvalidQuery},
-		{"neznámý cursor", exercise.Query{Cursor: "neexistuje"}, exercise.ErrInvalidCursor},
+		{"unknown sort", exercise.Query{Sort: exercise.SortOrder(9)}, exercise.ErrInvalidQuery},
+		{"invalid tag", exercise.Query{Tags: []string{"go lang"}}, exercise.ErrInvalidQuery},
+		{"unknown cursor", exercise.Query{Cursor: "neexistuje"}, exercise.ErrInvalidCursor},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -463,7 +463,7 @@ func TestSearchValidation(t *testing.T) {
 		})
 	}
 
-	t.Run("limit 0 znamená výchozí", func(t *testing.T) {
+	t.Run("limit 0 means default", func(t *testing.T) {
 		page, err := s.Search(exercise.Query{Limit: 0})
 		if err != nil {
 			t.Fatalf("Search() = %v", err)

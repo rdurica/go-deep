@@ -13,7 +13,7 @@ import (
 	exercise "github.com/rdurica/go-deep/lessons/lesson-36/solutions"
 )
 
-func TestParseEmailNormalizuje(t *testing.T) {
+func TestParseEmailNormalizes(t *testing.T) {
 	tests := []struct {
 		in   string
 		want string
@@ -36,7 +36,7 @@ func TestParseEmailNormalizuje(t *testing.T) {
 	}
 }
 
-func TestParseEmailNahodnaData(t *testing.T) {
+func TestParseEmailRandomData(t *testing.T) {
 	// Zabraňuje řešení typu "vrať natvrdo radek@example.com".
 	rnd := rand.New(rand.NewSource(1))
 	const letters = "abcdefghijklmnopqrstuvwxyz"
@@ -56,7 +56,7 @@ func TestParseEmailNahodnaData(t *testing.T) {
 	}
 }
 
-func TestParseEmailOdmita(t *testing.T) {
+func TestParseEmailRejects(t *testing.T) {
 	tests := []struct {
 		in      string
 		wantErr error
@@ -87,7 +87,7 @@ func TestParseEmailOdmita(t *testing.T) {
 	}
 }
 
-func TestEmailNulovaHodnota(t *testing.T) {
+func TestEmailZeroValue(t *testing.T) {
 	var zero exercise.Email
 	if !zero.IsZero() {
 		t.Error("nulová hodnota Email má být IsZero() == true")
@@ -104,7 +104,7 @@ func TestEmailNulovaHodnota(t *testing.T) {
 	}
 }
 
-func TestEmailJePorovnatelny(t *testing.T) {
+func TestEmailIsComparable(t *testing.T) {
 	a, err := exercise.ParseEmail("Radek@Example.com")
 	if err != nil {
 		t.Fatalf("ParseEmail = chyba %v", err)
@@ -202,7 +202,7 @@ func TestCreateUserRequestValidateOK(t *testing.T) {
 	}
 }
 
-func TestCreateUserRequestSbiraVsechnyChyby(t *testing.T) {
+func TestCreateUserRequestCollectsAllErrors(t *testing.T) {
 	req := exercise.CreateUserRequest{Email: "nope", Username: "x", Age: 3}
 	err := req.Validate()
 	if err == nil {
@@ -229,16 +229,16 @@ func TestCreateUserRequestSbiraVsechnyChyby(t *testing.T) {
 	}
 }
 
-func TestCreateUserRequestJednotliveChyby(t *testing.T) {
+func TestCreateUserRequestIndividualErrors(t *testing.T) {
 	tests := []struct {
 		name  string
 		req   exercise.CreateUserRequest
 		field string
 	}{
-		{"prázdný e-mail", exercise.CreateUserRequest{Username: "radek", Age: 30}, "email"},
-		{"prázdné jméno", exercise.CreateUserRequest{Email: "a@b.cz", Age: 30}, "username"},
-		{"nízký věk", exercise.CreateUserRequest{Email: "a@b.cz", Username: "radek", Age: 12}, "age"},
-		{"vysoký věk", exercise.CreateUserRequest{Email: "a@b.cz", Username: "radek", Age: 151}, "age"},
+		{"empty email", exercise.CreateUserRequest{Username: "radek", Age: 30}, "email"},
+		{"empty name", exercise.CreateUserRequest{Email: "a@b.cz", Age: 30}, "username"},
+		{"low age", exercise.CreateUserRequest{Email: "a@b.cz", Username: "radek", Age: 12}, "age"},
+		{"high age", exercise.CreateUserRequest{Email: "a@b.cz", Username: "radek", Age: 151}, "age"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -272,13 +272,13 @@ func TestDecodeAndValidateOK(t *testing.T) {
 	}
 }
 
-func TestDecodeAndValidateSpatneJSON(t *testing.T) {
+func TestDecodeAndValidateBadJSON(t *testing.T) {
 	tests := map[string]string{
-		"rozbitý JSON":       `{"email":`,
+		"broken JSON":       `{"email":`,
 		"špatný typ pole":    `{"email":"a@b.cz","username":"radek","age":"čtyřicet"}`,
-		"neznámé pole":       `{"email":"a@b.cz","username":"radek","age":40,"role":"admin"}`,
+		"unknown field":       `{"email":"a@b.cz","username":"radek","age":40,"role":"admin"}`,
 		"dva dokumenty":      `{"email":"a@b.cz","username":"radek","age":40}{"email":"x@y.cz"}`,
-		"prázdné tělo":       ``,
+		"empty body":       ``,
 		"pole místo objektu": `[1,2,3]`,
 	}
 	for name, body := range tests {
@@ -291,7 +291,7 @@ func TestDecodeAndValidateSpatneJSON(t *testing.T) {
 	}
 }
 
-func TestDecodeAndValidateNeplatnaData(t *testing.T) {
+func TestDecodeAndValidateInvalidData(t *testing.T) {
 	req := postJSON(`{"email":"nope","username":"x","age":3}`)
 	_, err := exercise.DecodeAndValidate[exercise.CreateUserRequest](req)
 	var ve exercise.ValidationErrors
@@ -351,7 +351,7 @@ func TestWriteProblem(t *testing.T) {
 	}
 }
 
-func TestWriteProblemBezPoli(t *testing.T) {
+func TestWriteProblemWithoutFields(t *testing.T) {
 	rec := httptest.NewRecorder()
 	exercise.WriteProblem(rec, http.StatusNotFound, "Nenalezeno", "", nil)
 
@@ -367,19 +367,19 @@ func TestWriteProblemBezPoli(t *testing.T) {
 	}
 }
 
-func TestErrorHandlerMapovani(t *testing.T) {
+func TestErrorHandlerMapping(t *testing.T) {
 	tests := []struct {
 		name       string
 		err        error
 		wantStatus int
 	}{
-		{"nenalezeno", exercise.ErrNotFound, http.StatusNotFound},
-		{"obalené nenalezeno", fmt.Errorf("repozitář: %w", exercise.ErrNotFound), http.StatusNotFound},
-		{"konflikt", exercise.ErrConflict, http.StatusConflict},
-		{"obalený konflikt", fmt.Errorf("uložení: %w", exercise.ErrConflict), http.StatusConflict},
-		{"rozbité JSON", fmt.Errorf("%w: EOF", exercise.ErrMalformedJSON), http.StatusBadRequest},
-		{"validace", exercise.ValidationErrors{"email": "chybí"}, http.StatusUnprocessableEntity},
-		{"neznámá chyba", errors.New("cokoli jiného"), http.StatusInternalServerError},
+		{"not found", exercise.ErrNotFound, http.StatusNotFound},
+		{"wrapped not found", fmt.Errorf("repozitář: %w", exercise.ErrNotFound), http.StatusNotFound},
+		{"conflict", exercise.ErrConflict, http.StatusConflict},
+		{"wrapped conflict", fmt.Errorf("uložení: %w", exercise.ErrConflict), http.StatusConflict},
+		{"broken JSON", fmt.Errorf("%w: EOF", exercise.ErrMalformedJSON), http.StatusBadRequest},
+		{"validation", exercise.ValidationErrors{"email": "chybí"}, http.StatusUnprocessableEntity},
+		{"unknown error", errors.New("cokoli jiného"), http.StatusInternalServerError},
 		{"nil", nil, http.StatusInternalServerError},
 	}
 	for _, tt := range tests {
@@ -398,7 +398,7 @@ func TestErrorHandlerMapovani(t *testing.T) {
 	}
 }
 
-func TestErrorHandlerPredaValidacniPole(t *testing.T) {
+func TestErrorHandlerForwardsValidationFields(t *testing.T) {
 	ve := exercise.ValidationErrors{"email": "nemá platný tvar", "age": "je mimo rozsah"}
 	_, body := exercise.ErrorHandler(fmt.Errorf("hranice: %w", ve))
 	if len(body.Errors) != 2 {
@@ -409,7 +409,7 @@ func TestErrorHandlerPredaValidacniPole(t *testing.T) {
 	}
 }
 
-func TestErrorHandlerNeprozradiInterniDetaily(t *testing.T) {
+func TestErrorHandlerDoesNotLeakInternalDetails(t *testing.T) {
 	secrets := []string{
 		"pq: password authentication failed for user \"orders\"",
 		"dial tcp 10.0.0.17:5432: connect: connection refused",
@@ -428,7 +428,7 @@ func TestErrorHandlerNeprozradiInterniDetaily(t *testing.T) {
 	}
 }
 
-func TestWriteErrorPresHTTP(t *testing.T) {
+func TestWriteErrorViaHTTP(t *testing.T) {
 	handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		req, err := exercise.DecodeAndValidate[exercise.CreateUserRequest](r)
 		if err != nil {
@@ -439,7 +439,7 @@ func TestWriteErrorPresHTTP(t *testing.T) {
 		_ = json.NewEncoder(w).Encode(map[string]string{"username": req.Username})
 	})
 
-	t.Run("platný požadavek", func(t *testing.T) {
+	t.Run("valid request", func(t *testing.T) {
 		rec := httptest.NewRecorder()
 		handler.ServeHTTP(rec, postJSON(`{"email":"a@b.cz","username":"radek","age":40}`))
 		if rec.Code != http.StatusCreated {
@@ -447,7 +447,7 @@ func TestWriteErrorPresHTTP(t *testing.T) {
 		}
 	})
 
-	t.Run("neplatná data", func(t *testing.T) {
+	t.Run("invalid data", func(t *testing.T) {
 		rec := httptest.NewRecorder()
 		handler.ServeHTTP(rec, postJSON(`{"email":"nope","username":"x","age":3}`))
 		if rec.Code != http.StatusUnprocessableEntity {
@@ -459,7 +459,7 @@ func TestWriteErrorPresHTTP(t *testing.T) {
 		}
 	})
 
-	t.Run("rozbité JSON", func(t *testing.T) {
+	t.Run("broken JSON", func(t *testing.T) {
 		rec := httptest.NewRecorder()
 		handler.ServeHTTP(rec, postJSON(`{"email":`))
 		if rec.Code != http.StatusBadRequest {
@@ -471,7 +471,7 @@ func TestWriteErrorPresHTTP(t *testing.T) {
 		}
 	})
 
-	t.Run("interní chyba", func(t *testing.T) {
+	t.Run("internal error", func(t *testing.T) {
 		rec := httptest.NewRecorder()
 		exercise.WriteError(rec, fmt.Errorf("repo: %w", errors.New("tajný stack trace")))
 		if rec.Code != http.StatusInternalServerError {

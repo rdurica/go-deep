@@ -40,6 +40,7 @@ type Money struct {
 	currency Currency
 }
 
+// --- Stupeň: jednoduchý ---
 // NewMoney vytvoří částku. Měna musí mít tvar přesně tří velkých písmen A–Z.
 func NewMoney(cents int64, c Currency) (Money, error) {
 	if !validCurrency(c) {
@@ -64,6 +65,7 @@ func (m Money) String() string {
 	return amount + " " + string(m.currency)
 }
 
+// --- Stupeň: střední ---
 // Add vrací novou částku m+o. Různé měny jsou ErrCurrencyMismatch.
 func (m Money) Add(o Money) (Money, error) {
 	if err := m.sameCurrency(o); err != nil {
@@ -94,6 +96,7 @@ func (m Money) Neg() Money {
 	return Money{cents: -m.cents, currency: m.currency}
 }
 
+// --- Stupeň: obtížný ---
 // Compare vrací -1, 0 nebo 1 podle toho, jestli je m menší, stejná nebo větší
 // než o. Různé měny jsou ErrCurrencyMismatch.
 func (m Money) Compare(o Money) (int, error) {

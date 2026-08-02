@@ -10,41 +10,6 @@
 - Změřit počet živých goroutin a napsat test, který leak odhalí bez holého `time.Sleep`.
 - Odpovědět u každého `go` na otázku „jak tahle goroutina skončí?".
 
-## PHP → Go most
-
-V PHP je souběžnost mimo proces. Když chceš zpracovat tisíc faktur „paralelně", pošleš
-tisíc zpráv do fronty a necháš to na Messengeru a supervisoru:
-
-```php
-foreach ($invoices as $invoice) {
-    $this->bus->dispatch(new GenerateInvoice($invoice->id));
-}
-// tady končí tvoje zodpovědnost — worker běží v jiném procesu,
-// jeho životní cyklus řeší supervisor, restarty a memory limit
-```
-
-Request je izolovaný proces: má vlastní paměť, po odpovědi umře a všechno po sobě uklidí
-operační systém. Sdílený stav neexistuje, protože není s kým sdílet.
-
-V Go je souběžnost **uvnitř tvého procesu** a její životní cyklus je tvoje zodpovědnost:
-
-```go
-var wg sync.WaitGroup
-for _, invoice := range invoices {
-    wg.Add(1)
-    go func() {
-        defer wg.Done()
-        generate(invoice)
-    }()
-}
-wg.Wait() // tady teprve máš hotovo
-```
-
-Dva návyky je potřeba opustit. Za prvé: neexistuje supervisor, který by ti zapomenutou
-goroutinu restartoval nebo zabil — když ji necháš viset, visí až do konce procesu.
-Za druhé: Go server běží týdny, takže každá zapomenutá goroutina je trvalý únik paměti.
-Reflex „to se nějak uklidí" je tady nejdražší věc, kterou si z PHP přineseš.
-
 ## Teorie
 
 ### `go` a co se vlastně stane
@@ -255,6 +220,41 @@ stacku včetně počtu. Když tam vidíš 40 000 goroutin blokovaných na `chan 
 A vždycky pouštěj `go test -race`. Závod není totéž co leak, ale souběžný kód bez
 `-race` je netestovaný kód.
 
+## Rozdíly proti PHP
+
+V PHP je souběžnost mimo proces. Když chceš zpracovat tisíc faktur „paralelně", pošleš
+tisíc zpráv do fronty a necháš to na Messengeru a supervisoru:
+
+```php
+foreach ($invoices as $invoice) {
+    $this->bus->dispatch(new GenerateInvoice($invoice->id));
+}
+// tady končí tvoje zodpovědnost — worker běží v jiném procesu,
+// jeho životní cyklus řeší supervisor, restarty a memory limit
+```
+
+Request je izolovaný proces: má vlastní paměť, po odpovědi umře a všechno po sobě uklidí
+operační systém. Sdílený stav neexistuje, protože není s kým sdílet.
+
+V Go je souběžnost **uvnitř tvého procesu** a její životní cyklus je tvoje zodpovědnost:
+
+```go
+var wg sync.WaitGroup
+for _, invoice := range invoices {
+    wg.Add(1)
+    go func() {
+        defer wg.Done()
+        generate(invoice)
+    }()
+}
+wg.Wait() // tady teprve máš hotovo
+```
+
+Dva návyky je potřeba opustit. Za prvé: neexistuje supervisor, který by ti zapomenutou
+goroutinu restartoval nebo zabil — když ji necháš viset, visí až do konce procesu.
+Za druhé: Go server běží týdny, takže každá zapomenutá goroutina je trvalý únik paměti.
+Reflex „to se nějak uklidí" je tady nejdražší věc, kterou si z PHP přineseš.
+
 ## Časté chyby
 
 | Chyba | Proč vzniká | Jak to udělat správně |
@@ -266,64 +266,52 @@ A vždycky pouštěj `go test -race`. Závod není totéž co leak, ale souběž
 | `append` do sdíleného slice z goroutin | vypadá jako totéž co zápis na index | předalokuj a piš na index |
 | `i := i` v novém kódu | rada z éry Go 1.21 (a od AI) | od 1.22 zbytečné; závod nad proměnnou **mimo** cyklus platí dál |
 
+## AI kvíz
+
+Po přečtení teorie spusť v Cursoru **`/go-deep-quiz 40`**. AI tě ~5 minut prověří mentální model (ne hotové cvičení). Slabiny si uloží do [`GAPS.md`](../../GAPS.md).
+
 ## Úkol
 
-Pracuj v `exercise/`. Postupuj A → B → C, po každé části spusť test.
+Pracuj v `exercise/`. Po doplnění spouštěj testy:
 
-### A — rozcvička (~10 min)
+Stupně jdou od jednodušších ke složitějším — po každém stupni spusť review, než jdeš dál.
 
-`ParallelSquares(nums []int) []int` — vrať druhé mocniny všech čísel **ve stejném
-pořadí** jako vstup. Na každý prvek spusť vlastní goroutinu, výsledek zapiš na jeho
-index do předalokovaného slice a počkej `WaitGroupou`. Žádný mutex ani kanál —
-rozmysli si, proč tady nejsou potřeba. `nil` a prázdný vstup vrací prázdný výsledek a
-nesmí panikovat.
+### Jednoduchý
 
-Test vedle správnosti hlídá i to, že goroutiny skutečně vznikají: sleduje maximum
-`runtime.NumGoroutine()` během běhu, takže sekvenční smyčka neprojde.
-
-např. `ParallelSquares([-3, 0, 4])` → `[9, 0, 16]`
-
-### B — jádro (~35 min)
-
-1. `FanOutSum(nums []int, workers int) int` — sečti všechna čísla nejvýše ve `workers`
-   goroutinách. Každá goroutina spočítá součet svého úseku a pošle ho do kanálu
-   výsledků, hlavní goroutina je posbírá. Ošetři `workers < 1` (chovej se jako 1),
-   `workers` větší než počet prvků (nespouštěj víc goroutin, než je prvků) i prázdný
-   vstup (vrať 0, žádná panika). Pozor na to, kdo a kdy zavírá kanál výsledků.
-2. `GoroutineDelta(f func()) int` — vrať, o kolik goroutin přibylo po zavolání `f`.
-   Změř stav před a po, ale **se stabilizací**: opakovaně čti `runtime.NumGoroutine()`,
-   dokud nedostaneš několikrát po sobě stejné číslo. Jeden `time.Sleep` je špatná
-   odpověď. Pro čistou funkci musí vrátit 0, pro funkci, která nechá viset tři
-   goroutiny, alespoň 3. Tímhle nástrojem se pak měří tvoje vlastní řešení v části C.
-
-např. `FanOutSum([1, 2, 3, 4, 5, 6, 7], 3)` → `28`
-
-### C — rozšíření (~25 min)
-
-1. `LeakyGenerator()` — napiš funkci, která **záměrně leakuje**: spustí goroutinu
-   zablokovanou navždy na zápisu do nebufferovaného kanálu bez čtenáře, a hned se vrátí.
-   Test ověří, že `GoroutineDelta(LeakyGenerator)` je alespoň 1.
-2. `SafeGenerator(done <-chan struct{}) <-chan int` — opravená verze. Posílá rostoucí
-   čísla `0, 1, 2, …`, dokud volající nezavře `done`. Podmínky:
-   - po zavření `done` musí goroutina skončit **i tehdy, když z výstupu nikdo nečte**,
-   - výstupní kanál zavírá generátor (odesílatel), ne volající,
-   - `GoroutineDelta` kolem celého scénáře musí vyjít 0.
-
-např. `GoroutineDelta(SafeGenerator po close(done))` → `0`
+Funkce: `ParallelSquares`
 
 ```bash
-make lesson L=40
-make race L=40
+make lesson L=40 PART=1
 ```
 
-Až budeš hotový, porovnej se `solutions/` (spoiler).
+Pak **`/go-deep-review 40 easy`**.
 
-## Ověření
+### Střední
 
-Po dokončení úkolů spusť v Cursoru **`/go-deep-review`** a zadej třeba jen `40`. AI tě postupně projde body níže, doptá se a ověří pochopení — nestačí jen zelené testy.
+Funkce: `FanOutSum`, `GoroutineDelta`
 
-- [ ] `make lesson L=40` prochází
-- [ ] `make race L=40` prochází (žádné hlášení race detektoru)
+```bash
+make lesson L=40 PART=2
+```
+
+Pak **`/go-deep-review 40 medium`**.
+
+### Obtížný
+
+Funkce: `LeakyGenerator`, `SafeGenerator`
+
+```bash
+make lesson L=40 PART=3
+```
+
+Pak **`/go-deep-review 40 hard`**.
+
+Až budou stupně hotové, porovnej se `solutions/` (spoiler).
+
+## Závěrečné otázky
+
+Spusť **`/go-deep-review 40 final`**. AI projde body níže, doptá se a ověří pochopení. Celé cvičení ověří `make lesson L=40` (+ `make race L=40`, pokud to lekce vyžaduje).
+
 - [ ] Umíš vysvětlit, proč je `wg.Add(1)` uvnitř goroutiny chyba
 - [ ] Umíš popsat dva způsoby, jak vzniká goroutine leak, a jak se každý opravuje
 - [ ] Umíš vysvětlit, proč je zápis na různé indexy slice z více goroutin bezpečný

@@ -96,43 +96,49 @@ func TestToJSONOmitempty(t *testing.T) {
 }
 
 func TestFromJSONValid(t *testing.T) {
-	in := sampleUser()
-	data, err := exercise.ToJSON(in)
-	if err != nil {
-		t.Fatalf("ToJSON(...) = _, %v, chci nil", err)
-	}
+	data := []byte(`{
+		"id": 7,
+		"name": "Ada",
+		"email": "ada@example.com",
+		"active": true,
+		"tags": ["admin", "beta"],
+		"created_at": "2024-03-01T12:30:00Z",
+		"password": "tajne-heslo"
+	}`)
 
 	got, err := exercise.FromJSON(data)
 	if err != nil {
 		t.Fatalf("FromJSON(%s) = _, %v, chci nil", data, err)
 	}
-	if got.ID != in.ID || got.Name != in.Name || got.Email != in.Email || got.Active != in.Active {
-		t.Errorf("FromJSON(...) = %+v, chci skalární pole shodná s %+v", got, in)
+	if got.ID != 7 || got.Name != "Ada" || got.Email != "ada@example.com" || !got.Active {
+		t.Errorf("FromJSON(...) = %+v, chci id=7 name=Ada email=ada@example.com active=true", got)
 	}
-	if !got.CreatedAt.Equal(in.CreatedAt) {
-		t.Errorf("CreatedAt = %v, chci %v", got.CreatedAt, in.CreatedAt)
+	wantAt := time.Date(2024, time.March, 1, 12, 30, 0, 0, time.UTC)
+	if !got.CreatedAt.Equal(wantAt) {
+		t.Errorf("CreatedAt = %v, chci %v", got.CreatedAt, wantAt)
 	}
-	if len(got.Tags) != len(in.Tags) {
-		t.Fatalf("Tags = %v, chci %v", got.Tags, in.Tags)
+	wantTags := []string{"admin", "beta"}
+	if len(got.Tags) != len(wantTags) {
+		t.Fatalf("Tags = %v, chci %v", got.Tags, wantTags)
 	}
-	for i := range in.Tags {
-		if got.Tags[i] != in.Tags[i] {
-			t.Errorf("Tags[%d] = %q, chci %q", i, got.Tags[i], in.Tags[i])
+	for i := range wantTags {
+		if got.Tags[i] != wantTags[i] {
+			t.Errorf("Tags[%d] = %q, chci %q", i, got.Tags[i], wantTags[i])
 		}
 	}
 	if got.Password != "" {
-		t.Errorf("Password = %q, chci prázdný řetězec (pole se neserializuje)", got.Password)
+		t.Errorf("Password = %q, chci prázdný řetězec (json:\"-\" se nenačítá)", got.Password)
 	}
 }
 
 func TestFromJSONInvalid(t *testing.T) {
 	tests := map[string]string{
-		"rozbitý JSON":  `{"id": 1,`,
+		"broken JSON":   `{"id": 1,`,
 		"chybí id":      `{"name":"Ada"}`,
 		"nulové id":     `{"id":0,"name":"Ada"}`,
 		"záporné id":    `{"id":-3,"name":"Ada"}`,
-		"chybí jméno":   `{"id":1}`,
-		"prázdné jméno": `{"id":1,"name":"   "}`,
+		"missing name":  `{"id":1}`,
+		"empty name":    `{"id":1,"name":"   "}`,
 		"špatný typ id": `{"id":"1","name":"Ada"}`,
 	}
 	for name, in := range tests {
@@ -175,7 +181,7 @@ func TestDecodeEvent(t *testing.T) {
 		}
 	})
 
-	t.Run("payload se dekóduje až podle kind", func(t *testing.T) {
+	t.Run("payload decoded by kind", func(t *testing.T) {
 		// Payload, který by se do UserCreated nikdy nevešel, ale kind ho neaktivuje.
 		in := `{"kind":"user.deleted","payload":{"id":1,"reason":"spam"},"extra":{"x":[1,2,3]}}`
 		got, err := exercise.DecodeEvent([]byte(in))
@@ -287,7 +293,7 @@ func TestCentsUnmarshalInput(t *testing.T) {
 }
 
 func TestStrictDecode(t *testing.T) {
-	t.Run("známá pole projdou", func(t *testing.T) {
+	t.Run("known fields pass", func(t *testing.T) {
 		var w wallet
 		if err := exercise.StrictDecode([]byte(`{"owner":"ada","balance":19.99}`), &w); err != nil {
 			t.Fatalf("StrictDecode(...) = %v, chci nil", err)
@@ -297,7 +303,7 @@ func TestStrictDecode(t *testing.T) {
 		}
 	})
 
-	t.Run("neznámé pole je chyba", func(t *testing.T) {
+	t.Run("unknown field is error", func(t *testing.T) {
 		var w wallet
 		err := exercise.StrictDecode([]byte(`{"owner":"ada","balance":1,"typo":true}`), &w)
 		if err == nil {
@@ -308,14 +314,14 @@ func TestStrictDecode(t *testing.T) {
 		}
 	})
 
-	t.Run("data navíc jsou chyba", func(t *testing.T) {
+	t.Run("extra data is error", func(t *testing.T) {
 		var w wallet
 		if err := exercise.StrictDecode([]byte(`{"owner":"ada"}{"owner":"bob"}`), &w); err == nil {
 			t.Fatal("StrictDecode se zbytkem dat = nil, chci chybu")
 		}
 	})
 
-	t.Run("rozbitý JSON je chyba", func(t *testing.T) {
+	t.Run("broken JSON is error", func(t *testing.T) {
 		var w wallet
 		if err := exercise.StrictDecode([]byte(`{"owner":`), &w); err == nil {
 			t.Fatal("StrictDecode(rozbitý JSON) = nil, chci chybu")

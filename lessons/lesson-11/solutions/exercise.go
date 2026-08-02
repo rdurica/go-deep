@@ -15,15 +15,18 @@ import (
 // Alias (znaménko =) není nový typ, jen druhé jméno pro ten samý typ.
 type Amount = money.Amount
 
+// --- Stupeň: jednoduchý ---
 // NewAmount je fasáda nad money.New. Hotová, neimplementuj ji.
 func NewAmount(cents int64) Amount { return money.New(cents) }
 
+// --- Stupeň: střední ---
 // SumCents je fasáda nad money.SumCents. Hotová, neimplementuj ji.
 func SumCents(amounts []Amount) int64 { return money.SumCents(amounts) }
 
 // Split je fasáda nad money.Split. Hotová, neimplementuj ji.
 func Split(a Amount, n int) ([]Amount, bool) { return money.Split(a, n) }
 
+// --- Stupeň: obtížný ---
 // TotalOf sečte částky a vrátí výsledek jako Amount.
 // Smí použít jen veřejné API balíčku money.
 func TotalOf(amounts []Amount) Amount {

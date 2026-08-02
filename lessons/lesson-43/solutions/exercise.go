@@ -25,6 +25,7 @@ type Counter struct {
 	n atomic.Int64
 }
 
+// --- Stupeň: jednoduchý ---
 // Inc zvýší čítač o jedna.
 func (c *Counter) Inc() { c.n.Add(1) }
 
@@ -55,6 +56,7 @@ func NewCache() *Cache {
 	}
 }
 
+// --- Stupeň: střední ---
 // Get vrací hodnotu a true, pokud klíč existuje.
 func (c *Cache) Get(key string) (string, bool) {
 	c.mu.RLock()
@@ -64,13 +66,16 @@ func (c *Cache) Get(key string) (string, bool) {
 }
 
 // Set uloží hodnotu pod klíč.
+// Přepis existujícího klíče je povolený.
+// Pod mutexem cache (jako Len); bezpečné pod -race.
 func (c *Cache) Set(key, value string) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	c.items[key] = value
 }
 
-// Delete smaže klíč.
+// Delete smaže klíč. Neexistující klíč je no-op.
+// Pod mutexem cache (jako Len); bezpečné pod -race.
 func (c *Cache) Delete(key string) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
@@ -84,6 +89,7 @@ func (c *Cache) Len() int {
 	return len(c.items)
 }
 
+// --- Stupeň: obtížný ---
 // GetOrCompute vrátí uloženou hodnotu, nebo ji spočítá pomocí f a uloží.
 func (c *Cache) GetOrCompute(key string, f func() string) string {
 	c.mu.RLock()

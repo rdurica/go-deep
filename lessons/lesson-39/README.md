@@ -14,20 +14,6 @@ kterou lekci si zopakovat.
 - Změřit si vlastní stav a vybrat, co si zopakovat.
 - Provést architektonické review vlastního projektu P03 podle checklistu.
 
-## PHP → Go most
-
-Shrnutí celé fáze do jedné tabulky. Levý sloupec je návyk, pravý to, co ho v Go nahradí.
-
-| Symfony návyk | Go protějšek | Lekce |
-|---|---|---|
-| `src/Entity`, `src/Service`, `src/Repository` | balíčky podle domény, `internal/` na hranici modulu | 32 |
-| `OrderRepositoryInterface` u implementace | malý interface u konzumenta | 33 |
-| `float $price` nebo `int $priceInCents` volně | typ `Money` s konstruktorem a metodami | 34 |
-| Doctrine entita = doména | agregát bez závislostí + port persistence | 35 |
-| `#[Assert\Email]` na DTO | `ParseEmail(s) (Email, error)` na hranici | 36 |
-| `security.yaml` + voters | middleware pro autentizaci, doména pro autorizaci | 37 |
-| `bin/console` a autowiring | `cmd/x/main.go` s ručním wiringem | 38 |
-
 ## Recap
 
 ### 32 — Project layout a `internal/`
@@ -148,6 +134,20 @@ Prvních pět kroků nepotřebuje nic zvenku, takže zpětná vazba je v milisek
 **Odpověď:** Interface s jedinou implementací a bez fake, vrstva, která jen přeposílá
 volání, a cokoli, co nevysvětlíš juniorovi za třicet vteřin.
 
+## Rozdíly proti PHP
+
+Shrnutí celé fáze do jedné tabulky. Levý sloupec je návyk, pravý to, co ho v Go nahradí.
+
+| Symfony návyk | Go protějšek | Lekce |
+|---|---|---|
+| `src/Entity`, `src/Service`, `src/Repository` | balíčky podle domény, `internal/` na hranici modulu | 32 |
+| `OrderRepositoryInterface` u implementace | malý interface u konzumenta | 33 |
+| `float $price` nebo `int $priceInCents` volně | typ `Money` s konstruktorem a metodami | 34 |
+| Doctrine entita = doména | agregát bez závislostí + port persistence | 35 |
+| `#[Assert\Email]` na DTO | `ParseEmail(s) (Email, error)` na hranici | 36 |
+| `security.yaml` + voters | middleware pro autentizaci, doména pro autorizaci | 37 |
+| `bin/console` a autowiring | `cmd/x/main.go` s ručním wiringem | 38 |
+
 ## Časté chyby
 
 | Chyba | Proč vzniká | Jak to udělat správně |
@@ -159,65 +159,47 @@ volání, a cokoli, co nevysvětlíš juniorovi za třicet vteřin.
 | Interní chyba v odpovědi | nejkratší cesta k debugu | detail do logu, ven neutrální titulek |
 | `user_id` jako label metriky | „hodilo by se to" | whitelist labelů s nízkou kardinalitou |
 
+## AI kvíz
+
+Po přečtení teorie spusť v Cursoru **`/go-deep-quiz 39`**. AI tě ~5 minut prověří mentální model (ne hotové cvičení). Slabiny si uloží do [`GAPS.md`](../../GAPS.md).
+
 ## Úkol
 
-Kumulativní cvičení: malá rezervační služba `booking`, která kombinuje value objekt
-(34), port s in-memory adaptérem (33, 35), validaci na hranici a mapování chyb (36)
-a jednoduchou metriku (37). Pracuj v `exercise/`.
+Pracuj v `exercise/`. Po doplnění spouštěj testy:
 
-V reálném projektu by to byly tři balíčky (`booking`, `store`, `httpapi`); tady jsou
-kvůli rozsahu v jednom, ale hranice mezi nimi je v kódu vidět.
+Stupně jdou od jednodušších ke složitějším — po každém stupni spusť review, než jdeš dál.
 
-### A — hodnotové typy (~20 min)
+### Jednoduchý
 
-1. `ParseRoomID(s string) (RoomID, error)` — ořízne bílé znaky, převede na velká
-   písmena a ověří tvar „písmeno, pomlčka, tři číslice" (`A-101`). Prázdný vstup →
-   `ErrEmptyRoomID`, cokoli jiného mimo tvar (včetně `A-000`, které neexistuje) →
-   chyba obalující `ErrInvalidRoomID`. Při chybě vrať nulovou hodnotu.
-2. `NewDateRange(from, to time.Time) (DateRange, error)` — zarovná oba časy na celý den
-   v UTC. Konec musí být po začátku (jinak `ErrInvalidRange`), pobyt smí mít nejvýš
-   `MaxNights` nocí (jinak `ErrRangeTooLong`).
-3. `DateRange.Nights()` a `DateRange.Overlaps(other DateRange) bool`. Interval je
-   **polootevřený**: odjezd 20. a příjezd dalšího hosta 20. se nepřekrývají.
-
-např. `ParseRoomID("a-101")` → `"A-101"`
-
-### B — port, adaptér, služba a metrika (~40 min)
-
-1. `NewMemoryRepo`, `Save`, `ByRoom` — in-memory adaptér portu `Repository`. Duplicitní
-   `Ref` → `ErrDuplicateRef`, zrušený kontext → chyba z `ctx.Err()`, `ByRoom` vrací
-   rezervace seřazené podle začátku pobytu. Bezpečné pro souběžné použití.
-2. `Metrics.Inc` a `Metrics.Snapshot` — čítače pod mutexem. **Nulová hodnota musí být
-   použitelná** (`var m Metrics` a rovnou `Inc`), `Snapshot` vrací kopii.
-3. `Service.Book(ctx, req)` — zvaliduje požadavek, převede vstup na hodnotové typy,
-   načte rezervace pokoje, odmítne překryv (`ErrRoomTaken`), spočítá cenu
-   (`nightly_rate × počet nocí`) a uloží. Metriky: `MetricCreated` po úspěchu,
-   `MetricRejected` při validační chybě, překryvu i duplicitní referenci.
-
-např. `Book(BK-1, A-101, 3 noci × 1500)` → `Total:4500`
-
-### C — hranice systému (~30 min)
-
-1. `ValidationErrors.Error()` a `Get(field)`.
-2. `CreateBookingRequest.Validate()` — sbírá **všechny** chyby v pořadí `ref`, `room`,
-   `guest`, `from`, `to`, `nightly_rate`. Kódy: `CodeRequired` pro chybějící hodnotu,
-   `CodeFormat` pro špatný tvar (pokoj, datum, jméno mimo 2–40 znaků), `CodeRange` pro
-   nesmyslný termín a nekladnou cenu. Datum má tvar `DateLayout`. Chyba termínu patří
-   k poli `to`.
-3. `Handler(svc *Service) http.Handler` — `POST /bookings` (přísné dekódování, 201
-   s hlavičkou `Location` a JSON tělem včetně `nights` a `total`) a `GET /metrics`
-   vracející snapshot. Mapování: 400 nečitelné tělo, 422 validace (s polem `errors`),
-   409 `ErrRoomTaken` i `ErrDuplicateRef`, 500 cokoli jiného. Chyby jako
-   `application/problem+json`.
-
-např. `POST /bookings` → `201` + `Location:/bookings/BK-1`, `total:4500`
+Funkce: `ParseRoomID`, `NewDateRange`, `From`, `To`, `Nights`, `Overlaps`
 
 ```bash
-make lesson L=39
-cd lessons/lesson-39/exercise && go test -race -count=1 .
+make lesson L=39 PART=1
 ```
 
-Až budeš hotový, porovnej se `solutions/` (spoiler).
+Pak **`/go-deep-review 39 easy`**.
+
+### Střední
+
+Funkce: `String`, `Error`, `Get`, `Validate`, `NewMemoryRepo`, `Save`
+
+```bash
+make lesson L=39 PART=2
+```
+
+Pak **`/go-deep-review 39 medium`**.
+
+### Obtížný
+
+Funkce: `ByRoom`, `Inc`, `Snapshot`, `NewService`, `Metrics`, `Book`, `Handler`
+
+```bash
+make lesson L=39 PART=3
+```
+
+Pak **`/go-deep-review 39 hard`**.
+
+Až budou stupně hotové, porovnej se `solutions/` (spoiler).
 
 ## Review projektu P03
 
@@ -302,11 +284,10 @@ Za každou položku si dej 1 bod, jen když je odpověď „ano, umím to bez hl
 Body 11–13 jsou nulové? Samo o sobě to fázi neblokuje, ale lekci 37 si projdi před tím,
 než postavíš cokoli, co půjde na internet.
 
-## Ověření
+## Závěrečné otázky
 
-Po dokončení úkolů spusť v Cursoru **`/go-deep-review`** a zadej třeba jen `39`. AI tě postupně projde body níže, doptá se a ověří pochopení — nestačí jen zelené testy.
+Spusť **`/go-deep-review 39 final`**. AI projde body níže, doptá se a ověří pochopení. Celé cvičení ověří `make lesson L=39` (+ `make race L=39`, pokud to lekce vyžaduje).
 
-- [ ] `make lesson L=39` a `go test -race` prochází
 - [ ] Vyplnil jsi rubriku poctivě, bez nahlížení do řešení
 - [ ] Projekt P03 splňuje všechna kritéria v `ACCEPTANCE.md`
 - [ ] Umíš z hlavy vyjmenovat pořadí prací při stavbě služby

@@ -29,6 +29,7 @@ type Version struct {
 	Pre   string // bez vedoucí pomlčky; prázdné u finálního vydání
 }
 
+// --- Stupeň: jednoduchý ---
 // String vrací verzi v kanonickém tvaru s prefixem "v".
 func (v Version) String() string {
 	s := fmt.Sprintf("v%d.%d.%d", v.Major, v.Minor, v.Patch)
@@ -69,6 +70,7 @@ func ParseSemver(s string) (Version, error) {
 	return Version{Major: nums[0], Minor: nums[1], Patch: nums[2], Pre: pre}, nil
 }
 
+// --- Stupeň: střední ---
 // Compare porovná dvě verze podle semver pravidel a vrací -1, 0 nebo 1.
 func Compare(a, b Version) int {
 	if c := compareInt(a.Major, b.Major); c != 0 {
@@ -142,6 +144,7 @@ func IsPseudo(s string) bool {
 	return err == nil
 }
 
+// --- Stupeň: obtížný ---
 // MajorSuffix vrátí major verzi zakódovanou v cestě modulu.
 func MajorSuffix(modulePath string) (int, error) {
 	if modulePath == "" || strings.HasSuffix(modulePath, "/") {

@@ -30,7 +30,7 @@ func TestNewServer(t *testing.T) {
 	}
 }
 
-func TestNewServerValidace(t *testing.T) {
+func TestNewServerValidation(t *testing.T) {
 	logger := testLogger()
 
 	tests := []struct {
@@ -39,9 +39,9 @@ func TestNewServerValidace(t *testing.T) {
 		logger  *slog.Logger
 		wantErr error
 	}{
-		{"prázdná adresa", "", logger, exercise.ErrMissingAddr},
-		{"adresa bez dvojtečky", "localhost", logger, exercise.ErrInvalidAddr},
-		{"chybějící logger", ":8080", nil, exercise.ErrMissingLogger},
+		{"empty address", "", logger, exercise.ErrMissingAddr},
+		{"address without colon", "localhost", logger, exercise.ErrInvalidAddr},
+		{"missing logger", ":8080", nil, exercise.ErrMissingLogger},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -57,14 +57,14 @@ func TestNewServerValidace(t *testing.T) {
 }
 
 func TestMustNewServer(t *testing.T) {
-	t.Run("platný vstup nepanikuje", func(t *testing.T) {
+	t.Run("valid input does not panic", func(t *testing.T) {
 		srv := exercise.MustNewServer("127.0.0.1:9000", testLogger())
 		if got := srv.Addr(); got != "127.0.0.1:9000" {
 			t.Errorf("Addr() = %q, chci %q", got, "127.0.0.1:9000")
 		}
 	})
 
-	t.Run("neplatný vstup panikuje", func(t *testing.T) {
+	t.Run("invalid input panics", func(t *testing.T) {
 		defer func() {
 			r := recover()
 			if r == nil {
@@ -79,7 +79,7 @@ func TestMustNewServer(t *testing.T) {
 	})
 }
 
-func TestNewClientVychoziHodnoty(t *testing.T) {
+func TestNewClientDefaultValues(t *testing.T) {
 	c, err := exercise.NewClient("https://api.example.com/")
 	if err != nil {
 		t.Fatalf("NewClient vrátil chybu %v, chci nil", err)
@@ -107,14 +107,14 @@ func TestNewClientOptions(t *testing.T) {
 		wantUserAgent string
 	}{
 		{
-			name:          "jen timeout",
+			name:          "timeout only",
 			opts:          []exercise.Option{exercise.WithTimeout(2 * time.Second)},
 			wantTimeout:   2 * time.Second,
 			wantRetries:   exercise.DefaultRetries,
 			wantUserAgent: exercise.DefaultUserAgent,
 		},
 		{
-			name: "všechny options",
+			name: "all options",
 			opts: []exercise.Option{
 				exercise.WithTimeout(time.Minute),
 				exercise.WithRetries(0),
@@ -125,7 +125,7 @@ func TestNewClientOptions(t *testing.T) {
 			wantUserAgent: "radek/2.0",
 		},
 		{
-			name: "poslední option vyhrává",
+			name: "last option wins",
 			opts: []exercise.Option{
 				exercise.WithRetries(7),
 				exercise.WithRetries(9),
@@ -155,36 +155,36 @@ func TestNewClientOptions(t *testing.T) {
 	}
 }
 
-func TestNewClientValidace(t *testing.T) {
+func TestNewClientValidation(t *testing.T) {
 	tests := []struct {
 		name    string
 		baseURL string
 		opts    []exercise.Option
 		wantErr error
 	}{
-		{"prázdná adresa", "", nil, exercise.ErrMissingBaseURL},
-		{"chybí schéma", "api.example.com", nil, exercise.ErrInvalidBaseURL},
-		{"ftp schéma", "ftp://example.com", nil, exercise.ErrInvalidBaseURL},
+		{"empty address", "", nil, exercise.ErrMissingBaseURL},
+		{"missing scheme", "api.example.com", nil, exercise.ErrInvalidBaseURL},
+		{"ftp scheme", "ftp://example.com", nil, exercise.ErrInvalidBaseURL},
 		{
-			"nulový timeout",
+			"zero timeout",
 			"https://example.com",
 			[]exercise.Option{exercise.WithTimeout(0)},
 			exercise.ErrInvalidTimeout,
 		},
 		{
-			"záporný timeout",
+			"negative timeout",
 			"https://example.com",
 			[]exercise.Option{exercise.WithTimeout(-time.Second)},
 			exercise.ErrInvalidTimeout,
 		},
 		{
-			"záporné retries",
+			"negative retries",
 			"https://example.com",
 			[]exercise.Option{exercise.WithRetries(-1)},
 			exercise.ErrInvalidRetries,
 		},
 		{
-			"prázdný user agent",
+			"empty user agent",
 			"https://example.com",
 			[]exercise.Option{exercise.WithUserAgent("")},
 			exercise.ErrEmptyUserAgent,
@@ -223,7 +223,7 @@ func (m *memStore) All() []exercise.Record {
 	return m.records
 }
 
-func TestServiceSeStorem(t *testing.T) {
+func TestServiceWithStore(t *testing.T) {
 	store := &memStore{}
 	svc, err := exercise.NewService(store)
 	if err != nil {
@@ -255,7 +255,7 @@ func TestServiceSeStorem(t *testing.T) {
 	}
 }
 
-func TestServiceChyby(t *testing.T) {
+func TestServiceErrors(t *testing.T) {
 	t.Run("nil store", func(t *testing.T) {
 		svc, err := exercise.NewService(nil)
 		if !errors.Is(err, exercise.ErrMissingStore) {
@@ -266,7 +266,7 @@ func TestServiceChyby(t *testing.T) {
 		}
 	})
 
-	t.Run("prázdné ID", func(t *testing.T) {
+	t.Run("empty ID", func(t *testing.T) {
 		svc, err := exercise.NewService(&memStore{})
 		if err != nil {
 			t.Fatalf("NewService vrátil chybu %v", err)
@@ -279,7 +279,7 @@ func TestServiceChyby(t *testing.T) {
 		}
 	})
 
-	t.Run("chyba ze storu je obalená", func(t *testing.T) {
+	t.Run("store error is wrapped", func(t *testing.T) {
 		boom := errors.New("disk full")
 		svc, err := exercise.NewService(&memStore{failWith: boom})
 		if err != nil {

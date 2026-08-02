@@ -10,44 +10,6 @@
 - Sbírat výsledky se zachovaným pořadím a s chybami jednotlivých úloh, bez mutexu nad slice.
 - Odhadnout počet workerů podle toho, jestli je práce CPU-bound, nebo IO-bound.
 
-## PHP → Go most
-
-V Symfony se souběžnost obvykle neomezuje v kódu — omezuje ji infrastruktura. Napíšeš
-handler, a kolik jich poběží najednou, rozhodne konfigurace supervisoru:
-
-```php
-// messenger: kolik zpráv se zpracuje současně, řeší počet procesů
-// supervisor: numprocs=8  →  osm PHP procesů, osm spojení do DB
-final class GenerateThumbnailHandler
-{
-    public function __invoke(GenerateThumbnail $msg): void { /* ... */ }
-}
-```
-
-V Go je ten dial uvnitř tvého programu a nikdo ho za tebe nenastaví:
-
-```go
-// bez limitu — 50 000 obrázků = 50 000 souběžných konverzí a OOM
-for _, img := range images {
-    go generate(img)
-}
-
-// s limitem — přesná obdoba numprocs=8, jen o tři patra níž
-sem := make(chan struct{}, 8)
-for _, img := range images {
-    sem <- struct{}{}
-    go func() {
-        defer func() { <-sem }()
-        generate(img)
-    }()
-}
-```
-
-Návyk, který je potřeba opustit: „škálování je věc opsu". V Go je počet souběžných úloh
-součást návrhu funkce, stejně jako její signatura. A přibývá k tomu druhá zodpovědnost,
-kterou PHP nemá vůbec — musíš vědět, **jak pool skončí**, protože proces po requestu
-nezemře.
-
 ## Teorie
 
 ### Proč vůbec omezovat
@@ -231,6 +193,44 @@ workers := 32                // IO-bound: tolik, kolik unese protistrana
 A poslední pravidlo: v kontejneru s CPU limitem `NumCPU()` do Go 1.24 včetně vrací počet
 jader **hostitele**, ne tvůj limit. Podrobně v lekci 49. Vždycky měř, nehádej.
 
+## Rozdíly proti PHP
+
+V Symfony se souběžnost obvykle neomezuje v kódu — omezuje ji infrastruktura. Napíšeš
+handler, a kolik jich poběží najednou, rozhodne konfigurace supervisoru:
+
+```php
+// messenger: kolik zpráv se zpracuje současně, řeší počet procesů
+// supervisor: numprocs=8  →  osm PHP procesů, osm spojení do DB
+final class GenerateThumbnailHandler
+{
+    public function __invoke(GenerateThumbnail $msg): void { /* ... */ }
+}
+```
+
+V Go je ten dial uvnitř tvého programu a nikdo ho za tebe nenastaví:
+
+```go
+// bez limitu — 50 000 obrázků = 50 000 souběžných konverzí a OOM
+for _, img := range images {
+    go generate(img)
+}
+
+// s limitem — přesná obdoba numprocs=8, jen o tři patra níž
+sem := make(chan struct{}, 8)
+for _, img := range images {
+    sem <- struct{}{}
+    go func() {
+        defer func() { <-sem }()
+        generate(img)
+    }()
+}
+```
+
+Návyk, který je potřeba opustit: „škálování je věc opsu". V Go je počet souběžných úloh
+součást návrhu funkce, stejně jako její signatura. A přibývá k tomu druhá zodpovědnost,
+kterou PHP nemá vůbec — musíš vědět, **jak pool skončí**, protože proces po requestu
+nezemře.
+
 ## Časté chyby
 
 | Chyba | Proč vzniká | Jak to udělat správně |
@@ -243,71 +243,52 @@ jader **hostitele**, ne tvůj limit. Podrobně v lekci 49. Vždycky měř, nehá
 | `workers = 1000` pro DB dotazy | „IO-bound, tak hodně" | limit diktuje protistrana, ne fantazie |
 | Zabrané místo v semaforu i při chybě `Acquire` | zapomenutá větev v `select` | při chybě se místo nezabírá, `Release` jen po úspěchu |
 
+## AI kvíz
+
+Po přečtení teorie spusť v Cursoru **`/go-deep-quiz 46`**. AI tě ~5 minut prověří mentální model (ne hotové cvičení). Slabiny si uloží do [`GAPS.md`](../../GAPS.md).
+
 ## Úkol
 
-Pracuj v `exercise/`. Postupuj A → B → C, po každé části spusť test.
+Pracuj v `exercise/`. Po doplnění spouštěj testy:
 
-### A — rozcvička (~10 min)
+Stupně jdou od jednodušších ke složitějším — po každém stupni spusť review, než jdeš dál.
 
-1. `NewSemaphore(n int) *Semaphore` s metodami `Acquire(ctx) error`, `TryAcquire() bool`
-   a `Release()`. Kapacitu drž v bufferovaném kanálu. `Acquire` musí respektovat zrušení
-   kontextu a při chybě **nesmí** zabrat místo; u už zrušeného kontextu vrací chybu, i
-   kdyby bylo volno. `Release` bez předchozího `Acquire` panikuje, `NewSemaphore(0)` taky.
-2. `LimitedMap(ctx, inputs []string, limit int, f func(string) string) []string` — aplikuj
-   `f` na všechny vstupy, nejvýš `limit` souběžně, výsledky ve **stejném pořadí** jako
-   vstup. `limit <= 0` se chová jako 1, `f == nil` vrací `nil`, zrušený kontext nechá
-   nespuštěné položky na prázdném řetězci. Po návratu nesmí zůstat běžící goroutina.
+### Jednoduchý
 
-např. `LimitedMap(ctx, []string{"a", "b"}, 0, strings.ToUpper)` → `["A", "B"]`
-
-### B — jádro (~35 min)
-
-Postav `Pool` s pevným počtem workerů:
-
-- `New(workers int) *Pool` — spustí workery, pro `workers <= 0` panikuje.
-- `Submit(job Job) error` — blokuje, dokud úlohu nepřevezme worker (backpressure).
-  Po `Close` vrací `ErrPoolClosed` a úlohu zahodí. **Nesmí** zapsat do zavřeného kanálu.
-- `Results() <-chan Result` — kanál výsledků, který se zavře, až doběhnou všechny úlohy
-  přijaté před `Close`.
-- `Close()` — idempotentní, oznámí, že další úlohy nepřijdou.
-
-`Job` s `Run == nil` musí dát `Result{Err: ErrNilJob}`, ne paniku. Test ověřuje tři věci:
-že projde všech 20 úloh, že pool nikdy nespustí víc než `workers` úloh současně (měří to
-atomickým maximem), a že po dočerpání `Results()` nezůstane žádná goroutina navíc.
-
-Kanál úloh je nebufferovaný, takže z `Results()` se musí číst souběžně se `Submit` —
-tohle si napiš do doc commentu, je to součást kontraktu.
-
-např. `Submit(Job{ID: 1, Run: →7}); Close()` → `Result{Value: 7}`
-
-### C — rozšíření (~20 min)
-
-`MapErr[T, U any](ctx, in []T, limit int, f func(context.Context, T) (U, error)) ([]U, error)`:
-
-- omezená souběžnost (`limit`), zachované pořadí výsledků,
-- **první chyba** zruší odvozený kontext, takže se běžící volání `f` dozvědí, že nemá
-  smysl pokračovat; funkce počká na jejich doběhnutí a vrátí `(nil, ta první chyba)`,
-- `limit <= 0` → `ErrInvalidWorkers`, `f == nil` → `ErrNilJob`, prázdný vstup → prázdný
-  výsledek a `nil`, už zrušený vstupní kontext → `ctx.Err()`.
-
-Nápověda: `context.WithCancel` + `sync.Once` na zapamatování první chyby. A nezapomeň na
-`defer cancel()`, jinak ti unikne kontext i v úspěšné větvi.
-
-např. `MapErr(ctx, []int{1, 2, 3}, 2, f)` → `["*", "**", "***"]`
+Funkce: `NewSemaphore`, `Acquire`, `TryAcquire`
 
 ```bash
-make lesson L=46
-make race L=46
+make lesson L=46 PART=1
 ```
 
-Až budeš hotový, porovnej se `solutions/` (spoiler).
+Pak **`/go-deep-review 46 easy`**.
 
-## Ověření
+### Střední
 
-Po dokončení úkolů spusť v Cursoru **`/go-deep-review`** a zadej třeba jen `46`. AI tě postupně projde body níže, doptá se a ověří pochopení — nestačí jen zelené testy.
+Funkce: `Release`, `LimitedMap`, `New`
 
-- [ ] `make lesson L=46` prochází
-- [ ] `make race L=46` prochází (žádné hlášení race detektoru)
+```bash
+make lesson L=46 PART=2
+```
+
+Pak **`/go-deep-review 46 medium`**.
+
+### Obtížný
+
+Funkce: `Submit`, `Results`, `Close`
+
+```bash
+make lesson L=46 PART=3
+```
+
+Pak **`/go-deep-review 46 hard`**.
+
+Až budou stupně hotové, porovnej se `solutions/` (spoiler).
+
+## Závěrečné otázky
+
+Spusť **`/go-deep-review 46 final`**. AI projde body níže, doptá se a ověří pochopení. Celé cvičení ověří `make lesson L=46` (+ `make race L=46`, pokud to lekce vyžaduje).
+
 - [ ] Umíš vysvětlit, proč `for range jobs` nepotřebuje `stop` kanál
 - [ ] Umíš vysvětlit, kdo smí zavřít kanál výsledků a proč
 - [ ] Umíš vysvětlit rozdíl mezi graceful drain a zrušením kontextem

@@ -10,38 +10,6 @@
 - Zachytit paniku v handleru dřív, než shodí celý proces, a vědět, kterou paniku spolknout nesmíš.
 - Vysvětlit, čím se explicitní kompozice liší od Symfony EventListenerů s prioritami.
 
-## PHP → Go most
-
-V Symfony se do životního cyklu požadavku zapojuješ listenerem na `kernel.request`.
-Kdo poběží dřív, určuje číslo v konfiguraci — a to číslo je jinde než kód.
-
-```php
-final class RequestIdListener
-{
-    #[AsEventListener(event: KernelEvents::REQUEST, priority: 250)]
-    public function onKernelRequest(RequestEvent $event): void { /* ... */ }
-}
-```
-
-V Go je middleware obyčejná funkce, která dostane handler a vrátí jiný handler:
-
-```go
-func RequestID(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		// ... něco před ...
-		next.ServeHTTP(w, r)
-		// ... něco po ...
-	})
-}
-
-handler := Logging(Recovery(RequestID(mux))) // pořadí je vidět na jednom řádku
-```
-
-Co se mění v uvažování: **pořadí není konfigurace, je to kód.** Nemusíš hledat, jaká
-priorita se kde nastavila; přečteš si jeden výraz. Zároveň tím ztrácíš možnost „přidat
-listener zvenčí" — což je v praxi spíš úleva, protože skryté zásahy do request pipeline
-patří mezi nejhůř laditelné věci ve velké Symfony aplikaci.
-
 ## Teorie
 
 ### Typ middlewaru a řetězení
@@ -218,6 +186,38 @@ vypršení odešle **503** i v případě, že handler pořád běží. Handler 
 goroutina běží dál, dokud sama nezareaguje na `ctx.Done()`. Zrušení v Go je vždycky
 spolupráce, ne přerušení. To je téma příští lekce.
 
+## Rozdíly proti PHP
+
+V Symfony se do životního cyklu požadavku zapojuješ listenerem na `kernel.request`.
+Kdo poběží dřív, určuje číslo v konfiguraci — a to číslo je jinde než kód.
+
+```php
+final class RequestIdListener
+{
+    #[AsEventListener(event: KernelEvents::REQUEST, priority: 250)]
+    public function onKernelRequest(RequestEvent $event): void { /* ... */ }
+}
+```
+
+V Go je middleware obyčejná funkce, která dostane handler a vrátí jiný handler:
+
+```go
+func RequestID(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		// ... něco před ...
+		next.ServeHTTP(w, r)
+		// ... něco po ...
+	})
+}
+
+handler := Logging(Recovery(RequestID(mux))) // pořadí je vidět na jednom řádku
+```
+
+Co se mění v uvažování: **pořadí není konfigurace, je to kód.** Nemusíš hledat, jaká
+priorita se kde nastavila; přečteš si jeden výraz. Zároveň tím ztrácíš možnost „přidat
+listener zvenčí" — což je v praxi spíš úleva, protože skryté zásahy do request pipeline
+patří mezi nejhůř laditelné věci ve velké Symfony aplikaci.
+
 ## Časté chyby
 
 | Chyba | Proč vzniká | Jak to udělat správně |
@@ -229,58 +229,52 @@ spolupráce, ne přerušení. To je téma příští lekce.
 | Hledání priorit místo čtení kódu | reflex z `kernel.request` listenerů | pořadí je viditelné v `Chain(...)` |
 | Text paniky v odpovědi klientovi | ladicí zvyk z `dev` prostředí | obecná hláška ven, `debug.Stack()` do logu |
 
+## AI kvíz
+
+Po přečtení teorie spusť v Cursoru **`/go-deep-quiz 26`**. AI tě ~5 minut prověří mentální model (ne hotové cvičení). Slabiny si uloží do [`GAPS.md`](../../GAPS.md).
+
 ## Úkol
 
-Pracuj v `exercise/`. `WriteJSON`, `ErrorResponse`, typ `Middleware` a kostra
-`statusRecorder` jsou připravené.
+Pracuj v `exercise/`. Po doplnění spouštěj testy:
 
-### A — rozcvička (~10 min)
+Stupně jdou od jednodušších ke složitějším — po každém stupni spusť review, než jdeš dál.
 
-`Chain(h http.Handler, mws ...Middleware) http.Handler` — obalí `h` tak, že **první**
-middleware v seznamu je nejvíc vnější. Volání bez middlewarů vrátí `h` beze změny.
+### Jednoduchý
 
-např. `Chain(h, A, B)` → pořadí `A:pred, B:pred, handler, B:po, A:po`
-
-### B — jádro (~35 min)
-
-1. Metody `statusRecorder`:
-   - `WriteHeader(status int)` — zapamatuje status a přepošle ho podkladovému writeru,
-     ale **jen při prvním volání**.
-   - `Write(b []byte) (int, error)` — pokud status ještě nebyl zapsán, doplní 200,
-     data přepošle a přičte skutečně zapsaný počet bajtů.
-2. `Logging(logger *slog.Logger) Middleware` — obalí writer do `statusRecorder`
-   s výchozím statusem 200, zavolá handler a **až potom** zaloguje na úrovni Info
-   se zprávou `"request"` a poli `method`, `path`, `status`, `bytes`.
-3. `Recovery() Middleware` — z paniky udělá **500** s tělem `ErrorResponse`
-   a `Content-Type: application/json`. Text paniky se do odpovědi nesmí dostat.
-   `http.ErrAbortHandler` musí propustit dál (`panic(recovered)`).
-
-např. `Recovery()` + `panic(...)` → `500` JSON `ErrorResponse` (bez textu paniky)
-
-### C — rozšíření (~25 min)
-
-1. `RequestID() Middleware` — vezme hlavičku `X-Request-ID` (konstanta `RequestIDHeader`),
-   a když chybí nebo je prázdná, vygeneruje novou náhodnou hodnotu (`crypto/rand` +
-   `encoding/hex`). ID vloží do kontextu pod **neexportovaným typem klíče** a nastaví ho
-   i do hlavičky odpovědi.
-2. `RequestIDFrom(ctx context.Context) (string, bool)` — typově bezpečné čtení; bez
-   middlewaru vrací `("", false)`.
-3. `Timeout(d time.Duration) Middleware` — handler dostane kontext s deadline `d`
-   a při jeho překročení odejde **503** s tělem obsahujícím slovo `timeout`.
-
-např. `RequestID` + hlavička `X-Request-ID: abc-123` → totéž ID v kontextu i odpovědi
+Funkce: `WriteJSON`, `WriteHeader`, `Write`
 
 ```bash
-make lesson L=26
+make lesson L=26 PART=1
 ```
 
-Až budeš hotový, porovnej se `solutions/` (spoiler).
+Pak **`/go-deep-review 26 easy`**.
 
-## Ověření
+### Střední
 
-Po dokončení úkolů spusť v Cursoru **`/go-deep-review`** a zadej třeba jen `26`. AI tě postupně projde body níže, doptá se a ověří pochopení — nestačí jen zelené testy.
+Funkce: `Chain`, `Logging`, `Recovery`
 
-- [ ] `make lesson L=26` prochází
+```bash
+make lesson L=26 PART=2
+```
+
+Pak **`/go-deep-review 26 medium`**.
+
+### Obtížný
+
+Funkce: `RequestID`, `RequestIDFrom`, `Timeout`
+
+```bash
+make lesson L=26 PART=3
+```
+
+Pak **`/go-deep-review 26 hard`**.
+
+Až budou stupně hotové, porovnej se `solutions/` (spoiler).
+
+## Závěrečné otázky
+
+Spusť **`/go-deep-review 26 final`**. AI projde body níže, doptá se a ověří pochopení. Celé cvičení ověří `make lesson L=26` (+ `make race L=26`, pokud to lekce vyžaduje).
+
 - [ ] Umíš z výrazu `Chain(mux, A, B, C)` odvodit pořadí „před" i „po" krocích
 - [ ] Umíš vysvětlit, proč Recovery patří pod Logging a ne nad něj
 - [ ] Umíš vyjmenovat tři věci, které se rozbijí při naivním obalení `ResponseWriter`

@@ -24,28 +24,33 @@ type bucket struct {
 	seen   time.Time
 }
 
-// NewRateLimiter vytvoří omezovač s kapacitou capacity a doplňováním jednoho tokenu
-// za refill. Hodiny se předávají jako závislost; nil znamená time.Now.
+// --- Stupeň: jednoduchý ---
+// NewRateLimiter vytvoří omezovač s token bucketem pro každý klíč.
+// Kapacita < 1 → 1; refill <= 0 → 1s; nil now → time.Now.
 func NewRateLimiter(capacity int, refill time.Duration, now func() time.Time) *RateLimiter {
-	// TODO: úkol A
+	// TODO
 	return nil
 }
 
-// Allow odebere token pro daný klíč. Vrací false, když je kbelík prázdný.
+// Allow odebere token pro klíč po doplnění podle elapsed/refill; prázdný kbelík vrací false.
+// Nový klíč začíná plný. Posuň last refill o vyčerpaný násobek refill, ne na aktuální čas.
 func (rl *RateLimiter) Allow(key string) bool {
-	// TODO: úkol A
+	// TODO
 	return false
 }
 
-// Cleanup zahodí kbelíky, které se nepoužily aspoň idle, a vrátí jejich počet.
+// --- Stupeň: střední ---
+// Cleanup zahodí kbelíky nepoužité aspoň idle a vrátí jejich počet.
+// Měří se od času posledního Allow pro daný klíč (ne od vytvoření kbelíku).
 func (rl *RateLimiter) Cleanup(idle time.Duration) int {
-	// TODO: úkol A
+	// TODO
 	return 0
 }
 
-// Len vrací počet sledovaných klíčů.
+// Len vrací počet sledovaných klíčů v rate limiteru.
+// Po Cleanup může být menší než předtím (odstraněné neaktivní kbelíky).
 func (rl *RateLimiter) Len() int {
-	// TODO: úkol A
+	// TODO
 	return 0
 }
 
@@ -65,11 +70,16 @@ var SecurityHeaders = map[string]string{
 	"Content-Security-Policy": "default-src 'none'",
 }
 
-// Harden složí produkční middleware chain: recovery, bezpečnostní hlavičky,
-// rate limiting, limit velikosti těla a timeout.
+// --- Stupeň: obtížný ---
+// Harden složí chain od vnějšku: recovery (500, "internal server error\n"), hlavičky,
+// rate limit (429, "too many requests\n"; klíč z KeyFunc nebo RemoteAddr bez portu),
+// max body (413, "request body too large\n" nebo MaxBytesReader),
+// timeout jen když opts.Timeout > 0 — http.TimeoutHandler se zprávou "timeout" (503).
+// Volitelné vrstvy přeskoč, když je Limiter nil, MaxBodyBytes 0 nebo Timeout 0.
+// Panika nesmí uniknout; bezpečnostní hlavičky i u chybových odpovědí.
 func Harden(h http.Handler, opts HardenOptions) http.Handler {
-	// TODO: úkol B
-	return *new(http.Handler)
+	// TODO
+	return nil
 }
 
 // Chyby produkčního auditu.
@@ -97,10 +107,12 @@ type Report struct {
 	Missing        []string
 }
 
-// AuditReport vyhodnotí připravenost k nasazení podle production checklistu.
+// AuditReport vyhodnotí checklist; Total/Passed/CriticalFailed/Score = Passed/Total.
+// Missing = ID nesplněných kontrol, seřazená. Ready jen bez kritického nedodělku a Score >= 0.8.
+// Prázdný vstup → ErrNoChecks; kontrola bez ID → ErrInvalidCheck; duplicitní ID → ErrDuplicateCheck.
 func AuditReport(checks []Check) (Report, error) {
-	// TODO: úkol C
-	return *new(Report), nil
+	// TODO
+	return Report{}, nil
 }
 
 // LessonResult je výsledek jedné lekce kurzu.
@@ -125,8 +137,10 @@ type Summary struct {
 	WeakestPhase int
 }
 
-// Coverage spočítá pokrok kurzem a najde nejslabší fázi.
+// Coverage spočítá pokrok kurzu; Percent 0–100 (prázdný vstup 0).
+// WeakestPhase má nejnižší poměr splněných; při shodě nižší číslo fáze; prázdný vstup 0.
+// ByPhase je vždy inicializovaná mapa fáze → PhaseStat.
 func Coverage(lessons []LessonResult) Summary {
-	// TODO: úkol C
-	return *new(Summary)
+	// TODO
+	return Summary{}
 }

@@ -37,14 +37,14 @@ func TestMedian(t *testing.T) {
 		want   float64
 		wantOK bool
 	}{
-		{"prázdný vstup", nil, 0, false},
-		{"prázdný slice", []float64{}, 0, false},
-		{"jeden prvek", []float64{4.2}, 4.2, true},
-		{"lichý počet", []float64{3, 1, 2}, 2, true},
-		{"sudý počet", []float64{4, 1, 3, 2}, 2.5, true},
-		{"záporná čísla", []float64{-5, -1, -3}, -3, true},
+		{"empty input", nil, 0, false},
+		{"empty slice", []float64{}, 0, false},
+		{"one element", []float64{4.2}, 4.2, true},
+		{"odd count", []float64{3, 1, 2}, 2, true},
+		{"even count", []float64{4, 1, 3, 2}, 2.5, true},
+		{"negative numbers", []float64{-5, -1, -3}, -3, true},
 		{"duplicity", []float64{2, 2, 2, 2}, 2, true},
-		{"už seřazeno", []float64{1, 2, 3, 4, 5}, 3, true},
+		{"already sorted", []float64{1, 2, 3, 4, 5}, 3, true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -57,7 +57,7 @@ func TestMedian(t *testing.T) {
 	}
 }
 
-func TestMedianNemeniVstup(t *testing.T) {
+func TestMedianDoesNotMutateInput(t *testing.T) {
 	in := []float64{9, 1, 5, 3}
 	before := append([]float64(nil), in...)
 
@@ -70,7 +70,7 @@ func TestMedianNemeniVstup(t *testing.T) {
 	}
 }
 
-func TestMedianNahodnaData(t *testing.T) {
+func TestMedianRandomData(t *testing.T) {
 	// Medián permutace 1..n je znám dopředu, takže test nejde splnit
 	// zadrátovanou konstantou.
 	rnd := rand.New(rand.NewSource(42))
@@ -111,7 +111,7 @@ func TestParseRecords(t *testing.T) {
 	}
 }
 
-func TestParseRecordsJenHlavicka(t *testing.T) {
+func TestParseRecordsHeaderOnly(t *testing.T) {
 	got, err := exercise.ParseRecords(strings.NewReader("name,amount,category\n"))
 	if err != nil {
 		t.Fatalf("ParseRecords(jen hlavička) = _, %v, chci nil", err)
@@ -121,14 +121,14 @@ func TestParseRecordsJenHlavicka(t *testing.T) {
 	}
 }
 
-func TestParseRecordsChyby(t *testing.T) {
+func TestParseRecordsErrors(t *testing.T) {
 	tests := map[string]string{
-		"prázdný vstup":     "",
+		"empty input":       "",
 		"špatná hlavička":   "jmeno,castka,kategorie\nAda,1,food\n",
 		"chybí sloupec":     "name,amount,category\nAda,120.50\n",
 		"sloupec navíc":     "name,amount,category\nAda,120.50,food,navic\n",
 		"nečíselná částka":  "name,amount,category\nAda,hodne,food\n",
-		"prázdné jméno":     "name,amount,category\n ,120.50,food\n",
+		"empty name":        "name,amount,category\n ,120.50,food\n",
 		"prázdná kategorie": "name,amount,category\nAda,120.50, \n",
 	}
 	for name, in := range tests {
@@ -152,7 +152,7 @@ func TestSumByCategory(t *testing.T) {
 	}
 }
 
-func TestSumByCategoryPrazdny(t *testing.T) {
+func TestSumByCategoryEmpty(t *testing.T) {
 	got := exercise.SumByCategory(nil)
 	if got == nil {
 		t.Fatal("SumByCategory(nil) = nil, chci prázdnou mapu")
@@ -191,7 +191,7 @@ func TestTopN(t *testing.T) {
 	}
 }
 
-func TestTopNStabilita(t *testing.T) {
+func TestTopNStability(t *testing.T) {
 	recs := []exercise.Record{
 		{Name: "prvni", Amount: 10, Category: "a"},
 		{Name: "druhy", Amount: 10, Category: "b"},
@@ -206,7 +206,7 @@ func TestTopNStabilita(t *testing.T) {
 	}
 }
 
-func TestTopNNemeniVstup(t *testing.T) {
+func TestTopNDoesNotMutateInput(t *testing.T) {
 	recs := sampleRecords()
 	before := append([]exercise.Record(nil), recs...)
 
@@ -224,11 +224,23 @@ func TestLoadFileTestdata(t *testing.T) {
 	if err != nil {
 		t.Fatalf("LoadFile(testdata/sample.csv) = _, %v, chci nil", err)
 	}
-	if len(got) != 5 {
-		t.Fatalf("LoadFile(...) vrátilo %d záznamů, chci 5: %+v", len(got), got)
+	want := []exercise.Record{
+		{Name: "Ada", Amount: 120.50, Category: "food"},
+		{Name: "Bob", Amount: 80, Category: "transport"},
+		{Name: "Grace", Amount: 200.25, Category: "food"},
+		{Name: "Linus", Amount: 15.75, Category: "transport"},
+		{Name: "Ken", Amount: 60, Category: "fun"},
 	}
-	sums := exercise.SumByCategory(got)
-	equalFloat(t, sums["food"], 320.75, "součet food = %v, chci %v", sums["food"], 320.75)
+	if len(got) != len(want) {
+		t.Fatalf("LoadFile(...) vrátilo %d záznamů, chci %d: %+v", len(got), len(want), got)
+	}
+	for i := range want {
+		if got[i].Name != want[i].Name || got[i].Category != want[i].Category {
+			t.Errorf("záznam %d = %+v, chci %+v", i, got[i], want[i])
+		}
+		equalFloat(t, got[i].Amount, want[i].Amount,
+			"záznam %d Amount = %v, chci %v", i, got[i].Amount, want[i].Amount)
+	}
 }
 
 func TestLoadFileTempDir(t *testing.T) {
@@ -258,14 +270,14 @@ func TestLoadFileTempDir(t *testing.T) {
 	}
 }
 
-func TestLoadFileChyby(t *testing.T) {
-	t.Run("neexistující soubor", func(t *testing.T) {
+func TestLoadFileErrors(t *testing.T) {
+	t.Run("missing file", func(t *testing.T) {
 		if _, err := exercise.LoadFile(filepath.Join(t.TempDir(), "neni.csv")); err == nil {
 			t.Error("LoadFile(neexistující) = _, nil, chci chybu")
 		}
 	})
 
-	t.Run("rozbitý obsah", func(t *testing.T) {
+	t.Run("broken content", func(t *testing.T) {
 		path := filepath.Join(t.TempDir(), "bad.csv")
 		if err := os.WriteFile(path, []byte("name,amount,category\nAda,neni-cislo,food\n"), 0o600); err != nil {
 			t.Fatalf("příprava souboru selhala: %v", err)

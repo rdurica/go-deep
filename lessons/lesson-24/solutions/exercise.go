@@ -35,6 +35,7 @@ type EchoResponse struct {
 	Count int    `json:"count"`
 }
 
+// --- Stupeň: jednoduchý ---
 // WriteJSON zapíše v jako JSON odpověď se status kódem status.
 // Musí nastavit hlavičku Content-Type dřív, než zavolá WriteHeader.
 func WriteJSON(w http.ResponseWriter, status int, v any) error {
@@ -55,6 +56,7 @@ func HealthHandler() http.Handler {
 	})
 }
 
+// --- Stupeň: střední ---
 // EchoHandler vrací handler, který přijme POST s JSON tělem EchoRequest
 // a odpoví EchoResponse, nebo chybou v podobě ErrorResponse.
 func EchoHandler() http.Handler {
@@ -107,12 +109,14 @@ func EchoHandler() http.Handler {
 }
 
 // NotFoundHandler vrací handler, který vždy odpoví 404 a JSON ErrorResponse.
+// Tělo ErrorResponse s neprázdným polem Error (např. "not found").
 func NotFoundHandler() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusNotFound, "not found")
 	})
 }
 
+// --- Stupeň: obtížný ---
 // NewRouter složí health, echo a 404 fallback do jednoho http.ServeMux.
 func NewRouter() http.Handler {
 	mux := http.NewServeMux()

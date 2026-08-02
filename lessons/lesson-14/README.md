@@ -9,44 +9,6 @@
 - Použít `errors.Is`, `errors.As` a `errors.Join` a vysvětlit, čím se liší.
 - Napsat texty chyb podle konvence a poskládat je do věty, která se dá číst v logu.
 
-## PHP → Go most
-
-V PHP je chyba **výjimka** — ovládací tok, který se sám probublá nahoru, dokud ho někdo
-nechytí. Kdo ji nechytí, o ní nemusí vědět:
-
-```php
-final class UserNotFound extends \RuntimeException {}
-
-function loadUser(string $id): User
-{
-    $row = $this->store->find($id);
-    if ($row === null) {
-        throw new UserNotFound("User $id not found");   // odsud dál nic
-    }
-    return User::fromRow($row);
-}
-```
-
-V Go je chyba **hodnota**, kterou funkce vrací jako druhý výsledek. Nikam se sama
-nepropaguje — buď ji zpracuješ, nebo ji explicitně pošleš dál:
-
-```go
-func LoadUser(id string) (User, error) {
-	row, err := store.Find(id)
-	if err != nil {
-		return User{}, fmt.Errorf("load user %s: %w", id, err)
-	}
-	return userFromRow(row), nil
-}
-```
-
-Změna v uvažování: `if err != nil { return ... }` **není boilerplate**. Je to
-dokumentace toku chyb přímo v kódu. V PHP musíš pro každou funkci hledat v docblocku
-nebo ve zdrojáku, co může vyhodit. V Go to vidíš v signatuře, a když chybu ignoruješ,
-je to vidět v diffu. Zvyk, který je potřeba opustit: **nekopíruj hierarchii výjimek.**
-`AppException → DomainException → UserException → UserNotFoundException` je v Go
-zbytečná — chyby se nerozlišují podle rodokmenu, ale podle toho, na co se dá zeptat.
-
 ## Teorie
 
 ### `error` je obyčejný interface
@@ -235,6 +197,44 @@ ale strom**:
 jen **první** nález. Chceš-li posbírat všechny (třeba všechna vadná pole), musíš strom
 projít ručně přes type assertion na `interface{ Unwrap() []error }`. Přesně to je úkol B.
 
+## Rozdíly proti PHP
+
+V PHP je chyba **výjimka** — ovládací tok, který se sám probublá nahoru, dokud ho někdo
+nechytí. Kdo ji nechytí, o ní nemusí vědět:
+
+```php
+final class UserNotFound extends \RuntimeException {}
+
+function loadUser(string $id): User
+{
+    $row = $this->store->find($id);
+    if ($row === null) {
+        throw new UserNotFound("User $id not found");   // odsud dál nic
+    }
+    return User::fromRow($row);
+}
+```
+
+V Go je chyba **hodnota**, kterou funkce vrací jako druhý výsledek. Nikam se sama
+nepropaguje — buď ji zpracuješ, nebo ji explicitně pošleš dál:
+
+```go
+func LoadUser(id string) (User, error) {
+	row, err := store.Find(id)
+	if err != nil {
+		return User{}, fmt.Errorf("load user %s: %w", id, err)
+	}
+	return userFromRow(row), nil
+}
+```
+
+Změna v uvažování: `if err != nil { return ... }` **není boilerplate**. Je to
+dokumentace toku chyb přímo v kódu. V PHP musíš pro každou funkci hledat v docblocku
+nebo ve zdrojáku, co může vyhodit. V Go to vidíš v signatuře, a když chybu ignoruješ,
+je to vidět v diffu. Zvyk, který je potřeba opustit: **nekopíruj hierarchii výjimek.**
+`AppException → DomainException → UserException → UserNotFoundException` je v Go
+zbytečná — chyby se nerozlišují podle rodokmenu, ale podle toho, na co se dá zeptat.
+
 ## Časté chyby
 
 | Chyba | Proč vzniká | Jak to udělat správně |
@@ -248,73 +248,52 @@ projít ručně přes type assertion na `interface{ Unwrap() []error }`. Přesn�
 | Obalování cizí chyby na hranici balíčku | wrapping jako automatismus | přelož na vlastní typ, řetěz schválně přeruš |
 | `_ = err` nebo ignorovaný druhý návrat | „to nemůže selhat" | zpracuj, nebo alespoň zaloguj s kontextem |
 
+## AI kvíz
+
+Po přečtení teorie spusť v Cursoru **`/go-deep-quiz 14`**. AI tě ~5 minut prověří mentální model (ne hotové cvičení). Slabiny si uloží do [`GAPS.md`](../../GAPS.md).
+
 ## Úkol
 
-Pracuj v `exercise/`. Postupuj A → B → C, po každé části spusť test.
+Pracuj v `exercise/`. Po doplnění spouštěj testy:
 
-Texty chyb piš **anglicky a podle konvence** — poslední test kontroluje, že žádná
-z tvých chyb nezačíná velkým písmenem ani nekončí tečkou.
+Stupně jdou od jednodušších ke složitějším — po každém stupni spusť review, než jdeš dál.
 
-### A — rozcvička (~10 min)
+### Jednoduchý
 
-`Divide(a, b int) (int, error)` — celočíselné dělení. Při `b == 0` vrať `0` a chybu,
-která **obaluje** připravený sentinel `ErrDivideByZero` a přidává kontext (třeba
-dělence). Test ověří tři věci najednou: `errors.Is` projde, text obsahuje
-`"division by zero"`, a vrácená chyba **není** holý sentinel — musí být obalená.
-
-např. `Divide(10, 2)` → `5, nil`
-
-### B — jádro (~35 min)
-
-1. `func (e *ValidationError) Error() string` — přesně ve tvaru
-   `"invalid email: must contain @"`, tedy `invalid <Field>: <Reason>`.
-2. `ValidateUser(name, email string) error` — posbírá **všechny** problémy a vrátí je
-   přes `errors.Join`:
-   - prázdné `name` → `ValidationError{Field: "name", Reason: "must not be empty"}`,
-   - prázdný `email` → `ValidationError{Field: "email", Reason: "must not be empty"}`,
-   - neprázdný `email` bez znaku `@` → `ValidationError{Field: "email", Reason: "must contain @"}`.
-
-   Pořadí je `name` a pak `email`. Bez problémů vrací `nil` — `errors.Join` nad prázdným
-   seznamem to udělá za tebe.
-3. `FieldsWithErrors(err error) []string` — projde řetěz (resp. **strom**) chyb a vrátí
-   jména polí všech `*ValidationError`, které v něm najde, v pořadí výskytu. Musí zvládnout:
-   - `nil` a chybu bez jediné `ValidationError` → prázdný výsledek,
-   - `ValidationError` obalenou přes `fmt.Errorf("%w", …)`,
-   - `errors.Join` s mixem cizích a validačních chyb,
-   - a hlavně **nesmí duplikovat**. Rozmysli si, proč naivní `errors.As` na každém uzlu
-     stromu vrátí stejnou chybu vícekrát.
-
-např. `FieldsWithErrors(ValidateUser("", "nope"))` → `["name", "email"]`
-
-### C — rozšíření (~25 min)
-
-Vrstvení chyb přes hranici „úložiště → služba".
-
-1. `func (e *NotFoundError) Error() string` — ve tvaru `"id u9 not found"`.
-2. `fetchFromStore(id string) error` — neexportovaná náhrada databáze. Zná ID `"u1"`
-   a `"u2"` (pro ně vrací `nil`), pro cokoli jiného vrací `&NotFoundError{ID: id}`.
-3. `LoadUser(id string) error` — zavolá `fetchFromStore` a případnou chybu obalí
-   jako `fmt.Errorf("load user %s: %w", id, err)`.
-4. `IsNotFound(err error) bool` — přes `errors.As` zjistí, jestli je někde v řetězu
-   `*NotFoundError`. Pro `nil` a cizí chyby vrací `false`.
-
-Test ověří, že text chyby obsahuje **obě vrstvy** (`"load user u9"` i `"not found"`)
-a **zároveň** že `errors.As` skrz obalení projde a vytáhne správné `ID`. Kdybys použil
-`%v` místo `%w`, první polovina projde a druhá spadne — přesně jako v produkci.
-
-např. `IsNotFound(LoadUser("u9"))` → `true`
+Funkce: `Divide`, `Error`
 
 ```bash
-make lesson L=14
+make lesson L=14 PART=1
 ```
 
-Až budeš hotový, porovnej se `solutions/` (spoiler).
+Pak **`/go-deep-review 14 easy`**.
 
-## Ověření
+### Střední
 
-Po dokončení úkolů spusť v Cursoru **`/go-deep-review`** a zadej třeba jen `14`. AI tě postupně projde body níže, doptá se a ověří pochopení — nestačí jen zelené testy.
+Funkce: `ValidateUser`, `FieldsWithErrors`
 
-- [ ] `make lesson L=14` prochází
+```bash
+make lesson L=14 PART=2
+```
+
+Pak **`/go-deep-review 14 medium`**.
+
+### Obtížný
+
+Funkce: `Error`, `LoadUser`, `IsNotFound`
+
+```bash
+make lesson L=14 PART=3
+```
+
+Pak **`/go-deep-review 14 hard`**.
+
+Až budou stupně hotové, porovnej se `solutions/` (spoiler).
+
+## Závěrečné otázky
+
+Spusť **`/go-deep-review 14 final`**. AI projde body níže, doptá se a ověří pochopení. Celé cvičení ověří `make lesson L=14` (+ `make race L=14`, pokud to lekce vyžaduje).
+
 - [ ] Umíš vysvětlit rozdíl mezi `errors.Is` a `errors.As` a kdy použít který
 - [ ] Umíš vysvětlit, co přesně rozbije `%v` místo `%w`
 - [ ] Umíš uvést situaci, kdy se chyba obalovat **nemá**
@@ -325,6 +304,7 @@ Po dokončení úkolů spusť v Cursoru **`/go-deep-review`** a zadej třeba jen
 
 `ZAKÁZÁNO` — viz [docs/ai-playbook.md](../../docs/ai-playbook.md).
 
+Mentor, kvíz i review (dialog) jsou vždy OK; v tomto režimu AI nesmí psát kód cvičení.
 ## Další čtení
 
 1. [Go blog — Working with Errors in Go 1.13](https://go.dev/blog/go1.13-errors)

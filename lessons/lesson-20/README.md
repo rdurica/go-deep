@@ -11,49 +11,6 @@
 - Aplikovat „accept interfaces, return structs" a vysvětlit, proč to není libovůle.
 - Nahradit Symfony DI kontejner ručním wiringem v `main`, aniž se ti to zvrhne v peklo.
 
-## PHP → Go most
-
-V Symfony konstruktor typicky jen přiřazuje a o sestavení se stará kontejner. Autowiring
-podle typu závislostí najde implementaci a předá ji:
-
-```php
-final class ApiClient
-{
-    public function __construct(
-        private readonly HttpClientInterface $http,
-        private readonly LoggerInterface $logger,
-        private readonly int $timeout = 5,
-    ) {}
-}
-// services.yaml se postará o zbytek, konstruktor nikdo ručně nevolá
-```
-
-V Go žádný kontejner není. Konstruktor je **obyčejná funkce** a wiring napíšeš ručně
-v `main`. To zní jako krok zpět, dokud si neuvědomíš, co za to dostaneš: celý graf
-závislostí je jeden čitelný blok kódu, který zkontroluje kompilátor.
-
-```go
-func main() {
-	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
-
-	client, err := api.NewClient("https://api.example.com", api.WithTimeout(5*time.Second))
-	if err != nil {
-		logger.Error("client", "err", err)
-		os.Exit(1)
-	}
-
-	srv, err := server.New(":8080", logger, client)
-	if err != nil {
-		logger.Error("server", "err", err)
-		os.Exit(1)
-	}
-	log.Fatal(srv.ListenAndServe())
-}
-```
-
-Návyk k opuštění: **nehledej framework, který wiring schová.** Pár desítek řádků v `main`
-je cena, kterou platíš za to, že nikdy nebudeš ladit runtime chybu kontejneru.
-
 ## Teorie
 
 ### Nejlepší konstruktor je žádný konstruktor
@@ -227,6 +184,49 @@ Pokud ti `main` přeroste přes zhruba sto řádků, extrahuj funkci
 Co ručním wiringem získáš: žádná reflexe za běhu, žádný cache warmup, chybějící závislost
 je chyba kompilace místo výjimky při startu, a graf závislostí si přečteš shora dolů.
 
+## Rozdíly proti PHP
+
+V Symfony konstruktor typicky jen přiřazuje a o sestavení se stará kontejner. Autowiring
+podle typu závislostí najde implementaci a předá ji:
+
+```php
+final class ApiClient
+{
+    public function __construct(
+        private readonly HttpClientInterface $http,
+        private readonly LoggerInterface $logger,
+        private readonly int $timeout = 5,
+    ) {}
+}
+// services.yaml se postará o zbytek, konstruktor nikdo ručně nevolá
+```
+
+V Go žádný kontejner není. Konstruktor je **obyčejná funkce** a wiring napíšeš ručně
+v `main`. To zní jako krok zpět, dokud si neuvědomíš, co za to dostaneš: celý graf
+závislostí je jeden čitelný blok kódu, který zkontroluje kompilátor.
+
+```go
+func main() {
+	logger := slog.New(slog.NewJSONHandler(os.Stdout, nil))
+
+	client, err := api.NewClient("https://api.example.com", api.WithTimeout(5*time.Second))
+	if err != nil {
+		logger.Error("client", "err", err)
+		os.Exit(1)
+	}
+
+	srv, err := server.New(":8080", logger, client)
+	if err != nil {
+		logger.Error("server", "err", err)
+		os.Exit(1)
+	}
+	log.Fatal(srv.ListenAndServe())
+}
+```
+
+Návyk k opuštění: **nehledej framework, který wiring schová.** Pár desítek řádků v `main`
+je cena, kterou platíš za to, že nikdy nebudeš ladit runtime chybu kontejneru.
+
 ## Časté chyby
 
 | Chyba | Proč vzniká | Jak to udělat správně |
@@ -239,81 +239,52 @@ je chyba kompilace místo výjimky při startu, a graf závislostí si přečte�
 | Interface v balíčku implementace | PHP drží interface u třídy | interface u toho, kdo ho volá |
 | Volitelná závislost jako parametr `nil` | „ať to je v signatuře" | `Option`, nebo `Config` struct |
 
+## AI kvíz
+
+Po přečtení teorie spusť v Cursoru **`/go-deep-quiz 20`**. AI tě ~5 minut prověří mentální model (ne hotové cvičení). Slabiny si uloží do [`GAPS.md`](../../GAPS.md).
+
 ## Úkol
 
-Pracuj v `exercise/`. Postupuj A → B → C, po každé části spusť test.
+Pracuj v `exercise/`. Po doplnění spouštěj testy:
 
-### A — rozcvička (~15 min)
+Stupně jdou od jednodušších ke složitějším — po každém stupni spusť review, než jdeš dál.
 
-`Server` má dvě povinné závislosti a bez nich nedává smysl.
+### Jednoduchý
 
-- `NewServer(addr string, logger *slog.Logger) (*Server, error)`:
-  prázdná `addr` → `nil, ErrMissingAddr`; `addr` bez znaku `:` → `nil` a chyba obalující
-  `ErrInvalidAddr`; `logger == nil` → `nil, ErrMissingLogger`. Jinak připravený server.
-- `MustNewServer(addr string, logger *slog.Logger) *Server` — volá `NewServer`
-  a při chybě panikuje **s tou chybou** (`panic(err)`, ne `panic(err.Error())`).
-- Gettery `Addr() string` a `Logger() *slog.Logger` — bez prefixu `Get`.
-
-např. `NewServer(":8080", logger).Addr()` → `":8080"`
-
-### B — jádro (~35 min)
-
-Klient konfigurovaný functional options.
-
-- `NewClient(baseURL string, opts ...Option) (*Client, error)`.
-- Povinná validace `baseURL` **před** vytvořením klienta: prázdný → `ErrMissingBaseURL`;
-  bez prefixu `http://` nebo `https://` → chyba obalující `ErrInvalidBaseURL`.
-- `baseURL` se ukládá bez koncových lomítek (`https://x.com/` → `https://x.com`).
-- Výchozí hodnoty: `DefaultTimeout`, `DefaultRetries`, `DefaultUserAgent` (konstanty už
-  v `exercise.go` jsou).
-- Options `WithTimeout(time.Duration)`, `WithRetries(int)`, `WithUserAgent(string)`
-  se aplikují v pořadí, ve kterém přišly — poslední vyhrává. `nil` option přeskoč.
-- Validace **po** aplikaci options: `timeout <= 0` → `ErrInvalidTimeout`;
-  `retries < 0` → `ErrInvalidRetries`; prázdný user agent → `ErrEmptyUserAgent`.
-  `retries == 0` je platná hodnota.
-- Při jakékoli chybě vrať `nil` klienta.
-- Gettery `BaseURL()`, `Timeout()`, `Retries()`, `UserAgent()`.
-
-např. `NewClient("https://api.example.com/").BaseURL()` → `"https://api.example.com"`
-
-### C — rozšíření (~25 min)
-
-Dvě části, obě o designu API.
-
-**Accept interfaces, return structs.** `Store` a `Record` už v `exercise.go` jsou,
-`Store` je port definovaný u konzumenta.
-
-- `NewService(store Store) (*Service, error)` — `nil` store → `ErrMissingStore`,
-  jinak `*Service` (konkrétní typ, ne interface).
-- `Add(id, value string) error` — prázdné `id` → `ErrEmptyRecordID` a **nic se neukládá**;
-  chybu ze `Save` obal kontextem: `fmt.Errorf("save record %q: %w", id, err)`.
-- `Count() int` — počet záznamů podle `store.All()`.
-- `Values() []string` — hodnoty v pořadí, v jakém je vrátil `Store`.
-
-Fake store v testu napsaný **není tvůj úkol** — podívej se, jak vypadá `memStore`
-v `exercise_test.go`. Přesně proto se interface definuje u konzumenta: test si napíše
-vlastní implementaci a nepotřebuje mockovací knihovnu.
-
-**Užitečná zero value.** `Registry` musí fungovat bez konstruktoru: `var reg Registry`
-a rovnou `reg.Set(...)`.
-
-- `Set(key, value string)` — líná inicializace mapy, přepis existujícího klíče.
-- `Lookup(key string) (string, bool)` — čtení musí fungovat i na nulové `Registry`.
-- `Len() int`, `Keys() []string` (vzestupně seřazené; na prázdné registry prázdný slice).
-
-např. `svc.Values()` → `["alfa", "beta"]`
+Funkce: `NewServer`, `MustNewServer`, `Addr`, `Logger`, `WithTimeout`, `WithRetries`
 
 ```bash
-make lesson L=20
+make lesson L=20 PART=1
 ```
 
-Až budeš hotový, porovnej se `solutions/` (spoiler).
+Pak **`/go-deep-review 20 easy`**.
 
-## Ověření
+### Střední
 
-Po dokončení úkolů spusť v Cursoru **`/go-deep-review`** a zadej třeba jen `20`. AI tě postupně projde body níže, doptá se a ověří pochopení — nestačí jen zelené testy.
+Funkce: `WithUserAgent`, `NewClient`, `BaseURL`, `Timeout`, `Retries`, `UserAgent`, `NewService`
 
-- [ ] `make lesson L=20` prochází
+```bash
+make lesson L=20 PART=2
+```
+
+Pak **`/go-deep-review 20 medium`**.
+
+### Obtížný
+
+Funkce: `Add`, `Count`, `Values`, `Set`, `Lookup`, `Len`, `Keys`
+
+```bash
+make lesson L=20 PART=3
+```
+
+Pak **`/go-deep-review 20 hard`**.
+
+Až budou stupně hotové, porovnej se `solutions/` (spoiler).
+
+## Závěrečné otázky
+
+Spusť **`/go-deep-review 20 final`**. AI projde body níže, doptá se a ověří pochopení. Celé cvičení ověří `make lesson L=20` (+ `make race L=20`, pokud to lekce vyžaduje).
+
 - [ ] Žádná tvoje funkce nevrací interface
 - [ ] `Registry` nemá konstruktor a testy na zero value prochází
 - [ ] Umíš vysvětlit, proč se validace dělá až po aplikaci options

@@ -131,7 +131,7 @@ func TestLazyInitRunsExactlyOnce(t *testing.T) {
 }
 
 func TestLazyInitEdgeCases(t *testing.T) {
-	t.Run("nil init panikuje", func(t *testing.T) {
+	t.Run("nil init panics", func(t *testing.T) {
 		defer func() {
 			if recover() == nil {
 				t.Error("NewLazyInit(nil) měl panikovat")
@@ -140,7 +140,7 @@ func TestLazyInitEdgeCases(t *testing.T) {
 		_ = exercise.NewLazyInit(nil)
 	})
 
-	t.Run("nekladné n", func(t *testing.T) {
+	t.Run("non-positive n", func(t *testing.T) {
 		l := exercise.NewLazyInit(func() int { return 1 })
 		if got := exercise.ConcurrentValues(l, 0); len(got) != 0 {
 			t.Errorf("ConcurrentValues(l, 0) = %v, chci prázdný výsledek", got)

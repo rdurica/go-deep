@@ -257,7 +257,7 @@ func TestHardenRateLimitKeyFunc(t *testing.T) {
 func TestHardenBodyLimit(t *testing.T) {
 	h := exercise.Harden(okHandler(), exercise.HardenOptions{MaxBodyBytes: 16})
 
-	t.Run("tělo v limitu projde", func(t *testing.T) {
+	t.Run("body within limit passes", func(t *testing.T) {
 		req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(strings.Repeat("x", 16)))
 		rec := httptest.NewRecorder()
 		h.ServeHTTP(rec, req)
@@ -266,7 +266,7 @@ func TestHardenBodyLimit(t *testing.T) {
 		}
 	})
 
-	t.Run("příliš velké tělo dá 413", func(t *testing.T) {
+	t.Run("oversized body returns 413", func(t *testing.T) {
 		req := httptest.NewRequest(http.MethodPost, "/", strings.NewReader(strings.Repeat("x", 17)))
 		rec := httptest.NewRecorder()
 		h.ServeHTTP(rec, req)
@@ -275,7 +275,7 @@ func TestHardenBodyLimit(t *testing.T) {
 		}
 	})
 
-	t.Run("neznámá délka se ořízne při čtení", func(t *testing.T) {
+	t.Run("unknown length truncated on read", func(t *testing.T) {
 		var readErr error
 		inner := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			_, readErr = io.ReadAll(r.Body)
@@ -460,7 +460,7 @@ func TestCoverage(t *testing.T) {
 }
 
 func TestCoverageEdgeCases(t *testing.T) {
-	t.Run("prázdný vstup", func(t *testing.T) {
+	t.Run("empty input", func(t *testing.T) {
 		got := exercise.Coverage(nil)
 		if got.Total != 0 || got.Passed != 0 || got.Percent != 0 || got.WeakestPhase != 0 {
 			t.Errorf("Coverage(nil) = %+v, chci nuly", got)
@@ -470,7 +470,7 @@ func TestCoverageEdgeCases(t *testing.T) {
 		}
 	})
 
-	t.Run("shoda nejslabších fází vyhrává nižší číslo", func(t *testing.T) {
+	t.Run("weakest phase match wins lower number", func(t *testing.T) {
 		got := exercise.Coverage([]exercise.LessonResult{
 			{Lesson: 1, Phase: 5, Passed: false},
 			{Lesson: 2, Phase: 3, Passed: false},
@@ -481,7 +481,7 @@ func TestCoverageEdgeCases(t *testing.T) {
 		}
 	})
 
-	t.Run("všechno splněno", func(t *testing.T) {
+	t.Run("all done", func(t *testing.T) {
 		got := exercise.Coverage([]exercise.LessonResult{
 			{Lesson: 1, Phase: 1, Passed: true},
 			{Lesson: 2, Phase: 2, Passed: true},

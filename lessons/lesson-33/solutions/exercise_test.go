@@ -37,15 +37,15 @@ var (
 	_ exercise.OrderStore = exercise.FailingStore{}
 )
 
-func TestNewServiceVyzadujeZavislosti(t *testing.T) {
+func TestNewServiceRequiresDeps(t *testing.T) {
 	tests := []struct {
 		name  string
 		clock exercise.Clock
 		ids   exercise.IDGen
 	}{
-		{"chybí clock", nil, &seqIDs{}},
-		{"chybí idgen", fixedClock{refTime}, nil},
-		{"chybí obojí", nil, nil},
+		{"missing clock", nil, &seqIDs{}},
+		{"missing idgen", fixedClock{refTime}, nil},
+		{"both missing", nil, nil},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -57,7 +57,7 @@ func TestNewServiceVyzadujeZavislosti(t *testing.T) {
 	}
 }
 
-func TestNewOrderJeDeterministicky(t *testing.T) {
+func TestNewOrderIsDeterministic(t *testing.T) {
 	svc, err := exercise.NewService(fixedClock{refTime}, &seqIDs{})
 	if err != nil {
 		t.Fatalf("NewService = %v", err)
@@ -89,7 +89,7 @@ func TestNewOrderJeDeterministicky(t *testing.T) {
 	}
 }
 
-func TestNewOrderValidace(t *testing.T) {
+func TestNewOrderValidation(t *testing.T) {
 	svc, err := exercise.NewService(fixedClock{refTime}, &seqIDs{})
 	if err != nil {
 		t.Fatalf("NewService = %v", err)
@@ -101,10 +101,10 @@ func TestNewOrderValidace(t *testing.T) {
 		total    int64
 		want     error
 	}{
-		{"prázdný zákazník", "", 100, exercise.ErrEmptyCustomer},
-		{"zákazník jen z mezer", "   ", 100, exercise.ErrEmptyCustomer},
-		{"nulová částka", "Alice", 0, exercise.ErrInvalidTotal},
-		{"záporná částka", "Alice", -1, exercise.ErrInvalidTotal},
+		{"empty customer", "", 100, exercise.ErrEmptyCustomer},
+		{"customer only spaces", "   ", 100, exercise.ErrEmptyCustomer},
+		{"zero amount", "Alice", 0, exercise.ErrInvalidTotal},
+		{"negative amount", "Alice", -1, exercise.ErrInvalidTotal},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -144,7 +144,7 @@ func TestMemoryStore(t *testing.T) {
 	}
 }
 
-func TestMemoryStoreSoubezne(t *testing.T) {
+func TestMemoryStoreConcurrent(t *testing.T) {
 	store := exercise.NewMemoryStore()
 
 	const n = 100
@@ -178,7 +178,7 @@ func newTestService(t *testing.T, store exercise.OrderStore) *exercise.OrderServ
 	return svc
 }
 
-func TestNewOrderServiceVyzadujeStore(t *testing.T) {
+func TestNewOrderServiceRequiresStore(t *testing.T) {
 	_, err := exercise.NewOrderService(nil, fixedClock{refTime}, &seqIDs{})
 	if !errors.Is(err, exercise.ErrMissingDependency) {
 		t.Errorf("NewOrderService(nil store) = %v, chci ErrMissingDependency", err)
@@ -225,7 +225,7 @@ func TestPlaceFindCancel(t *testing.T) {
 	}
 }
 
-func TestFindACancelNeznameID(t *testing.T) {
+func TestFindAndCancelUnknownID(t *testing.T) {
 	svc := newTestService(t, exercise.NewMemoryStore())
 
 	if _, err := svc.Find("nic"); !errors.Is(err, exercise.ErrNotFound) {
@@ -236,7 +236,7 @@ func TestFindACancelNeznameID(t *testing.T) {
 	}
 }
 
-func TestCancelDvakrat(t *testing.T) {
+func TestCancelTwice(t *testing.T) {
 	svc := newTestService(t, exercise.NewMemoryStore())
 
 	if _, err := svc.Place("Alice", 100); err != nil {
@@ -250,7 +250,7 @@ func TestCancelDvakrat(t *testing.T) {
 	}
 }
 
-func TestVymenaAdapteruZaPadajici(t *testing.T) {
+func TestSwapAdapterForFailing(t *testing.T) {
 	boom := errors.New("disk je plný")
 	svc := newTestService(t, exercise.FailingStore{Err: boom})
 
@@ -266,7 +266,7 @@ func TestVymenaAdapteruZaPadajici(t *testing.T) {
 	}
 }
 
-func TestCancelObaliChybuAdapteru(t *testing.T) {
+func TestCancelWrapsAdapterError(t *testing.T) {
 	boom := errors.New("spojení spadlo")
 	store := exercise.FailingStore{
 		Err: boom,
@@ -317,7 +317,7 @@ func TestWire(t *testing.T) {
 	}
 }
 
-func TestRandomIDGenJeUnikatni(t *testing.T) {
+func TestRandomIDGenIsUnique(t *testing.T) {
 	var g exercise.RandomIDGen
 	seen := make(map[string]bool, 500)
 	for i := 0; i < 500; i++ {

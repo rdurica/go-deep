@@ -39,38 +39,51 @@ type UserDeleted struct {
 // V JSON se objevuje jako desetinné číslo (1999 -> 19.99).
 type Cents int64
 
+// --- Stupeň: jednoduchý ---
 // ToJSON serializuje uživatele do JSON.
+// Password v JSON nikdy není; prázdný email a nil tags zmizí (omitempty).
+// Active zůstane i při false; created_at je RFC 3339.
+// Chybu z json.Marshal obal přes %w.
 func ToJSON(u User) ([]byte, error) {
-	// TODO: úkol A
+	// TODO
 	return nil, nil
 }
 
 // FromJSON deserializuje uživatele z JSON a ověří povinná pole.
+// ID musí být kladné, Name neprázdné i po oříznutí bílých znaků.
+// Při chybě vrať nulový User a chybu; rozbitý JSON je taky chyba.
 func FromJSON(data []byte) (User, error) {
-	// TODO: úkol B
+	// TODO
 	return *new(User), nil
 }
 
+// --- Stupeň: střední ---
 // DecodeEvent podle pole Kind dekóduje payload do odpovídajícího typu.
+// user.created → UserCreated, user.deleted → UserDeleted; vracej hodnotu, ne pointer.
+// Neznámý kind, chybějící nebo nevalidní payload jsou chyby s názvem kindu v hlášce.
 func DecodeEvent(data []byte) (any, error) {
-	// TODO: úkol B
+	// TODO
 	return nil, nil
 }
 
-// MarshalJSON zapíše částku jako desetinné číslo.
+// MarshalJSON zapíše částku jako desetinné číslo vždy se dvěma místy.
+// 1999 → 19.99, 5 → 0.05, 0 → 0.00, -250 → -2.50.
 func (c Cents) MarshalJSON() ([]byte, error) {
-	// TODO: úkol C
+	// TODO
 	return nil, nil
 }
 
-// UnmarshalJSON načte částku z desetinného čísla nebo z řetězce.
+// --- Stupeň: obtížný ---
+// UnmarshalJSON načte částku z desetinného čísla, řetězce nebo celého čísla (1 → 100 centů).
+// null nechá hodnotu beze změny; round-trip musí být přesný (pozor na float).
 func (c *Cents) UnmarshalJSON(data []byte) error {
-	// TODO: úkol C
+	// TODO
 	return nil
 }
 
-// StrictDecode dekóduje data do v a odmítne neznámá pole i data navíc.
+// StrictDecode dekóduje data do v přes json.Decoder s DisallowUnknownFields.
+// Data za první JSON hodnotou jsou chyba.
 func StrictDecode(data []byte, v any) error {
-	// TODO: úkol C
+	// TODO
 	return nil
 }

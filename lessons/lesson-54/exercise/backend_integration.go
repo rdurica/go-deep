@@ -2,9 +2,9 @@
 
 package exercise
 
-// Backend vrací jméno úložiště zapečeného do buildu.
-// Tahle varianta se přeloží jen s "go build -tags integration".
+// Backend vrací jméno úložiště při buildu s -tags integration.
+// V tomto buildu vrací "postgres"; bez tagu se kompiluje backend_default.go.
 func Backend() string {
-	// TODO: úkol C
+	// TODO
 	return ""
 }

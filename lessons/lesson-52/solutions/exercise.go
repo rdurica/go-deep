@@ -20,6 +20,7 @@ type Record struct {
 	Score int
 }
 
+// --- Stupeň: jednoduchý ---
 // Normalize ořízne okrajové bílé znaky, sjednotí vnitřní bílé znaky
 // na jednu mezeru a převede text na malá písmena.
 func Normalize(s string) string {
@@ -43,6 +44,7 @@ func Normalize(s string) string {
 	return b.String()
 }
 
+// --- Stupeň: střední ---
 // Encode zapíše záznamy do textového formátu "id|name|score" po řádcích.
 // Znaky '\\', '|', '\n' a '\r' se escapují zpětným lomítkem.
 func Encode(recs []Record) string {
@@ -144,6 +146,7 @@ func decodeLine(line string) (Record, error) {
 	return Record{ID: fields[0], Name: fields[1], Score: score}, nil
 }
 
+// --- Stupeň: obtížný ---
 // RenderTable vykreslí záznamy jako zarovnanou textovou tabulku.
 // Prázdný vstup dá prázdný řetězec.
 func RenderTable(recs []Record) string {

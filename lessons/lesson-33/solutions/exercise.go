@@ -49,6 +49,7 @@ type OrderStore interface {
 // SystemClock je driven adaptér portu Clock nad systémovým časem.
 type SystemClock struct{}
 
+// --- Stupeň: jednoduchý ---
 // Now vrací aktuální systémový čas.
 func (SystemClock) Now() time.Time { return time.Now() }
 
@@ -115,6 +116,7 @@ type MemoryStore struct {
 	orders map[string]Order
 }
 
+// --- Stupeň: střední ---
 // NewMemoryStore vytvoří prázdné úložiště.
 func NewMemoryStore() *MemoryStore {
 	return &MemoryStore{orders: make(map[string]Order)}
@@ -159,6 +161,7 @@ type OrderService struct {
 	svc   *Service
 }
 
+// --- Stupeň: obtížný ---
 // NewOrderService sestaví službu ze tří portů. Chybějící port vrací
 // ErrMissingDependency.
 func NewOrderService(store OrderStore, clock Clock, ids IDGen) (*OrderService, error) {

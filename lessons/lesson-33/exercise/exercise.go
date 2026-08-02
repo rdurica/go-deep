@@ -45,18 +45,21 @@ type OrderStore interface {
 // SystemClock je driven adaptér portu Clock nad systémovým časem.
 type SystemClock struct{}
 
-// Now vrací aktuální systémový čas.
+// --- Stupeň: jednoduchý ---
+// Now vrací aktuální systémový čas přes time.Now().
+// Driven adaptér portu Clock — doména nesmí volat time.Now() přímo, test to pozná.
 func (SystemClock) Now() time.Time {
-	// TODO: úkol C
+	// TODO
 	return *new(time.Time)
 }
 
 // RandomIDGen je driven adaptér portu IDGen nad crypto/rand.
 type RandomIDGen struct{}
 
-// NewID vrací 32 hexadecimálních znaků, tedy 16 náhodných bajtů.
+// NewID vrací 32 hexadecimálních znaků (16 bajtů z crypto/rand přes encoding/hex).
+// Test ověřuje tvar ^[0-9a-f]{32}$ i to, že se pět set ID neopakuje.
 func (RandomIDGen) NewID() string {
-	// TODO: úkol C
+	// TODO
 	return ""
 }
 
@@ -77,42 +80,47 @@ type Service struct {
 	ids   IDGen
 }
 
-// NewService sestaví službu ze dvou portů. Chybějící port vrací
-// ErrMissingDependency.
+// NewService sestaví službu ze dvou portů Clock a IDGen.
+// Chybějící kterýkoli port (i oba) vrací ErrMissingDependency.
 func NewService(clock Clock, ids IDGen) (*Service, error) {
-	// TODO: úkol A
+	// TODO
 	return nil, nil
 }
 
 // NewOrder sestaví novou objednávku. Jméno zákazníka ořízne o bílé znaky,
-// prázdné jméno je ErrEmptyCustomer, nekladná částka ErrInvalidTotal.
+// prázdné jméno → ErrEmptyCustomer, nekladná částka → ErrInvalidTotal.
+// ID z IDGen, PlacedAt z Clock — nikde nevolej time.Now() přímo.
 func (s *Service) NewOrder(customer string, totalCents int64) (Order, error) {
-	// TODO: úkol A
+	// TODO
 	return *new(Order), nil
 }
 
-// MemoryStore je in-memory adaptér portu OrderStore. Je bezpečný pro
-// souběžné použití.
+// MemoryStore je in-memory adaptér portu OrderStore. Bezpečný pro souběžné
+// použití (sync.RWMutex); uložení existujícího ID hodnotu přepíše.
 type MemoryStore struct {
 	mu     sync.RWMutex
 	orders map[string]Order
 }
 
-// NewMemoryStore vytvoří prázdné úložiště.
+// --- Stupeň: střední ---
+// NewMemoryStore vytvoří prázdné úložiště s inicializovanou mapou.
+// Bezpečné pro souběžné použití; test běží s -race. Save přepíše existující ID.
 func NewMemoryStore() *MemoryStore {
-	// TODO: úkol B
+	// TODO
 	return nil
 }
 
-// Save uloží objednávku; existující se stejným ID přepíše.
+// Save uloží objednávku do mapy. Existující se stejným ID přepíše.
+// Musí být bezpečné pro souběžné volání z více goroutin.
 func (s *MemoryStore) Save(o Order) error {
-	// TODO: úkol B
+	// TODO
 	return nil
 }
 
-// Get vrací objednávku podle ID a příznak, jestli existuje.
+// Get vrací objednávku podle ID a příznak, zda existuje.
+// Neznámé ID vrátí nulovou Order a false.
 func (s *MemoryStore) Get(id string) (Order, bool) {
-	// TODO: úkol B
+	// TODO
 	return *new(Order), false
 }
 
@@ -123,15 +131,16 @@ type FailingStore struct {
 	Orders map[string]Order
 }
 
-// Save vždy vrací nastavenou chybu.
+// Save vždy vrací pole Err bez ohledu na předanou objednávku.
+// Fake adaptér pro testování chybové cesty úložiště.
 func (s FailingStore) Save(o Order) error {
-	// TODO: úkol B
+	// TODO
 	return nil
 }
 
-// Get vrací objednávku z předvyplněné mapy.
+// Get čte objednávku z mapy Orders. Funguje i když je Orders nil.
 func (s FailingStore) Get(id string) (Order, bool) {
-	// TODO: úkol B
+	// TODO
 	return *new(Order), false
 }
 
@@ -142,36 +151,40 @@ type OrderService struct {
 	svc   *Service
 }
 
-// NewOrderService sestaví službu ze tří portů. Chybějící port vrací
-// ErrMissingDependency.
+// --- Stupeň: obtížný ---
+// NewOrderService sestaví službu ze tří portů: store, clock a ids.
+// Chybějící kterákoli závislost → ErrMissingDependency.
 func NewOrderService(store OrderStore, clock Clock, ids IDGen) (*OrderService, error) {
-	// TODO: úkol B
+	// TODO
 	return nil, nil
 }
 
-// Place vytvoří objednávku a uloží ji. Chybu úložiště obalí ErrStore
-// a zachová původní příčinu.
+// Place vytvoří objednávku přes Service.NewOrder a uloží ji.
+// Neplatná objednávka se nesmí uložit. Selhání úložiště obal ErrStore
+// i původní chybu (%w), aby platilo errors.Is pro obě.
 func (s *OrderService) Place(customer string, totalCents int64) (Order, error) {
-	// TODO: úkol B
+	// TODO
 	return *new(Order), nil
 }
 
-// Find vrací objednávku podle ID, jinak chybu obalující ErrNotFound.
+// Find vrací objednávku podle ID z úložiště.
+// Neznámé ID → chyba obalující ErrNotFound (errors.Is).
 func (s *OrderService) Find(id string) (Order, error) {
-	// TODO: úkol B
+	// TODO
 	return *new(Order), nil
 }
 
-// Cancel stornuje objednávku. Neznámé ID je ErrNotFound, opakované storno
-// ErrAlreadyCanceled, selhání zápisu ErrStore s původní příčinou.
+// Cancel stornuje objednávku: nastaví Canceled a uloží.
+// Neznámé ID → ErrNotFound, už stornovaná → ErrAlreadyCanceled.
+// Selhání zápisu obal jako u Place. Storno musí být vidět při dalším Find.
 func (s *OrderService) Cancel(id string) (Order, error) {
-	// TODO: úkol B
+	// TODO
 	return *new(Order), nil
 }
 
-// Wire sestaví službu z produkčních adaptérů. Tohle je celý DI kontejner:
-// jeden výraz, ve kterém je vidět, co na čem visí.
+// Wire sestaví OrderService z produkčních adaptérů: MemoryStore, SystemClock, RandomIDGen.
+// Jeden výraz, žádná logika — celý DI kontejner.
 func Wire() (*OrderService, error) {
-	// TODO: úkol C
+	// TODO
 	return nil, nil
 }

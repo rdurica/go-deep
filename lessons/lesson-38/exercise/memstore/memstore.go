@@ -14,20 +14,23 @@ type Repository struct {
 	orders map[string]order.Order
 }
 
-// New vytvoří prázdné úložiště.
+// New vytvoří prázdné in-memory úložiště s inicializovanou mapou.
+// Bezpečné pro souběžné použití díky sync.RWMutex.
 func New() *Repository {
-	// TODO: úkol B
+	// TODO
 	return nil
 }
 
-// Save uloží nebo přepíše objednávku.
+// Save uloží nebo přepíše objednávku v mapě. Ukládá kopie položek (slice lines).
+// Zrušený kontext → chyba z ctx.Err().
 func (r *Repository) Save(ctx context.Context, o order.Order) error {
-	// TODO: úkol B
+	// TODO
 	return nil
 }
 
-// Find vrátí objednávku podle ID, jinak chybu obalující order.ErrNotFound.
+// Find vrátí kopii objednávky podle ID.
+// Neznámé ID → chyba obalující order.ErrNotFound. Zrušený kontext → ctx.Err().
 func (r *Repository) Find(ctx context.Context, id string) (order.Order, error) {
-	// TODO: úkol B
+	// TODO
 	return *new(order.Order), nil
 }

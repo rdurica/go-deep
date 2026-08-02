@@ -9,33 +9,6 @@
 - Vysvětlit, proč Go nemá implicitní konverze a co to znamená pro `int` × `float64`.
 - Doplnit metody u vlastního pojmenovaného typu s konstantami přes `iota` a `String()`.
 
-## PHP → Go most
-
-PHP proměnná, která „není nastavená", je `null`. Skoro každá knihovna proto řeší
-`?? ''`, `isset()`, `?->` a nullable typy.
-
-```php
-$name = null;
-echo strlen($name ?? '');   // musíš ošetřit null
-$count = "5" + 3;            // 8 — PHP typ převede za tebe
-```
-
-Go tenhle problém z velké části odstraňuje: **každá proměnná má vždy platnou hodnotu**.
-Není nutné ji inicializovat, protože zero value je definovaná a použitelná.
-
-```go
-var name string   // "" — ne null, rovnou použitelný string
-var count int     // 0
-fmt.Println(len(name)) // 0, žádná kontrola nutná
-
-count := 3
-sum := "5" + count // chyba kompilace — Go nekonvertuje nic samo
-```
-
-Přenos návyku: přestaň psát obranné kontroly na „nenastaveno". Pokud potřebuješ rozlišit
-„nula" od „nevyplněno", musíš to modelovat explicitně (pointer nebo dvojice hodnota+bool).
-Právě proto, že to Go nutí přiznat, je to čitelnější než všudypřítomný `null`.
-
 ## Teorie
 
 ### Zero values
@@ -199,6 +172,33 @@ const (
 )
 ```
 
+## Rozdíly proti PHP
+
+PHP proměnná, která „není nastavená", je `null`. Skoro každá knihovna proto řeší
+`?? ''`, `isset()`, `?->` a nullable typy.
+
+```php
+$name = null;
+echo strlen($name ?? '');   // musíš ošetřit null
+$count = "5" + 3;            // 8 — PHP typ převede za tebe
+```
+
+Go tenhle problém z velké části odstraňuje: **každá proměnná má vždy platnou hodnotu**.
+Není nutné ji inicializovat, protože zero value je definovaná a použitelná.
+
+```go
+var name string   // "" — ne null, rovnou použitelný string
+var count int     // 0
+fmt.Println(len(name)) // 0, žádná kontrola nutná
+
+count := 3
+sum := "5" + count // chyba kompilace — Go nekonvertuje nic samo
+```
+
+Přenos návyku: přestaň psát obranné kontroly na „nenastaveno". Pokud potřebuješ rozlišit
+„nula" od „nevyplněno", musíš to modelovat explicitně (pointer nebo dvojice hodnota+bool).
+Právě proto, že to Go nutí přiznat, je to čitelnější než všudypřítomný `null`.
+
 ## Časté chyby
 
 | Chyba | Proč vzniká | Jak to udělat správně |
@@ -210,57 +210,52 @@ const (
 | Pointer jen kvůli „nenastaveno" | reflex z nullable PHP | zvaž `(value, bool)` nebo prázdnou hodnotu |
 | Konstanta s typem bez důvodu | zvyk na strict types | nech ji netypovanou |
 
+## AI kvíz
+
+Po přečtení teorie spusť v Cursoru **`/go-deep-quiz 03`**. AI tě ~5 minut prověří mentální model (ne hotové cvičení). Slabiny si uloží do [`GAPS.md`](../../GAPS.md).
+
 ## Úkol
 
-Pracuj v `exercise/`. Postupuj A → B → C, po každé části spusť test.
+Pracuj v `exercise/`. Po doplnění spouštěj testy:
 
-### A — rozcvička (~10 min)
+Stupně jdou od jednodušších ke složitějším — po každém stupni spusť review, než jdeš dál.
 
-Implementuj `Classify(n int) string`, která vrací `"negative"`, `"zero"` nebo `"positive"`.
-Použij `switch` bez výrazu (`switch { case n < 0: ... }`), ne řetězec `if/else`.
+### Jednoduchý
 
-např. `Classify(-1)` → `"negative"`
-
-### B — jádro (~35 min)
-
-1. `ZeroValueOf(kind string) string` — pro názvy typů `"int"`, `"float64"`, `"string"`,
-   `"bool"`, `"slice"`, `"map"`, `"pointer"`, `"chan"`, `"interface"` vrať textovou podobu
-   zero value: `"0"`, `"0"`, `""` (prázdný řetězec), `"false"`, `"nil"`, `"nil"`, `"nil"`,
-   `"nil"`, `"nil"`. Cokoli jiného → `"unknown"`.
-2. `CentsToPrice(cents int) float64` — převede celé centy na desetinnou cenu
-   (1999 → 19.99). Pozor na pořadí konverze a dělení.
-3. `ToInt8(n int) (int8, bool)` — vrátí hodnotu jako `int8` a `true`, pokud se do rozsahu
-   `int8` vejde; jinak `0, false`. Rozsah si odvoď, nebo použij `math.MinInt8` a
-   `math.MaxInt8`.
-
-např. `CentsToPrice(1999)` → `19.99`
-
-### C — rozšíření (~25 min)
-
-Typ `Level int` a konstanty `LevelUnknown`, `LevelDebug`, `LevelInfo`, `LevelWarn`,
-`LevelError` přes `iota` jsou předpřipravené v `exercise.go` — dopiš metody:
-
-- `func (l Level) String() string` → `"UNKNOWN"`, `"DEBUG"`, `"INFO"`, `"WARN"`, `"ERROR"`;
-  hodnota mimo rozsah také `"UNKNOWN"`.
-- `func ParseLevel(s string) Level` — case-insensitive převod ze jména na `Level`,
-  neznámý vstup dá `LevelUnknown`.
-- `func (l Level) Enabled(min Level) bool` — vrací `true`, pokud je úroveň alespoň `min`.
-
-Až budeš hotový, ověř si v `go doc fmt.Stringer`, co jsi právě implementoval.
-
-např. `ParseLevel("DEBUG")` → `LevelDebug`
+Funkce: `Classify`, `ZeroValueOf`
 
 ```bash
-make lesson L=03
+make lesson L=03 PART=1
 ```
 
-Až budeš hotový, porovnej se `solutions/` (spoiler).
+Pak **`/go-deep-review 03 easy`**.
 
-## Ověření
+### Střední
 
-Po dokončení úkolů spusť v Cursoru **`/go-deep-review`** a zadej třeba jen `03`. AI tě postupně projde body níže, doptá se a ověří pochopení — nestačí jen zelené testy.
+Funkce: `CentsToPrice`, `ToInt8`
 
-- [ ] `make lesson L=03` prochází
+```bash
+make lesson L=03 PART=2
+```
+
+Pak **`/go-deep-review 03 medium`**.
+
+### Obtížný
+
+Funkce: `String`, `ParseLevel`, `Enabled`
+
+```bash
+make lesson L=03 PART=3
+```
+
+Pak **`/go-deep-review 03 hard`**.
+
+Až budou stupně hotové, porovnej se `solutions/` (spoiler).
+
+## Závěrečné otázky
+
+Spusť **`/go-deep-review 03 final`**. AI projde body níže, doptá se a ověří pochopení. Celé cvičení ověří `make lesson L=03` (+ `make race L=03`, pokud to lekce vyžaduje).
+
 - [ ] Umíš zpaměti zero value pro slice, mapu, pointer a struct
 - [ ] Umíš vysvětlit, proč `float64(1999/100)` není `19.99`
 - [ ] Umíš vysvětlit rozdíl mezi typovanou a netypovanou konstantou
@@ -271,6 +266,7 @@ Po dokončení úkolů spusť v Cursoru **`/go-deep-review`** a zadej třeba jen
 
 `ZAKÁZÁNO` — viz [docs/ai-playbook.md](../../docs/ai-playbook.md).
 
+Mentor, kvíz i review (dialog) jsou vždy OK; v tomto režimu AI nesmí psát kód cvičení.
 ## Další čtení
 
 1. [Tour of Go — Basic types, Zero values](https://go.dev/tour/basics/11)

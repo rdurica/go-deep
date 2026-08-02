@@ -27,7 +27,9 @@ type Version struct {
 	Pre   string // bez vedoucí pomlčky; prázdné u finálního vydání
 }
 
+// --- Stupeň: jednoduchý ---
 // String vrací verzi v kanonickém tvaru s prefixem "v".
+// Prerelease se připojí za pomlčku; prázdné Pre u finálního vydání.
 func (v Version) String() string {
 	s := fmt.Sprintf("v%d.%d.%d", v.Major, v.Minor, v.Patch)
 	if v.Pre != "" {
@@ -36,44 +38,55 @@ func (v Version) String() string {
 	return s
 }
 
-// ParseSemver rozparsuje sémantickou verzi. Prefix "v" je volitelný.
+// ParseSemver rozparsuje semver: volitelný prefix v, tři číselné složky bez vedoucích nul,
+// volitelná prerelease za pomlčkou. Každá chyba obaluje ErrSyntax (ověřitelné přes errors.Is).
 func ParseSemver(s string) (Version, error) {
-	// TODO: úkol A
-	return *new(Version), nil
+	// TODO
+	return Version{}, nil
 }
 
-// Compare porovná dvě verze podle semver pravidel a vrací -1, 0 nebo 1.
+// --- Stupeň: střední ---
+// Compare porovná dvě verze: major, minor, patch; prerelease bez hodnoty je vyšší než s ním.
+// Prerelease se porovnává po identifikátorech (číselné číselně, kratší menší). Vrací -1, 0, 1.
 func Compare(a, b Version) int {
-	// TODO: úkol A
+	// TODO
 	return 0
 }
 
-// ParsePseudoVersion rozloží pseudo-verzi na základ, čas commitu a revizi.
+// ParsePseudoVersion rozloží pseudo-verzi na kanonický base, UTC čas a 12místnou revizi.
+// Podporuje všechny tři tvary z dokumentace; jinak chyba obalující ErrSyntax.
 func ParsePseudoVersion(s string) (base string, ts time.Time, rev string, err error) {
-	// TODO: úkol B
+	// TODO
 	return
 }
 
-// IsPseudo vrací true, pokud je s platná pseudo-verze.
+// IsPseudo vrací true, pokud s je platná pseudo-verze.
+// Postav na ParsePseudoVersion — neduplikuj parsovací logiku.
 func IsPseudo(s string) bool {
-	// TODO: úkol B
+	// TODO
 	return false
 }
 
-// MajorSuffix vrátí major verzi zakódovanou v cestě modulu.
+// --- Stupeň: obtížný ---
+// MajorSuffix vrátí major z cesty modulu (bez sufixu → 1).
+// /v0, /v1, /v02, prázdná cesta nebo koncové lomítko jsou ErrMajorSuffix.
+// Poslední segment, který nevypadá jako v<číslice>, znamená major 1.
 func MajorSuffix(modulePath string) (int, error) {
-	// TODO: úkol B
+	// TODO
 	return 0, nil
 }
 
-// SelectVersions implementuje minimal version selection nad požadavky modulů.
+// SelectVersions provede minimal version selection: pro každý modul nejvyšší z minim.
+// Prázdná mapa dá prázdnou nenilovou mapu; prázdný seznam verzí je ErrNoVersions.
+// Nerozparsovatelná verze propaguje ErrSyntax s cestou modulu v kontextu.
 func SelectVersions(reqs map[string][]string) (map[string]string, error) {
-	// TODO: úkol C
+	// TODO
 	return nil, nil
 }
 
-// CheckCompat ověří, že major verze v import path odpovídá verzi modulu.
+// CheckCompat ověří import compatibility rule: major v cestě musí odpovídat verzi modulu.
+// v0.x i v1.x patří k cestě bez sufixu. Nesoulad → ErrIncompatible; rozbitý vstup → ErrSyntax/ErrMajorSuffix.
 func CheckCompat(importPath, moduleVersion string) error {
-	// TODO: úkol C
+	// TODO
 	return nil
 }

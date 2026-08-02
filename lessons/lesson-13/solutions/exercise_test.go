@@ -33,10 +33,10 @@ func TestWriteReport(t *testing.T) {
 		in   []string
 		want string
 	}{
-		{"prázdný vstup", nil, "celkem: 0\n"},
-		{"jeden řádek", []string{"první"}, "1. první\ncelkem: 1\n"},
-		{"více řádků", []string{"a", "b", "c"}, "1. a\n2. b\n3. c\ncelkem: 3\n"},
-		{"prázdný řetězec jako řádek", []string{""}, "1. \ncelkem: 1\n"},
+		{"empty input", nil, "celkem: 0\n"},
+		{"one line", []string{"první"}, "1. první\ncelkem: 1\n"},
+		{"multiple lines", []string{"a", "b", "c"}, "1. a\n2. b\n3. c\ncelkem: 3\n"},
+		{"empty string as line", []string{""}, "1. \ncelkem: 1\n"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -51,7 +51,7 @@ func TestWriteReport(t *testing.T) {
 	}
 }
 
-func TestWriteReportPropagujeChybu(t *testing.T) {
+func TestWriteReportPropagatesError(t *testing.T) {
 	w := &errWriter{okWrites: 1}
 	err := exercise.WriteReport(w, []string{"a", "b", "c"})
 	if !errors.Is(err, errDisk) {
@@ -65,12 +65,12 @@ func TestCountLines(t *testing.T) {
 		in   string
 		want int
 	}{
-		{"prázdný vstup", "", 0},
-		{"jeden řádek bez konce", "ahoj", 1},
-		{"jeden řádek s koncem", "ahoj\n", 1},
-		{"dva řádky", "a\nb", 2},
-		{"dva řádky s koncem", "a\nb\n", 2},
-		{"prázdné řádky se počítají", "a\n\nb\n", 3},
+		{"empty input", "", 0},
+		{"one line without newline", "ahoj", 1},
+		{"one line with newline", "ahoj\n", 1},
+		{"two lines", "a\nb", 2},
+		{"two lines with newline", "a\nb\n", 2},
+		{"empty lines count", "a\n\nb\n", 3},
 		{"CRLF", "a\r\nb\r\n", 2},
 	}
 	for _, tt := range tests {
@@ -86,9 +86,9 @@ func TestCountLines(t *testing.T) {
 	}
 }
 
-// TestCountLinesDlouhyRadek hlídá, že sis pohlídal výchozí 64 KiB limit
+// TestCountLinesLongLine hlídá, že sis pohlídal výchozí 64 KiB limit
 // bufio.Scanneru.
-func TestCountLinesDlouhyRadek(t *testing.T) {
+func TestCountLinesLongLine(t *testing.T) {
 	long := strings.Repeat("x", 200*1024)
 	in := "krátký\n" + long + "\nkrátký\n"
 
@@ -101,7 +101,7 @@ func TestCountLinesDlouhyRadek(t *testing.T) {
 	}
 }
 
-func TestCountLinesVraciChybuCteni(t *testing.T) {
+func TestCountLinesReturnsReadError(t *testing.T) {
 	want := errors.New("čtení selhalo")
 	r := io.MultiReader(strings.NewReader("a\nb\n"), &errReader{err: want})
 
@@ -137,8 +137,8 @@ func TestUpperReader(t *testing.T) {
 	}
 }
 
-// TestUpperReaderNechavaNeASCII ověřuje, že převod je bajtový a nerozbije UTF-8.
-func TestUpperReaderNechavaNeASCII(t *testing.T) {
+// TestUpperReaderLeavesNonASCII ověřuje, že převod je bajtový a nerozbije UTF-8.
+func TestUpperReaderLeavesNonASCII(t *testing.T) {
 	got, err := io.ReadAll(exercise.NewUpperReader(strings.NewReader("Světe")))
 	if err != nil {
 		t.Fatalf("čtení selhalo: %v", err)
@@ -148,9 +148,9 @@ func TestUpperReaderNechavaNeASCII(t *testing.T) {
 	}
 }
 
-// TestUpperReaderPoMalychKusech ověřuje, že převod probíhá průběžně a funguje
+// TestUpperReaderSmallChunks ověřuje, že převod probíhá průběžně a funguje
 // i při čtení po třech bajtech.
-func TestUpperReaderPoMalychKusech(t *testing.T) {
+func TestUpperReaderSmallChunks(t *testing.T) {
 	r := exercise.NewUpperReader(strings.NewReader("abcdefghij"))
 
 	var out []byte
@@ -170,9 +170,9 @@ func TestUpperReaderPoMalychKusech(t *testing.T) {
 	}
 }
 
-// TestUpperReaderPracujeSDekoratory ověřuje, že UpperReader nečte dopředu:
+// TestUpperReaderWorksWithDecorators ověřuje, že UpperReader nečte dopředu:
 // io.LimitReader nad ním musí vrátit přesně tolik bajtů, kolik povolí.
-func TestUpperReaderPracujeSDekoratory(t *testing.T) {
+func TestUpperReaderWorksWithDecorators(t *testing.T) {
 	r := io.LimitReader(exercise.NewUpperReader(strings.NewReader("abcdef")), 3)
 	got, err := io.ReadAll(r)
 	if err != nil {
@@ -190,13 +190,13 @@ func TestTail(t *testing.T) {
 		n    int
 		want []string
 	}{
-		{"poslední dva", "a\nb\nc\nd\n", 2, []string{"c", "d"}},
-		{"víc než je řádků", "a\nb\n", 5, []string{"a", "b"}},
-		{"přesně všechny", "a\nb\n", 2, []string{"a", "b"}},
+		{"last two", "a\nb\nc\nd\n", 2, []string{"c", "d"}},
+		{"more than lines", "a\nb\n", 5, []string{"a", "b"}},
+		{"exactly all", "a\nb\n", 2, []string{"a", "b"}},
 		{"jeden", "a\nb\nc", 1, []string{"c"}},
-		{"prázdný vstup", "", 3, nil},
+		{"empty input", "", 3, nil},
 		{"n je nula", "a\nb\n", 0, nil},
-		{"n je záporné", "a\nb\n", -2, nil},
+		{"n is negative", "a\nb\n", -2, nil},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -234,7 +234,7 @@ func TestCountingWriterZeroValue(t *testing.T) {
 	}
 }
 
-func TestCountingWriterJakoDekorator(t *testing.T) {
+func TestCountingWriterAsDecorator(t *testing.T) {
 	var sink bytes.Buffer
 	cw := &exercise.CountingWriter{W: &sink}
 
@@ -256,7 +256,7 @@ func TestCountingWriterJakoDekorator(t *testing.T) {
 	}
 }
 
-func TestCountingWriterPropagujeChybu(t *testing.T) {
+func TestCountingWriterPropagatesError(t *testing.T) {
 	cw := &exercise.CountingWriter{W: &errWriter{okWrites: 0}}
 
 	if _, err := cw.Write([]byte("data\n")); !errors.Is(err, errDisk) {
@@ -275,9 +275,9 @@ func TestPipeline(t *testing.T) {
 		want      string
 		wantLines int
 	}{
-		{"velká písmena", "a\nb\n", strings.ToUpper, "A\nB\n", 2},
-		{"beze změny", "x\ny\nz", func(s string) string { return s }, "x\ny\nz\n", 3},
-		{"prázdný vstup", "", strings.ToUpper, "", 0},
+		{"uppercase", "a\nb\n", strings.ToUpper, "A\nB\n", 2},
+		{"unchanged", "x\ny\nz", func(s string) string { return s }, "x\ny\nz\n", 3},
+		{"empty input", "", strings.ToUpper, "", 0},
 		{
 			"prefix",
 			"jedna\ndva\n",
@@ -303,9 +303,9 @@ func TestPipeline(t *testing.T) {
 	}
 }
 
-// TestPipelineSVlastnimiTypy propojí všechno dohromady: zdrojem je vlastní
+// TestPipelineWithCustomTypes propojí všechno dohromady: zdrojem je vlastní
 // UpperReader, cílem vlastní CountingWriter.
-func TestPipelineSVlastnimiTypy(t *testing.T) {
+func TestPipelineWithCustomTypes(t *testing.T) {
 	src := exercise.NewUpperReader(strings.NewReader("ahoj\nsvete\n"))
 	var sink bytes.Buffer
 	cw := &exercise.CountingWriter{W: &sink}
@@ -325,7 +325,7 @@ func TestPipelineSVlastnimiTypy(t *testing.T) {
 	}
 }
 
-func TestPipelinePropagujeChybu(t *testing.T) {
+func TestPipelinePropagatesError(t *testing.T) {
 	_, err := exercise.Pipeline(
 		strings.NewReader("a\nb\nc\n"),
 		&errWriter{okWrites: 1},

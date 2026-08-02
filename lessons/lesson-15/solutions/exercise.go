@@ -87,6 +87,7 @@ func Keys[K comparable, V any](m map[K]V) []K {
 	return out
 }
 
+// --- Stupeň: jednoduchý ---
 // Push vloží hodnotu na vrchol zásobníku.
 func (s *Stack[T]) Push(v T) {
 	s.items = append(s.items, v)
@@ -108,6 +109,7 @@ func (s *Stack[T]) Pop() (T, bool) {
 	return v, true
 }
 
+// --- Stupeň: střední ---
 // Peek vrátí vrchol bez odebrání. Na prázdném zásobníku vrací zero value a false.
 func (s *Stack[T]) Peek() (T, bool) {
 	if len(s.items) == 0 {
@@ -117,6 +119,7 @@ func (s *Stack[T]) Peek() (T, bool) {
 	return s.items[len(s.items)-1], true
 }
 
+// --- Stupeň: obtížný ---
 // Len vrací počet prvků v zásobníku.
 func (s *Stack[T]) Len() int {
 	return len(s.items)

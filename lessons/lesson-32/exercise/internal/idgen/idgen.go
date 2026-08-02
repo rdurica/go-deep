@@ -19,16 +19,17 @@ type Gen struct {
 	n      int64
 }
 
-// New vytvoří generátor s daným prefixem. Prázdný prefix se nahradí "id".
+// New vytvoří generátor s daným prefixem.
+// Prázdný prefix se nahradí "id". Nulová hodnota Gen není použitelná.
 func New(prefix string) *Gen {
-	// TODO: úkol C
+	// TODO
 	return nil
 }
 
-// NewID vrací další identifikátor ve tvaru "<prefix>-000001".
-// Je bezpečné volat ho z více goroutin současně.
+// NewID vrací další identifikátor "<prefix>-000001", "<prefix>-000002", …
+// Pořadové číslo na šest míst s nulami. Bezpečné pro souběžné volání.
 func (g *Gen) NewID() string {
-	// TODO: úkol C
+	// TODO
 	return ""
 }
 

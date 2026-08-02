@@ -10,42 +10,6 @@
 - Vysvětlit, proč atomika není jen o nedělitelnosti zápisu, ale hlavně o viditelnosti.
 - Napsat správný double-checked locking přes `sync.Once` a říct, proč je naivní verze rozbitá.
 
-## PHP → Go most
-
-V PHP tenhle problém neexistuje a je dobré vědět proč. Každý request má vlastní proces
-a vlastní paměť; nic se nesdílí:
-
-```php
-final class Config
-{
-    private static ?array $cache = null;
-
-    public static function get(): array
-    {
-        // žádný zámek, žádná atomika — v tomhle procesu jsem sám
-        return self::$cache ??= self::loadFromDisk();
-    }
-}
-```
-
-Ten samý kód v Go je datový závod, protože `Get()` může běžet z tisíce goroutin v jednom
-procesu naráz:
-
-```go
-var cache map[string]string
-
-func Get() map[string]string {
-    if cache == nil {          // ZÁVOD: čtení bez synchronizace
-        cache = loadFromDisk() // ZÁVOD: zápis bez synchronizace
-    }
-    return cache
-}
-```
-
-Co se mění v uvažování: v PHP je „sdílený stav" cizí slovo — sdílí se přes Redis nebo DB,
-což jsou systémy s vlastní synchronizací. V Go je sdílený stav běžná věc a **ty** jsi ten,
-kdo musí dokázat, že je k němu přístup uspořádaný. Ne odhadnout. Dokázat.
-
 ## Teorie
 
 ### Co model garantuje
@@ -205,6 +169,42 @@ potřebuješ retry, `Once` není správný nástroj (od Go 1.21 je k dispozici
 `sync.OnceValue` a `sync.OnceValues`, ale ty se chovají stejně). A `Once` se nesmí
 kopírovat, stejně jako `Mutex` a `WaitGroup`.
 
+## Rozdíly proti PHP
+
+V PHP tenhle problém neexistuje a je dobré vědět proč. Každý request má vlastní proces
+a vlastní paměť; nic se nesdílí:
+
+```php
+final class Config
+{
+    private static ?array $cache = null;
+
+    public static function get(): array
+    {
+        // žádný zámek, žádná atomika — v tomhle procesu jsem sám
+        return self::$cache ??= self::loadFromDisk();
+    }
+}
+```
+
+Ten samý kód v Go je datový závod, protože `Get()` může běžet z tisíce goroutin v jednom
+procesu naráz:
+
+```go
+var cache map[string]string
+
+func Get() map[string]string {
+    if cache == nil {          // ZÁVOD: čtení bez synchronizace
+        cache = loadFromDisk() // ZÁVOD: zápis bez synchronizace
+    }
+    return cache
+}
+```
+
+Co se mění v uvažování: v PHP je „sdílený stav" cizí slovo — sdílí se přes Redis nebo DB,
+což jsou systémy s vlastní synchronizací. V Go je sdílený stav běžná věc a **ty** jsi ten,
+kdo musí dokázat, že je k němu přístup uspořádaný. Ne odhadnout. Dokázat.
+
 ## Časté chyby
 
 | Chyba | Proč vzniká | Jak to udělat správně |
@@ -217,65 +217,52 @@ kopírovat, stejně jako `Mutex` a `WaitGroup`.
 | Mutex jen kolem zápisu, ne kolem čtení | „čtení přece nic nerozbije" | závod potřebuje jen jeden zápis; zamykej obojí |
 | Kopírování `sync.Once` / `Mutex` ve struct | struct se předává hodnotou | předávej ukazatel, `go vet` to hlásí |
 
+## AI kvíz
+
+Po přečtení teorie spusť v Cursoru **`/go-deep-quiz 48`**. AI tě ~5 minut prověří mentální model (ne hotové cvičení). Slabiny si uloží do [`GAPS.md`](../../GAPS.md).
+
 ## Úkol
 
-Pracuj v `exercise/`. Postupuj A → B → C, po každé části spusť test. Celá lekce se
-testuje s `-race`; bez něj by testy neměly smysl.
+Pracuj v `exercise/`. Po doplnění spouštěj testy:
 
-### A — rozcvička (~10 min)
+Stupně jdou od jednodušších ke složitějším — po každém stupni spusť review, než jdeš dál.
 
-Implementuj dvě varianty rozhraní `Flag` (`Set(bool)`, `Get() bool`):
+### Jednoduchý
 
-- `AtomicFlag` nad `atomic.Bool`,
-- `MutexFlag` nad `sync.Mutex` — zamykej **i čtení**, ne jen zápis.
-
-A k tomu `StressFlag(f Flag, writers, readers, iterations int) int`, která spustí
-`writers` goroutin nastavujících `true` a `readers` goroutin čtoucích, počká na všechny
-a vrátí, kolikrát čtenáři viděli `true`. Nekladné počty nebo `nil` příznak: vrať 0 a nic
-nespouštěj. Test prožene obě varianty a pod `-race` nesmí hlásit nic.
-
-např. `Set(true); Get()` → `true`
-
-### B — jádro (~35 min)
-
-1. `NewLazyInit(init func() int) *LazyInit` a metoda `Value() int` — správný double-checked
-   pattern přes `sync.Once`. `NewLazyInit(nil)` panikuje.
-2. `ConcurrentValues(l *LazyInit, n int) []int` — zavolá `Value()` z `n` goroutin naráz a
-   vrátí, co která viděla, v pořadí goroutin. Nápověda: startovní čáru srovnej zavřením
-   sdíleného kanálu, jinak se první goroutina stihne inicializovat dřív, než ostatní
-   vůbec vzniknou.
-
-Test spustí 100 goroutin a hlídá atomickým čítačem, že inicializační funkce proběhla
-**právě jednou** a že všichni vidí stejnou hodnotu.
-
-např. `ConcurrentValues(NewLazyInit(→42), 100)` → sto hodnot `42`, init jen 1×
-
-### C — rozšíření (~20 min)
-
-1. `Box` s `NewBox()`, `Publish(data []int)` a `Consume() []int` — publikace dat přes
-   zavření kanálu. `Consume` blokuje do `Publish` a pak vrací okamžitě libovolnému počtu
-   čtenářů.
-2. `PublishAndConsume(data []int, readers int) [][]int` — publikuje z jedné goroutiny,
-   čte z `readers` goroutin a vrátí, co který čtenář viděl. Všichni musí vidět **kompletní**
-   data (test používá tisíc prvků, aby se případná nedokončená publikace projevila).
-3. `WaitGroupVisibility(n int) int` — `n` goroutin zapíše `i*i` na svůj index, po `Wait`
-   se výsledky bez dalšího zamykání sečtou. Vrací součet, pro `n <= 0` nulu.
-
-např. `WaitGroupVisibility(4)` → `14` (`0+1+4+9`)
+Funkce: `Set`, `Get`, `Set`, `Get`
 
 ```bash
-make lesson L=48
-make race L=48
+make lesson L=48 PART=1
 ```
 
-Až budeš hotový, porovnej se `solutions/` (spoiler).
+Pak **`/go-deep-review 48 easy`**.
 
-## Ověření
+### Střední
 
-Po dokončení úkolů spusť v Cursoru **`/go-deep-review`** a zadej třeba jen `48`. AI tě postupně projde body níže, doptá se a ověří pochopení — nestačí jen zelené testy.
+Funkce: `StressFlag`, `NewLazyInit`, `Value`, `ConcurrentValues`
 
-- [ ] `make lesson L=48` prochází
-- [ ] `make race L=48` prochází (žádné hlášení race detektoru)
+```bash
+make lesson L=48 PART=2
+```
+
+Pak **`/go-deep-review 48 medium`**.
+
+### Obtížný
+
+Funkce: `NewBox`, `Publish`, `Consume`, `PublishAndConsume`, `WaitGroupVisibility`
+
+```bash
+make lesson L=48 PART=3
+```
+
+Pak **`/go-deep-review 48 hard`**.
+
+Až budou stupně hotové, porovnej se `solutions/` (spoiler).
+
+## Závěrečné otázky
+
+Spusť **`/go-deep-review 48 final`**. AI projde body níže, doptá se a ověří pochopení. Celé cvičení ověří `make lesson L=48` (+ `make race L=48`, pokud to lekce vyžaduje).
+
 - [ ] Umíš vyjmenovat aspoň šest synchronizačních bodů
 - [ ] Umíš vysvětlit, proč happens-before není o čase
 - [ ] Umíš vysvětlit, proč `for !done {}` s obyčejným `bool` nemusí nikdy skončit

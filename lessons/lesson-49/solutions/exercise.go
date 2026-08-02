@@ -14,6 +14,7 @@ const BlockingDuration = 50 * time.Millisecond
 // cpuWork je počet iterací jedné CPU-bound úlohy v Compare.
 const cpuWork = 2_000_000
 
+// --- Stupeň: jednoduchý ---
 // RunWithMaxProcs dočasně nastaví GOMAXPROCS na n, spustí f a původní hodnotu
 // zase vrátí — i když f panikuje. Pro n <= 0 GOMAXPROCS nemění, pro nil f nedělá nic.
 func RunWithMaxProcs(n int, f func()) {
@@ -76,6 +77,7 @@ func ObserveParallelism(workers int) int {
 	return int(peak.Load())
 }
 
+// --- Stupeň: střední ---
 // CPUBound udělá work jednotek čistě výpočetní práce (žádné čekání)
 // a vrátí kontrolní součet. Pro stejný vstup vrací vždy stejnou hodnotu.
 func CPUBound(work int) uint64 {
@@ -135,6 +137,7 @@ func Compare(workers int) (cpu, blocking time.Duration) {
 	return cpu, blocking
 }
 
+// --- Stupeň: obtížný ---
 // StackGrowth zavolá sama sebe do hloubky depth, přičemž každý rámec zabere
 // kilobajt lokálního pole. Vrací dosaženou hloubku, pro depth <= 0 nulu.
 // Smysl: zásobník goroutiny začíná na dvou kilobajtech a runtime ho podle

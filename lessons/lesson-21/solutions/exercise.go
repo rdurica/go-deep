@@ -32,6 +32,7 @@ type Config struct {
 	Debug bool
 }
 
+// --- Stupeň: jednoduchý ---
 // ReadConfig načte konfiguraci ve tvaru key=value a každou chybu opatří kontextem.
 func ReadConfig(r io.Reader) (Config, error) {
 	var cfg Config
@@ -95,6 +96,7 @@ type Pipeline struct {
 	steps []Step
 }
 
+// --- Stupeň: střední ---
 // NewPipeline vrací pipeline složenou ze zadaných kroků.
 func NewPipeline(steps ...Step) *Pipeline {
 	return &Pipeline{steps: steps}
@@ -116,6 +118,7 @@ func (p *Pipeline) Run(input string) (string, error) {
 	return out, nil
 }
 
+// --- Stupeň: obtížný ---
 // CloseAll zavře všechny closery a spojí jejich chyby.
 func CloseAll(closers []io.Closer) error {
 	var errs []error
@@ -131,6 +134,9 @@ func CloseAll(closers []io.Closer) error {
 }
 
 // WithCleanup zavolá f a poté vždy cleanup, přičemž správně zkombinuje obě chyby.
+// f == nil → ErrNilFunc, cleanup se nevolá. cleanup == nil je no-op.
+// Chybu cleanup obal: fmt.Errorf("cleanup: %w", err). Chybu z f neobaluj.
+// Selžou-li obě, vrať obě (errors.Join). Vyžaduje named return (err error).
 func WithCleanup(f func() error, cleanup func() error) (err error) {
 	if f == nil {
 		return ErrNilFunc

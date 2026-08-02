@@ -20,6 +20,7 @@ type ErrorResponse struct {
 // Middleware je funkce, která obalí handler jiným handlerem.
 type Middleware func(http.Handler) http.Handler
 
+// --- Stupeň: jednoduchý ---
 // WriteJSON zapíše v jako JSON odpověď se status kódem status.
 // Hotové z lekce 24.
 func WriteJSON(w http.ResponseWriter, status int, v any) error {
@@ -39,49 +40,59 @@ type statusRecorder struct {
 }
 
 // WriteHeader zapamatuje status a přepošle ho podkladovému writeru — jen jednou.
+// Druhé a další WriteHeader status nepřepisují (první vyhrává).
 func (rec *statusRecorder) WriteHeader(status int) {
-	// TODO: úkol B
+	// TODO
 }
 
 // Write přepošle data a přičte jejich délku k počítadlu.
+// Pokud status ještě nebyl zapsán, doplní 200.
 func (rec *statusRecorder) Write(b []byte) (int, error) {
-	// TODO: úkol B
+	// TODO
 	return 0, nil
 }
 
+// --- Stupeň: střední ---
 // Chain obalí h middlewary tak, že první uvedený je nejvíc vnější.
+// Bez middlewarů vrátí h beze změny.
 func Chain(h http.Handler, mws ...Middleware) http.Handler {
-	// TODO: úkol A
+	// TODO
 	return *new(http.Handler)
 }
 
 // Logging vrací middleware, který po dokončení požadavku zaloguje
 // metodu, cestu, status a velikost odpovědi.
+// Výchozí status 200; log Info se zprávou "request" a poli method, path, status, bytes.
 func Logging(logger *slog.Logger) Middleware {
-	// TODO: úkol B
+	// TODO
 	return *new(Middleware)
 }
 
 // Recovery vrací middleware, který z paniky v handleru udělá 500 s JSON tělem.
+// Text paniky se do odpovědi nesmí; http.ErrAbortHandler propusť dál (panic).
 func Recovery() Middleware {
-	// TODO: úkol B
+	// TODO
 	return *new(Middleware)
 }
 
+// --- Stupeň: obtížný ---
 // RequestID vrací middleware, který doplní ID požadavku do kontextu i do odpovědi.
+// Z hlavičky X-Request-ID nebo nové z crypto/rand; klíč neexportovaného typu.
 func RequestID() Middleware {
-	// TODO: úkol C
+	// TODO
 	return *new(Middleware)
 }
 
 // RequestIDFrom vytáhne ID požadavku z kontextu.
+// Bez middlewaru vrací "", false.
 func RequestIDFrom(ctx context.Context) (string, bool) {
-	// TODO: úkol C
+	// TODO
 	return "", false
 }
 
 // Timeout vrací middleware, který požadavku nastaví deadline d.
+// Při překročení 503 s tělem obsahujícím slovo timeout.
 func Timeout(d time.Duration) Middleware {
-	// TODO: úkol C
+	// TODO
 	return *new(Middleware)
 }

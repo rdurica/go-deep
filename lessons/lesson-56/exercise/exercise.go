@@ -26,27 +26,34 @@ const (
 	StatusSuperseded
 )
 
-// String implementuje fmt.Stringer.
+// --- Stupeň: obtížný ---
+// String vrací "Unknown", "Proposed", "Accepted", "Rejected" nebo "Superseded".
+// Hodnota mimo rozsah vrací "Unknown".
 func (s Status) String() string {
-	// TODO: úkol A
+	// TODO
 	return ""
 }
 
-// ParseStatus převede jméno stavu (case-insensitive) na Status.
+// --- Stupeň: jednoduchý ---
+// ParseStatus převede jméno stavu (case-insensitive, s oříznutím mezer) na Status.
+// Neznámý vstup vrací chybu obalující ErrInvalidStatus.
 func ParseStatus(s string) (Status, error) {
-	// TODO: úkol A
+	// TODO
 	return *new(Status), nil
 }
 
 // Fold převede text na malá písmena bez diakritiky.
+// Znaky bez mapování nechává beze změny ("Akceptační Kritéria" → "akceptacni kriteria").
 func Fold(s string) string {
-	// TODO: úkol A
+	// TODO
 	return ""
 }
 
-// Slug převede titulek na URL-bezpečný tvar bez diakritiky.
+// Slug převede titulek na URL-bezpečný tvar: Fold, pak jen [a-z0-9],
+// ostatní skupiny znaků nahraď jedinou pomlčkou, bez pomlčky na začátku/konci.
+// "---" → "".
 func Slug(title string) string {
-	// TODO: úkol A
+	// TODO
 	return ""
 }
 
@@ -61,27 +68,37 @@ type ADR struct {
 	Consequences string
 }
 
-// Filename vrací jméno souboru ADR, například "0007-use-stdlib-router.md".
+// --- Stupeň: střední ---
+// Filename vrací jméno souboru ADR: "<číslo4>-<slug>.md".
+// Číslo je na čtyři místa doplněné nulami, delší se nezkracuje.
+// Prázdný slug nahraď "adr".
 func (a ADR) Filename() string {
-	// TODO: úkol A
+	// TODO
 	return ""
 }
 
-// Render vykreslí ADR jako markdown dokument.
+// Render vykreslí ADR jako markdown: hlavička "# N. Title", Status, Date (2006-01-02),
+// sekce Context / Decision / Consequences. Texty sekcí ořízni o okolní bílé znaky.
+// Výstup končí \n a bez odsazení.
 func (a ADR) Render() string {
-	// TODO: úkol B
+	// TODO
 	return ""
 }
 
-// ParseADR rozebere markdown vyrobený metodou Render zpět na ADR.
+// ParseADR rozebere markdown z Render zpět na ADR (včetně víceřádkových sekcí a \r\n).
+// Chyby vždy obaluj kvůli errors.Is:
+// neplatná hlavička → ErrInvalidHeader, neznámý status → ErrInvalidStatus,
+// špatné datum → ErrInvalidDate, chybějící/prázdná sekce nebo Status/Date → ErrMissingSection.
 func ParseADR(s string) (ADR, error) {
-	// TODO: úkol B
+	// TODO
 	return *new(ADR), nil
 }
 
-// Index vygeneruje markdown tabulku všech ADR seřazenou podle čísla.
+// Index vygeneruje markdown tabulku Číslo|Titulek|Status|Datum, seřazenou podle čísla
+// (při shodě podle titulku). Prázdný vstup → "_Žádné ADR._\n".
+// Při duplicitním čísle za tabulkou prázdný řádek a "> pozor: duplicitní číslo N (K×)" vzestupně.
 func Index(adrs []ADR) string {
-	// TODO: úkol B
+	// TODO
 	return ""
 }
 
@@ -95,9 +112,9 @@ const (
 	SeverityError
 )
 
-// String implementuje fmt.Stringer.
+// String vrací "INFO", "WARN" nebo "ERROR".
 func (s Severity) String() string {
-	// TODO: úkol C
+	// TODO
 	return ""
 }
 
@@ -121,20 +138,26 @@ type SpecCheck struct {
 	Rules []Rule
 }
 
-// DefaultSpecCheck vrací výchozí sadu pravidel pro spec-first zadání.
+// DefaultSpecCheck vrací výchozí sadu pravidel v tomto pořadí:
+// acceptance (ERROR: akceptační kritéria / acceptance criteria / kritéria přijetí),
+// edge-cases (ERROR: hraniční případ / edge case),
+// errors (ERROR: chybový stav(y) / error handling),
+// go-version (WARN: "go 1."),
+// deps (WARN: bez/žádné závislosti / pouze stdlib / stdlib only).
 func DefaultSpecCheck() SpecCheck {
-	// TODO: úkol C
+	// TODO
 	return *new(SpecCheck)
 }
 
-// Check projde specifikaci a vrátí nálezy v pořadí pravidel.
+// Check pro každé pravidlo, jehož žádné klíčové slovo se ve spec nevyskytuje, vrátí nález.
+// Porovnávej přes Fold. Pořadí nálezů = pořadí pravidel. Bez pravidel → žádné nálezy.
 func (c SpecCheck) Check(spec string) []Finding {
-	// TODO: úkol C
+	// TODO
 	return nil
 }
 
-// CheckSpec zkontroluje specifikaci výchozí sadou pravidel.
+// CheckSpec zkontroluje specifikaci výchozí sadou pravidel (DefaultSpecCheck).
 func CheckSpec(spec string) []Finding {
-	// TODO: úkol C
+	// TODO
 	return nil
 }

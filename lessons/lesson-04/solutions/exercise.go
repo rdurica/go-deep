@@ -1,6 +1,7 @@
 // Package solutions obsahuje referenční řešení lekce 04.
 package solutions
 
+// --- Stupeň: jednoduchý ---
 // Sum sečte libovolný počet čísel. Bez argumentů vrací 0.
 func Sum(nums ...int) int {
 	total := 0
@@ -28,6 +29,7 @@ func MinMax(nums []int) (min, max int, ok bool) {
 	return min, max, true
 }
 
+// --- Stupeň: střední ---
 // Counter vrací funkci, která při každém zavolání vrátí o jedna víc.
 // První volání vrátí 1.
 func Counter() func() int {
@@ -48,6 +50,7 @@ func Apply(nums []int, f func(int) int) []int {
 	return out
 }
 
+// --- Stupeň: obtížný ---
 // Compose složí funkce zleva doprava: Compose(f, g)(x) == g(f(x)).
 // Bez argumentů vrací identitu.
 func Compose(fs ...func(int) int) func(int) int {

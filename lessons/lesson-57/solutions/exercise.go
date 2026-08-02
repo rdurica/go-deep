@@ -21,6 +21,7 @@ const (
 	SeverityError
 )
 
+// --- Stupeň: jednoduchý ---
 // String implementuje fmt.Stringer.
 func (s Severity) String() string {
 	switch s {
@@ -136,6 +137,7 @@ func isContextType(e ast.Expr) bool {
 	return ok && pkg.Name == "context" && sel.Sel.Name == "Context"
 }
 
+// --- Stupeň: střední ---
 // CheckIgnoredErrors najde přiřazení návratové hodnoty volání do _.
 func CheckIgnoredErrors(src string) []Finding {
 	fset, file, err := parseSrc(src)
@@ -201,6 +203,7 @@ func CheckContextInStruct(src string) []Finding {
 	return findings
 }
 
+// --- Stupeň: obtížný ---
 // CheckContextNotFirst najde funkce, které berou context.Context, ale ne jako první parametr.
 func CheckContextNotFirst(src string) []Finding {
 	fset, file, err := parseSrc(src)

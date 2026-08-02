@@ -222,11 +222,11 @@ func TestBankTransferErrors(t *testing.T) {
 		want             error
 		wantBalanceFromA int64
 	}{
-		{"neznámý zdroj", "x", "a", 10, exercise.ErrUnknownAccount, 100},
-		{"neznámý cíl", "a", "x", 10, exercise.ErrUnknownAccount, 100},
-		{"nulová částka", "a", "b", 0, exercise.ErrInvalidAmount, 100},
-		{"záporná částka", "a", "b", -5, exercise.ErrInvalidAmount, 100},
-		{"nedostatek prostředků", "a", "b", 1000, exercise.ErrInsufficientFunds, 100},
+		{"unknown source", "x", "a", 10, exercise.ErrUnknownAccount, 100},
+		{"unknown destination", "a", "x", 10, exercise.ErrUnknownAccount, 100},
+		{"zero amount", "a", "b", 0, exercise.ErrInvalidAmount, 100},
+		{"negative amount", "a", "b", -5, exercise.ErrInvalidAmount, 100},
+		{"insufficient funds", "a", "b", 1000, exercise.ErrInsufficientFunds, 100},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

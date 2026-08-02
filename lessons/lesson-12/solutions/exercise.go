@@ -38,16 +38,19 @@ type Recorder struct {
 // Slouží k ukázce pasti "nil pointer v non-nil interfacu".
 type MyErr struct{}
 
+// --- Stupeň: obtížný ---
 // Area vrací obsah obdélníku.
 func (r Rect) Area() float64 {
 	return r.W * r.H
 }
 
-// Area vrací obsah kruhu.
+// Area vrací obsah kruhu π·R².
+// Použij math.Pi (ne vlastní přibližnou konstantu).
 func (c Circle) Area() float64 {
 	return math.Pi * c.R * c.R
 }
 
+// --- Stupeň: jednoduchý ---
 // TotalArea sečte obsahy všech tvarů. Prvky rovné nil přeskočí.
 func TotalArea(shapes []Shape) float64 {
 	var total float64
@@ -60,6 +63,7 @@ func TotalArea(shapes []Shape) float64 {
 	return total
 }
 
+// --- Stupeň: střední ---
 // Describe vrací popis dynamického typu hodnoty.
 func Describe(v any) string {
 	switch x := v.(type) {
@@ -117,7 +121,8 @@ func ReturnsNilPointer() Shape {
 	return p     // zabalený do interfacu: (typ=*MyErr, hodnota=nil) != nil
 }
 
-// IsNilInterface vrací true, jen když je celá interface hodnota nil.
+// IsNilInterface vrací true jen když je celá interface hodnota nil (s == nil).
+// Typed-nil (non-nil interface s nil pointerem uvnitř) vrací false.
 func IsNilInterface(s Shape) bool {
 	return s == nil
 }

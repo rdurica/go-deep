@@ -13,11 +13,13 @@ type Amount struct {
 	cents int64
 }
 
+// --- Stupeň: jednoduchý ---
 // New vytvoří částku z celých centů.
 func New(cents int64) Amount {
 	return Amount{cents: cents}
 }
 
+// --- Stupeň: střední ---
 // Cents vrací částku v celých centech.
 func (a Amount) Cents() int64 {
 	return a.cents
@@ -39,6 +41,7 @@ func (a Amount) String() string {
 	return sign + whole + "." + frac
 }
 
+// --- Stupeň: obtížný ---
 // SumCents sečte částky a vrátí výsledek v centech.
 //
 // Funkce je uvnitř balíčku money, takže smí sáhnout přímo na pole cents

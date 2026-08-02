@@ -13,50 +13,6 @@
 - Naplánovat běh migrací a poznat drift mezi tím, co je aplikované, a tím, co je
   v repozitáři.
 
-## PHP → Go most
-
-Doctrine ti dá persistenci skoro zdarma — za cenu toho, že entita ví o databázi:
-
-```php
-#[ORM\Entity(repositoryClass: UserRepository::class)]
-#[ORM\Table(name: 'users')]
-class User
-{
-    #[ORM\Id, ORM\Column(type: 'string')]
-    private string $id;
-
-    #[ORM\Column(type: 'string', unique: true)]
-    private string $email;
-}
-
-$user = $repo->find($id);   // null když nic
-$user->setName('Alice');    // změna se uloží sama při flush()
-$em->flush();
-```
-
-Doménový objekt je poseshovaný anotacemi, unit of work sleduje změny za tebe
-a lazy loading dotahuje vazby, když na ně sáhneš. Go protějšek je nudnější
-a to je jeho hlavní přednost:
-
-```go
-type User struct {   // žádné tagy, doména neví o databázi
-	ID     string
-	Email  string
-	Name   string
-	Active bool
-}
-
-u, err := repo.Get(ctx, id)          // err, ne null
-if errors.Is(err, ErrNotFound) { /* ... */ }
-u.Name = "Alice"
-if err := repo.Save(ctx, u); err != nil { /* ... */ }   // explicitní zápis
-```
-
-Návyk k opuštění: **přestaň čekat, že se změna uloží sama.** Ve stdlib není ORM,
-unit of work ani lazy loading. Každý zápis napíšeš. Zní to jako krok zpátky, dokud
-si nevzpomeneš, kolikrát jsi v Symfony ladil, proč se něco uložilo, proč se to
-neuložilo, nebo proč jeden `find()` v cyklu vygeneroval čtyři sta dotazů.
-
 ## Teorie
 
 ### Persistence není doména
@@ -210,6 +166,50 @@ v úmyslu; lazy loading, který udělá dotaz při čtení atributu; a proxy tř
 v stack trace. Cena je, že napíšeš víc řádků. Odměna je, že každý dotaz, který
 proběhne, je vidět v kódu.
 
+## Rozdíly proti PHP
+
+Doctrine ti dá persistenci skoro zdarma — za cenu toho, že entita ví o databázi:
+
+```php
+#[ORM\Entity(repositoryClass: UserRepository::class)]
+#[ORM\Table(name: 'users')]
+class User
+{
+    #[ORM\Id, ORM\Column(type: 'string')]
+    private string $id;
+
+    #[ORM\Column(type: 'string', unique: true)]
+    private string $email;
+}
+
+$user = $repo->find($id);   // null když nic
+$user->setName('Alice');    // změna se uloží sama při flush()
+$em->flush();
+```
+
+Doménový objekt je poseshovaný anotacemi, unit of work sleduje změny za tebe
+a lazy loading dotahuje vazby, když na ně sáhneš. Go protějšek je nudnější
+a to je jeho hlavní přednost:
+
+```go
+type User struct {   // žádné tagy, doména neví o databázi
+	ID     string
+	Email  string
+	Name   string
+	Active bool
+}
+
+u, err := repo.Get(ctx, id)          // err, ne null
+if errors.Is(err, ErrNotFound) { /* ... */ }
+u.Name = "Alice"
+if err := repo.Save(ctx, u); err != nil { /* ... */ }   // explicitní zápis
+```
+
+Návyk k opuštění: **přestaň čekat, že se změna uloží sama.** Ve stdlib není ORM,
+unit of work ani lazy loading. Každý zápis napíšeš. Zní to jako krok zpátky, dokud
+si nevzpomeneš, kolikrát jsi v Symfony ladil, proč se něco uložilo, proč se to
+neuložilo, nebo proč jeden `find()` v cyklu vygeneroval čtyři sta dotazů.
+
 ## Časté chyby
 
 | Chyba | Proč vzniká | Jak to udělat správně |
@@ -222,82 +222,52 @@ proběhne, je vidět v kódu.
 | Transakce kolem HTTP volání | „ať je to atomické" | transakce = jedna obchodní operace, krátká |
 | Dotaz v cyklu | chybí lazy loading, tak to řeším ručně | jeden dotaz s `IN`, pak mapa |
 
+## AI kvíz
+
+Po přečtení teorie spusť v Cursoru **`/go-deep-quiz 35`**. AI tě ~5 minut prověří mentální model (ne hotové cvičení). Slabiny si uloží do [`GAPS.md`](../../GAPS.md).
+
 ## Úkol
 
-Pracuj v `exercise/`. Žádný SQL driver nepotřebuješ — cvičení běží nad in-memory
-implementací. Pomocníky `allowedColumn`, `sortedFilterKeys`, `placeholder`
-a `notFound` máš předpřipravené.
+Pracuj v `exercise/`. Po doplnění spouštěj testy:
 
-Postupuj A → B → C, po každé části spusť test.
+Stupně jdou od jednodušších ke složitějším — po každém stupni spusť review, než jdeš dál.
 
-### A — rozcvička (~20 min)
+### Jednoduchý
 
-Implementuj `MemoryRepo`, adaptér portu `UserRepo`:
-
-1. `NewMemoryRepo() *MemoryRepo` — inicializuj mapu.
-2. `Get(ctx, id)` — neznámé ID vrací chybu obalující `ErrNotFound`.
-3. `Save(ctx, u)` — upsert. Prázdné ID nebo prázdný e-mail (i po ořezu bílých
-   znaků) je `ErrInvalidUser`.
-4. `Delete(ctx, id)` — neznámé ID je `ErrNotFound`.
-5. `List(ctx)` — všichni uživatelé **seřazení vzestupně podle ID**.
-
-Dvě věci navíc, které test kontroluje: každá metoda nejdřív zkontroluje
-`ctx.Err()` a při zrušeném contextu vrátí `context.Canceled`; a celý repozitář
-musí být bezpečný pro souběžné použití, takže `sync.RWMutex` (čtení `RLock`,
-zápis `Lock`). Test běží s `-race`.
-
-např. `List()` po uložení `u-3,u-1,u-2` → `[u-1, u-2, u-3]`
-
-### B — jádro (~35 min)
-
-`BuildSelect(table string, cols []string, filters map[string]any) (query string, args []any, err error)`
-je bezpečný stavitel dotazu:
-
-- Tabulka musí být klíčem v `schema`, jinak `ErrUnknownTable`.
-- Prázdný seznam sloupců je `ErrNoColumns`.
-- Každý sloupec ve výběru i každý klíč filtru musí být ve whitelistu té tabulky,
-  jinak `ErrUnknownColumn`.
-- Výsledek bez filtru: `SELECT id, email FROM users`.
-- S filtry: `SELECT id FROM users WHERE active = $1 AND email = $2`, kde filtry
-  jsou **seřazené abecedně podle jména sloupce** (jinak by dotaz byl pokaždé jiný,
-  protože iterace mapy je náhodná).
-- **Hodnoty se nikdy nevalidují a nikdy nekončí v textu dotazu** — jdou výhradně
-  do `args` v pořadí odpovídajícím placeholderům.
-- Při chybě vrať prázdný dotaz a `nil` argumenty.
-
-Test obsahuje pokusy o injection ve jménu tabulky, ve jménu sloupce i v klíči
-filtru (všechny musí skončit chybou) a jeden v hodnotě — ten naopak projít musí
-a payload `' OR 1=1 --` skončí v `args`, ne v dotazu.
-
-např. `BuildSelect("users", ["id","email"], nil)` → `"SELECT id, email FROM users"`
-
-### C — rozšíření (~25 min)
-
-`Plan(applied []int, all []Migration) ([]Migration, error)` spočítá, co dobíhá:
-
-- Nejdřív ověř seznam `all`: verze musí být kladná a jméno neprázdné, jinak
-  `ErrInvalidMigration`; dvě stejné verze jsou `ErrDuplicateVersion`.
-- Pak ověř `applied`: verze, která v `all` není, je `ErrDrift`. Duplicita
-  v `applied` chyba není, jen ji ignoruj.
-- Vrať migrace, které ještě neproběhly, **seřazené vzestupně podle verze**.
-  Nic k doběhnutí znamená prázdný plán, ne chybu.
-- Při chybě vrať `nil` plán.
-
-např. `Plan([1], all)` → migrace verzí `[2, 3]`
+Funkce: `NewMemoryRepo`, `Get`
 
 ```bash
-make lesson L=35
-make race L=35
+make lesson L=35 PART=1
 ```
 
-Až budeš hotový, porovnej se `solutions/` (spoiler).
+Pak **`/go-deep-review 35 easy`**.
 
-## Ověření
+### Střední
 
-Po dokončení úkolů spusť v Cursoru **`/go-deep-review`** a zadej třeba jen `35`. AI tě postupně projde body níže, doptá se a ověří pochopení — nestačí jen zelené testy.
+Funkce: `Save`, `Delete`
 
-- [ ] `make lesson L=35` prochází
-- [ ] `make race L=35` prochází
+```bash
+make lesson L=35 PART=2
+```
+
+Pak **`/go-deep-review 35 medium`**.
+
+### Obtížný
+
+Funkce: `List`, `BuildSelect`, `Plan`
+
+```bash
+make lesson L=35 PART=3
+```
+
+Pak **`/go-deep-review 35 hard`**.
+
+Až budou stupně hotové, porovnej se `solutions/` (spoiler).
+
+## Závěrečné otázky
+
+Spusť **`/go-deep-review 35 final`**. AI projde body níže, doptá se a ověří pochopení. Celé cvičení ověří `make lesson L=35` (+ `make race L=35`, pokud to lekce vyžaduje).
+
 - [ ] Umíš vysvětlit, proč doménový typ nesmí mít `db:` tagy
 - [ ] Umíš vyjmenovat, co udělá `rows.Err()` navíc oproti `rows.Next()`
 - [ ] Umíš popsat, proč `sql.ErrNoRows` nesmí opustit repozitář

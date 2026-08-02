@@ -32,9 +32,10 @@ const (
 	StatusCancelled
 )
 
-// String implementuje fmt.Stringer.
+// String implementuje fmt.Stringer pro všech pět stavů objednávky.
+// new, paid, shipped, cancelled mají odpovídající řetězce; neznámá hodnota → "unknown".
 func (s Status) String() string {
-	// TODO: úkol A
+	// TODO
 	return ""
 }
 
@@ -45,9 +46,10 @@ type Line struct {
 	UnitPriceCents int64
 }
 
-// TotalCents vrací cenu položky v celých centech.
+// TotalCents vrací cenu položky: UnitPriceCents * Quantity.
+// Např. Line{Quantity:3, UnitPriceCents:1999} → 5997.
 func (l Line) TotalCents() int64 {
-	// TODO: úkol A
+	// TODO
 	return 0
 }
 
@@ -59,32 +61,38 @@ type Order struct {
 	Status Status
 }
 
-// New vytvoří novou objednávku ve stavu StatusNew a ověří invarianty.
+// New vytvoří objednávku ve stavu new. Ořízne ID; prázdné ID → ErrMissingID;
+// prázdné lines → ErrEmptyOrder; vadná položka → ErrInvalidLine.
+// Vrátí kopii slice položek. Při chybě nulová Order.
 func New(id string, lines []Line) (Order, error) {
-	// TODO: úkol A
+	// TODO
 	return *new(Order), nil
 }
 
-// TotalCents vrací celkovou cenu objednávky v celých centech.
+// TotalCents vrací součet cen všech položek objednávky v centech.
+// Sčítá TotalCents() každé položky.
 func (o Order) TotalCents() int64 {
-	// TODO: úkol A
+	// TODO
 	return 0
 }
 
-// Pay převede novou objednávku do stavu StatusPaid.
+// Pay převede stav new → paid. Hodnotový receiver — vrací novou Order, původní zůstane.
+// Jiný stav → chyba obalující ErrInvalidTransition.
 func (o Order) Pay() (Order, error) {
-	// TODO: úkol A
+	// TODO
 	return *new(Order), nil
 }
 
-// Ship převede zaplacenou objednávku do stavu StatusShipped.
+// Ship převede stav paid → shipped. Hodnotový receiver vrací novou hodnotu.
+// Jiný stav (včetně new, shipped, cancelled) → ErrInvalidTransition.
 func (o Order) Ship() (Order, error) {
-	// TODO: úkol A
+	// TODO
 	return *new(Order), nil
 }
 
-// Cancel zruší objednávku, která ještě není odeslaná ani zrušená.
+// Cancel zruší objednávku ve stavu new nebo paid.
+// Odeslaná nebo už zrušená → ErrInvalidTransition. Vrací novou hodnotu.
 func (o Order) Cancel() (Order, error) {
-	// TODO: úkol A
+	// TODO
 	return *new(Order), nil
 }

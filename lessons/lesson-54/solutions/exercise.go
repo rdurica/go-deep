@@ -56,6 +56,7 @@ func Err[T any](err error) Result[T] {
 	return Result[T]{err: err}
 }
 
+// --- Stupeň: jednoduchý ---
 // IsOk vrací true, pokud výsledek nese hodnotu (chyba je nil).
 func (r Result[T]) IsOk() bool {
 	return r.err == nil
@@ -86,6 +87,7 @@ func Must[T any](v T, err error) T {
 	return v
 }
 
+// --- Stupeň: střední ---
 // NewUser sestaví User včetně neexportovaného hesla.
 func NewUser(id int, name, email string, active bool, password string) User {
 	return User{
@@ -107,6 +109,7 @@ func (c Config) Secret() string {
 	return c.secret
 }
 
+// --- Stupeň: obtížný ---
 // StructToMap převede struct (nebo ukazatel na struct) na mapu podle tagů map.
 func StructToMap(v any) (map[string]any, error) {
 	rv := reflect.ValueOf(v)

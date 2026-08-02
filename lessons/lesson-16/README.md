@@ -10,42 +10,6 @@
 - Vysvětlit, proč se v `map[string]any` z čísel stanou `float64`, a kdy místo toho sáhnout po `json.Number`.
 - Napsat vlastní `MarshalJSON`/`UnmarshalJSON` pro doménový typ a zapnout striktní dekódování na hranici API.
 
-## PHP → Go most
-
-V Symfony máš Serializer: nakonfiguruješ normalizery, na property dáš atribut a komponenta
-za tebe vyřeší viditelnost, přejmenování i skupiny.
-
-```php
-final class User
-{
-    public function __construct(
-        #[Groups(['read'])] public int $id,
-        #[SerializedName('full_name')] public string $name,
-        #[Ignore] public string $password,
-    ) {}
-}
-
-$json = $serializer->serialize($user, 'json', ['groups' => ['read']]);
-```
-
-V Go je to jedna funkce ze standardní knihovny a několik znaků v tagu:
-
-```go
-type User struct {
-	ID       int    `json:"id"`
-	Name     string `json:"full_name"`
-	Password string `json:"-"`
-}
-
-data, err := json.Marshal(u)
-```
-
-Co se mění v uvažování: **Serializer je runtime služba, `encoding/json` je funkce nad
-reflexí bez konfigurace.** Nejsou skupiny, nejsou kontexty, není DI. Když potřebuješ dva
-různé tvary téhož objektu, nevymýšlíš groups — napíšeš druhý struct (typicky DTO na
-hranici HTTP) a mapování mezi nimi napíšeš rukou. Zní to jako krok zpět; ve skutečnosti
-tím zmizí celá třída otázek typu „proč se to pole v produkci neserializovalo".
-
 ## Teorie
 
 ### Tagy a exportovaná pole
@@ -217,6 +181,42 @@ Dvě pravidla, na kterých se to nejčastěji láme:
 `"0001-01-01T00:00:00Z"` a `omitempty` na ni **nezabere** (struct není nikdy „empty").
 Chceš-li volitelné datum, použij `*time.Time`.
 
+## Rozdíly proti PHP
+
+V Symfony máš Serializer: nakonfiguruješ normalizery, na property dáš atribut a komponenta
+za tebe vyřeší viditelnost, přejmenování i skupiny.
+
+```php
+final class User
+{
+    public function __construct(
+        #[Groups(['read'])] public int $id,
+        #[SerializedName('full_name')] public string $name,
+        #[Ignore] public string $password,
+    ) {}
+}
+
+$json = $serializer->serialize($user, 'json', ['groups' => ['read']]);
+```
+
+V Go je to jedna funkce ze standardní knihovny a několik znaků v tagu:
+
+```go
+type User struct {
+	ID       int    `json:"id"`
+	Name     string `json:"full_name"`
+	Password string `json:"-"`
+}
+
+data, err := json.Marshal(u)
+```
+
+Co se mění v uvažování: **Serializer je runtime služba, `encoding/json` je funkce nad
+reflexí bez konfigurace.** Nejsou skupiny, nejsou kontexty, není DI. Když potřebuješ dva
+různé tvary téhož objektu, nevymýšlíš groups — napíšeš druhý struct (typicky DTO na
+hranici HTTP) a mapování mezi nimi napíšeš rukou. Zní to jako krok zpět; ve skutečnosti
+tím zmizí celá třída otázek typu „proč se to pole v produkci neserializovalo".
+
 ## Časté chyby
 
 | Chyba | Proč vzniká | Jak to udělat správně |
@@ -228,55 +228,52 @@ Chceš-li volitelné datum, použij `*time.Time`.
 | Tichý průchod překlepu v klíči | Serializer to taky ignoroval | `dec.DisallowUnknownFields()` na hranici |
 | `MarshalJSON` na pointer receiveru | reflex „metody na pointeru" | hodnotový receiver pro Marshal, pointer pro Unmarshal |
 
+## AI kvíz
+
+Po přečtení teorie spusť v Cursoru **`/go-deep-quiz 16`**. AI tě ~5 minut prověří mentální model (ne hotové cvičení). Slabiny si uloží do [`GAPS.md`](../../GAPS.md).
+
 ## Úkol
 
-Pracuj v `exercise/`. Postupuj A → B → C, po každé části spusť test.
+Pracuj v `exercise/`. Po doplnění spouštěj testy:
 
-### A — rozcvička (~10 min)
+Stupně jdou od jednodušších ke složitějším — po každém stupni spusť review, než jdeš dál.
 
-Struct `User` už je předvyplněný — projdi si jeho tagy a implementuj
-`ToJSON(u User) ([]byte, error)`. Chyba z `json.Marshal` se obaluje přes `%w`.
+### Jednoduchý
 
-Výstup musí splňovat: `password` v JSON **nikdy** není, prázdný `email` a nil `tags`
-zmizí, `active` je ve výstupu i s hodnotou `false`, `created_at` je RFC 3339.
-
-např. `ToJSON(User{ID: 7, Name: "Ada", Password: "tajne"})` → JSON bez klíče `password`
-
-### B — jádro (~35 min)
-
-1. `FromJSON(data []byte) (User, error)` — dekóduj a validuj: `ID` musí být kladné,
-   `Name` neprázdné i po odstranění bílých znaků. Při chybě vracej nulový `User`
-   a chybu; rozbitý JSON je taky chyba.
-2. `DecodeEvent(data []byte) (any, error)` — dekóduj obálku `Event` a podle `Kind`
-   dekóduj `Payload` do `UserCreated` (`"user.created"`) nebo `UserDeleted`
-   (`"user.deleted"`). Vracej **hodnotu**, ne pointer. Neznámý kind, chybějící payload
-   i nevalidní payload jsou chyby a chybová hláška obsahuje jméno kindu.
-
-např. `DecodeEvent({"kind":"user.created","payload":{"id":42,"name":"Grace"}})` → `UserCreated{ID: 42, Name: "Grace"}`
-
-### C — rozšíření (~20 min)
-
-1. `Cents` je částka v celých centech. Implementuj `MarshalJSON` tak, aby v JSON vznikl
-   desetinné **číslo** vždy se dvěma místy (`1999` → `19.99`, `5` → `0.05`, `0` → `0.00`,
-   `-250` → `-2.50`), a `UnmarshalJSON`, které přijme jak číslo (`19.99`), tak řetězec
-   (`"19.99"`), i celé číslo (`1` → 100 centů). `null` nechá hodnotu beze změny.
-   Round-trip musí být přesný — pozor na binární plovoucí čárku, výsledek zaokrouhli.
-2. `StrictDecode(data []byte, v any) error` — dekóduj přes `json.Decoder`
-   s `DisallowUnknownFields()`. Když za první hodnotou zbývají další data, je to chyba.
-
-např. `json.Marshal(Cents(1999))` → `19.99`
+Funkce: `ToJSON`, `FromJSON`
 
 ```bash
-make lesson L=16
+make lesson L=16 PART=1
 ```
 
-Až budeš hotový, porovnej se `solutions/` (spoiler).
+Pak **`/go-deep-review 16 easy`**.
 
-## Ověření
+### Střední
 
-Po dokončení úkolů spusť v Cursoru **`/go-deep-review`** a zadej třeba jen `16`. AI tě postupně projde body níže, doptá se a ověří pochopení — nestačí jen zelené testy.
+Funkce: `DecodeEvent`, `MarshalJSON`
 
-- [ ] `make lesson L=16` prochází
+```bash
+make lesson L=16 PART=2
+```
+
+Pak **`/go-deep-review 16 medium`**.
+
+### Obtížný
+
+Funkce: `UnmarshalJSON`, `StrictDecode`
+
+```bash
+make lesson L=16 PART=3
+```
+
+Pak **`/go-deep-review 16 hard`**.
+
+Až budou stupně hotové, porovnej se `solutions/` (spoiler).
+
+## Závěrečné otázky
+
+Spusť **`/go-deep-review 16 final`**. AI projde body níže, doptá se a ověří pochopení. Celé cvičení ověří `make lesson L=16` (+ `make race L=16`, pokud to lekce vyžaduje).
+
 - [ ] Umíš vysvětlit, proč se neexportované pole neserializuje ani s tagem
 - [ ] Umíš vysvětlit, kdy `omitempty` zahodí data, o která jsi přijít nechtěl
 - [ ] Umíš vysvětlit rozdíl mezi `json.Unmarshal` a `json.Decoder` u zbytku vstupu
@@ -287,6 +284,7 @@ Po dokončení úkolů spusť v Cursoru **`/go-deep-review`** a zadej třeba jen
 
 `ZAKÁZÁNO` — viz [docs/ai-playbook.md](../../docs/ai-playbook.md).
 
+Mentor, kvíz i review (dialog) jsou vždy OK; v tomto režimu AI nesmí psát kód cvičení.
 ## Další čtení
 
 1. [pkg.go.dev — encoding/json](https://pkg.go.dev/encoding/json)

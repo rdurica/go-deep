@@ -10,51 +10,6 @@
 - Navrhnout chybovou odpověď podle RFC 7807 a namapovat doménové chyby na HTTP statusy.
 - Vysvětlit, proč v Go není anotační validátor a proč to není chudoba, ale volba.
 
-## PHP → Go most
-
-V Symfony je validace deklarativní. Přilepíš atributy na DTO a framework je za tebe
-projde:
-
-```php
-final class CreateUserRequest
-{
-    #[Assert\NotBlank, Assert\Email]
-    public string $email = '';
-
-    #[Assert\Range(min: 13, max: 150)]
-    public int $age = 0;
-}
-
-$violations = $validator->validate($request);   // magie přes reflexi
-```
-
-Go protějšek je obyčejná metoda. Žádná reflexe, žádný kontejner:
-
-```go
-type CreateUserRequest struct {
-	Email string `json:"email"`
-	Age   int    `json:"age"`
-}
-
-func (r CreateUserRequest) Validate() error {
-	problems := ValidationErrors{}
-	if _, err := ParseEmail(r.Email); err != nil {
-		problems["email"] = "e-mail nemá platný tvar"
-	}
-	// …
-	if len(problems) == 0 {
-		return nil
-	}
-	return problems
-}
-```
-
-Co se mění v uvažování: v Symfony je validace **vlastnost DTO**, kterou kdosi jinde
-spustí. V Go je validace **krok v handleru**, který je vidět v kódu. Nikdo ti ji
-nespustí za zády — ale taky ti ji nikdo nezapomene spustit v novém kontextu, protože
-bez ní se ti do domény nedostane hodnota správného typu. A to je podstatnější rozdíl,
-než se zdá.
-
 ## Teorie
 
 ### Kde validovat
@@ -289,6 +244,51 @@ if err != nil {
 }
 ```
 
+## Rozdíly proti PHP
+
+V Symfony je validace deklarativní. Přilepíš atributy na DTO a framework je za tebe
+projde:
+
+```php
+final class CreateUserRequest
+{
+    #[Assert\NotBlank, Assert\Email]
+    public string $email = '';
+
+    #[Assert\Range(min: 13, max: 150)]
+    public int $age = 0;
+}
+
+$violations = $validator->validate($request);   // magie přes reflexi
+```
+
+Go protějšek je obyčejná metoda. Žádná reflexe, žádný kontejner:
+
+```go
+type CreateUserRequest struct {
+	Email string `json:"email"`
+	Age   int    `json:"age"`
+}
+
+func (r CreateUserRequest) Validate() error {
+	problems := ValidationErrors{}
+	if _, err := ParseEmail(r.Email); err != nil {
+		problems["email"] = "e-mail nemá platný tvar"
+	}
+	// …
+	if len(problems) == 0 {
+		return nil
+	}
+	return problems
+}
+```
+
+Co se mění v uvažování: v Symfony je validace **vlastnost DTO**, kterou kdosi jinde
+spustí. V Go je validace **krok v handleru**, který je vidět v kódu. Nikdo ti ji
+nespustí za zády — ale taky ti ji nikdo nezapomene spustit v novém kontextu, protože
+bez ní se ti do domény nedostane hodnota správného typu. A to je podstatnější rozdíl,
+než se zdá.
+
 ## Časté chyby
 
 | Chyba | Proč vzniká | Jak to udělat správně |
@@ -302,69 +302,52 @@ if err != nil {
 | Porovnávání `err.Error() == "..."` | v PHP se chytá typ výjimky | `errors.Is` / `errors.As` nad sentinely |
 | 400 na nevalidní data | nezná se rozdíl 400 vs 422 | 400 = nejde dekódovat, 422 = nedává smysl |
 
+## AI kvíz
+
+Po přečtení teorie spusť v Cursoru **`/go-deep-quiz 36`**. AI tě ~5 minut prověří mentální model (ne hotové cvičení). Slabiny si uloží do [`GAPS.md`](../../GAPS.md).
+
 ## Úkol
 
-Pracuj v `exercise/`. Postupuj A → B → C, po každé části spusť test.
+Pracuj v `exercise/`. Po doplnění spouštěj testy:
 
-### A — hodnotové typy (~20 min)
+Stupně jdou od jednodušších ke složitějším — po každém stupni spusť review, než jdeš dál.
 
-1. `ParseEmail(s string) (Email, error)` — ořízne bílé znaky, převede na malá písmena
-   a ověří tvar. Pravidla: prázdný vstup → `ErrEmptyEmail`; délka nad 254 znaků, bílý
-   znak uvnitř, chybějící nebo vícenásobný zavináč, prázdná lokální část nebo doména,
-   doména bez tečky, doména začínající či končící tečkou a dvě tečky za sebou → chyba
-   obalující `ErrInvalidEmail`. Při chybě vrať nulovou hodnotu.
-2. `Email.String()` a `Email.IsZero()`. Po normalizaci musí platit, že
-   `ParseEmail("Radek@Example.com") == ParseEmail(" radek@example.com ")`.
-3. `ParseUsername(s string) (Username, error)` — ořízne bílé znaky; prázdný vstup →
-   `ErrEmptyUsername`; 3–20 znaků, jen ASCII písmena, číslice a podtržítko, první znak
-   písmeno → jinak chyba obalující `ErrInvalidUsername`. Délku měř v **runech**, ne
-   v bajtech.
+### Jednoduchý
 
-Chyby obal přes `%w`, aby `errors.Is` fungovalo i s dodatečným kontextem.
-
-např. `ParseEmail("Radek@Example.COM")` → `"radek@example.com"`
-
-### B — validace na hranici (~35 min)
-
-1. `func (v ValidationErrors) Error() string` — souhrn s **abecedně seřazenými** poli,
-   aby byl výpis deterministický. Prázdná mapa dá rozumnou větu, ne prázdný string.
-2. `func (r CreateUserRequest) Validate() error` — ověří **všechna** pole najednou
-   a vrátí `ValidationErrors` s klíči `email`, `username`, `age`, nebo `nil`. E-mail
-   a jméno zvaliduj voláním konstruktorů z části A, věk musí být mezi 13 a 150.
-   Nezapomeň na past s typovaným nil.
-3. `DecodeAndValidate[T Validator](r *http.Request) (T, error)` — omez tělo přes
-   `io.LimitReader`, zakaž neznámá pole, odmítni druhý JSON dokument v těle i chybějící
-tělo. Chyba dekódování → obal `ErrMalformedJSON`; chyba validace → propusť tak, jak
-je, aby ji šlo vytáhnout přes `errors.As`.
-
-např. `CreateUserRequest{Email:"Radek@Example.com", Username:"radek", Age:40}.Validate()` → `nil`
-
-### C — chybové odpovědi (~25 min)
-
-1. `WriteProblem(w, status, title, detail string, fields map[string]string)` — hlavička
-   `Content-Type: application/problem+json`, status a JSON tělo `ProblemDetails`
-   s `Type` nastaveným na `about:blank`. Prázdný `detail` ani prázdná `fields` se do
-   těla nesmí dostat.
-2. `ErrorHandler(err error) (int, ProblemDetails)` — mapování: `ValidationErrors` → 422
-   (a pole `errors` v těle), `ErrMalformedJSON` → 400, `ErrNotFound` → 404,
-   `ErrConflict` → 409, cokoli jiného včetně `nil` → 500. Musí fungovat i na obalené
-   chyby. `body.Status` se vždy rovná vrácenému statusu.
-3. `WriteError(w, err)` — složení obou. Test přes `httptest` ověří tvar odpovědi,
-   Content-Type i to, že se text interní chyby v těle **neobjeví**.
-
-např. `ErrorHandler(ErrNotFound)` → `404`
+Funkce: `ParseEmail`, `String`, `IsZero`
 
 ```bash
-make lesson L=36
+make lesson L=36 PART=1
 ```
 
-Až budeš hotový, porovnej se `solutions/` (spoiler).
+Pak **`/go-deep-review 36 easy`**.
 
-## Ověření
+### Střední
 
-Po dokončení úkolů spusť v Cursoru **`/go-deep-review`** a zadej třeba jen `36`. AI tě postupně projde body níže, doptá se a ověří pochopení — nestačí jen zelené testy.
+Funkce: `ParseUsername`, `String`, `Error`
 
-- [ ] `make lesson L=36` prochází
+```bash
+make lesson L=36 PART=2
+```
+
+Pak **`/go-deep-review 36 medium`**.
+
+### Obtížný
+
+Funkce: `Validate`, `WriteProblem`, `ErrorHandler`, `WriteError`
+
+```bash
+make lesson L=36 PART=3
+```
+
+Pak **`/go-deep-review 36 hard`**.
+
+Až budou stupně hotové, porovnej se `solutions/` (spoiler).
+
+## Závěrečné otázky
+
+Spusť **`/go-deep-review 36 final`**. AI projde body níže, doptá se a ověří pochopení. Celé cvičení ověří `make lesson L=36` (+ `make race L=36`, pokud to lekce vyžaduje).
+
 - [ ] Umíš vysvětlit rozdíl mezi validací vstupu a doménovým invariantem na vlastním příkladu
 - [ ] Umíš vysvětlit, proč `IsValid(s) bool` zahazuje informaci a `Parse` ne
 - [ ] Umíš vysvětlit, kdy vrátit 400 a kdy 422

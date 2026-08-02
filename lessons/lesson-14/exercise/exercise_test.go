@@ -65,6 +65,27 @@ func TestValidationErrorText(t *testing.T) {
 	}
 }
 
+// validationFields vytáhne Field ze všech *ValidationError ve stromu přes errors.As —
+// bez volání studentského FieldsWithErrors / Error().
+func validationFields(err error) []string {
+	var fields []string
+	type multi interface{ Unwrap() []error }
+	if m, ok := err.(multi); ok {
+		for _, e := range m.Unwrap() {
+			var ve *exercise.ValidationError
+			if errors.As(e, &ve) {
+				fields = append(fields, ve.Field)
+			}
+		}
+		return fields
+	}
+	var ve *exercise.ValidationError
+	if errors.As(err, &ve) {
+		return []string{ve.Field}
+	}
+	return nil
+}
+
 func TestValidateUser(t *testing.T) {
 	tests := []struct {
 		name       string
@@ -72,12 +93,12 @@ func TestValidateUser(t *testing.T) {
 		email      string
 		wantFields []string
 	}{
-		{"vše v pořádku", "radek", "radek@example.com", nil},
-		{"chybí jméno", "", "radek@example.com", []string{"name"}},
-		{"chybí e-mail", "radek", "", []string{"email"}},
-		{"e-mail bez zavináče", "radek", "radek.example.com", []string{"email"}},
-		{"chybí obojí", "", "", []string{"name", "email"}},
-		{"jméno chybí, e-mail špatný", "", "nope", []string{"name", "email"}},
+		{"all ok", "radek", "radek@example.com", nil},
+		{"missing name", "", "radek@example.com", []string{"name"}},
+		{"missing email", "radek", "", []string{"email"}},
+		{"email without at", "radek", "radek.example.com", []string{"email"}},
+		{"both missing", "", "", []string{"name", "email"}},
+		{"name missing, email bad", "", "nope", []string{"name", "email"}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -94,16 +115,9 @@ func TestValidateUser(t *testing.T) {
 					tt.userName, tt.email, tt.wantFields)
 			}
 
-			got := exercise.FieldsWithErrors(err)
+			got := validationFields(err)
 			if !slices.Equal(got, tt.wantFields) {
-				t.Errorf("FieldsWithErrors() = %v, chci %v", got, tt.wantFields)
-			}
-
-			// Každé pole musí být dohledatelné i v textu chyby.
-			for _, field := range tt.wantFields {
-				if !strings.Contains(err.Error(), field) {
-					t.Errorf("err.Error() = %q, chci text obsahující %q", err.Error(), field)
-				}
+				t.Errorf("pole z ValidateUser = %v, chci %v", got, tt.wantFields)
 			}
 		})
 	}
@@ -122,19 +136,19 @@ func TestValidateUserErrorsAs(t *testing.T) {
 }
 
 func TestFieldsWithErrors(t *testing.T) {
-	t.Run("nil chyba", func(t *testing.T) {
+	t.Run("nil error", func(t *testing.T) {
 		if got := exercise.FieldsWithErrors(nil); len(got) != 0 {
 			t.Errorf("FieldsWithErrors(nil) = %v, chci prázdné", got)
 		}
 	})
 
-	t.Run("cizí chyba", func(t *testing.T) {
+	t.Run("foreign error", func(t *testing.T) {
 		if got := exercise.FieldsWithErrors(errors.New("něco jiného")); len(got) != 0 {
 			t.Errorf("FieldsWithErrors() = %v, chci prázdné", got)
 		}
 	})
 
-	t.Run("obalená ValidationError", func(t *testing.T) {
+	t.Run("wrapped ValidationError", func(t *testing.T) {
 		inner := &exercise.ValidationError{Field: "age", Reason: "must be positive"}
 		wrapped := fmt.Errorf("ověření vstupu: %w", inner)
 
@@ -144,7 +158,7 @@ func TestFieldsWithErrors(t *testing.T) {
 		}
 	})
 
-	t.Run("smíšený join", func(t *testing.T) {
+	t.Run("mixed join", func(t *testing.T) {
 		err := errors.Join(
 			errors.New("nesouvisející"),
 			&exercise.ValidationError{Field: "a", Reason: "r"},
@@ -166,7 +180,7 @@ func TestNotFoundErrorText(t *testing.T) {
 	}
 }
 
-func TestLoadUserExistuje(t *testing.T) {
+func TestLoadUserExists(t *testing.T) {
 	for _, id := range []string{"u1", "u2"} {
 		if err := exercise.LoadUser(id); err != nil {
 			t.Errorf("LoadUser(%q) = %v, chci nil", id, err)
@@ -210,11 +224,11 @@ func TestIsNotFound(t *testing.T) {
 		want bool
 	}{
 		{"nil", nil, false},
-		{"cizí chyba", errors.New("boom"), false},
-		{"přímo NotFoundError", &exercise.NotFoundError{ID: "x"}, true},
-		{"z LoadUser", exercise.LoadUser("neexistuje"), true},
-		{"dvakrát obalená", fmt.Errorf("handler: %w", exercise.LoadUser("nope")), true},
-		{"jiný typ chyby", exercise.ValidateUser("", ""), false},
+		{"foreign error", errors.New("boom"), false},
+		{"direct NotFoundError", &exercise.NotFoundError{ID: "x"}, true},
+		{"wrapped NotFoundError", fmt.Errorf("load user x: %w", &exercise.NotFoundError{ID: "x"}), true},
+		{"wrapped twice", fmt.Errorf("handler: %w", fmt.Errorf("load: %w", &exercise.NotFoundError{ID: "nope"})), true},
+		{"other error type", &exercise.ValidationError{Field: "name", Reason: "must not be empty"}, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -234,7 +248,7 @@ func TestErrorTextConventions(t *testing.T) {
 		divErr,
 		&exercise.ValidationError{Field: "f", Reason: "r"},
 		&exercise.NotFoundError{ID: "x"},
-		exercise.LoadUser("nope"),
+		fmt.Errorf("load user nope: %w", &exercise.NotFoundError{ID: "nope"}),
 	}
 	for _, err := range errs {
 		msg := err.Error()

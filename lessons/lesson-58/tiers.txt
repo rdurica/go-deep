@@ -1,0 +1,3 @@
+1:TestSeverityString|TestMergeChecklists|TestMergeChecklistsEdgeCases|TestRoleString
+2:TestSessionBackwardHandoff|TestSessionInvalidTransitions
+3:TestSessionTimelineIsCopy|TestScoreReview|TestScoreReviewEdgeCases|TestRecommendLesson|TestSessionErrors|TestSessionHappyPath

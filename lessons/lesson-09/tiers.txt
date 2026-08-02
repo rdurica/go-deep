@@ -1,0 +1,3 @@
+1:TestByteLen|TestRuneLen|TestByteLenWithDiacritics|TestRuneLenWithDiacritics
+2:TestReverseRunes|TestReverseRunesDoesNotBreakUTF8|TestTruncate|TestTruncateNeverExceedsLimit
+3:TestInitials|TestJoin|TestJoinMatchesStringsJoin|TestJoinPreallocates|TestCountRunes|TestCountRunesCountsRunesNotBytes

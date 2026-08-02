@@ -1,7 +1,8 @@
 # Postup
 
-Odškrtávej až po zeleném `make lesson L=NN`. Checkpointy neodškrtávej,
-dokud nemáš vyplněné sebehodnocení.
+Odškrtávej až po úspěšném **`/go-deep-review NN final`** (skill odškrtne za tebe).
+Checkpointy neodškrtávej, dokud nemáš vyplněné sebehodnocení. Slabiny AI zapisuje
+do [`GAPS.md`](GAPS.md).
 
 ## Fáze 0 — Setup a mentální reset
 

@@ -17,7 +17,7 @@ type (
 )
 
 func TestMap(t *testing.T) {
-	t.Run("int na string", func(t *testing.T) {
+	t.Run("int to string", func(t *testing.T) {
 		got := exercise.Map([]int{1, 2, 3}, strconv.Itoa)
 		want := []string{"1", "2", "3"}
 		if !slices.Equal(got, want) {
@@ -25,7 +25,7 @@ func TestMap(t *testing.T) {
 		}
 	})
 
-	t.Run("string na délku", func(t *testing.T) {
+	t.Run("string to length", func(t *testing.T) {
 		got := exercise.Map([]string{"a", "bb", ""}, func(s string) int { return len(s) })
 		want := []int{1, 2, 0}
 		if !slices.Equal(got, want) {
@@ -33,7 +33,7 @@ func TestMap(t *testing.T) {
 		}
 	})
 
-	t.Run("vlastní typ", func(t *testing.T) {
+	t.Run("custom type", func(t *testing.T) {
 		got := exercise.Map([]UserID{1, 2}, func(id UserID) string {
 			return "u" + strconv.Itoa(int(id))
 		})
@@ -43,7 +43,7 @@ func TestMap(t *testing.T) {
 		}
 	})
 
-	t.Run("prázdný a nil vstup", func(t *testing.T) {
+	t.Run("empty and nil input", func(t *testing.T) {
 		if got := exercise.Map([]int{}, strconv.Itoa); len(got) != 0 {
 			t.Errorf("Map([]) = %v, chci prázdné", got)
 		}
@@ -54,7 +54,7 @@ func TestMap(t *testing.T) {
 }
 
 func TestFilter(t *testing.T) {
-	t.Run("sudá čísla", func(t *testing.T) {
+	t.Run("even numbers", func(t *testing.T) {
 		got := exercise.Filter([]int{1, 2, 3, 4, 5, 6}, func(n int) bool { return n%2 == 0 })
 		want := []int{2, 4, 6}
 		if !slices.Equal(got, want) {
@@ -62,7 +62,7 @@ func TestFilter(t *testing.T) {
 		}
 	})
 
-	t.Run("stringy s prefixem", func(t *testing.T) {
+	t.Run("strings with prefix", func(t *testing.T) {
 		in := []string{"go", "php", "golang", "rust"}
 		got := exercise.Filter(in, func(s string) bool { return strings.HasPrefix(s, "go") })
 		want := []string{"go", "golang"}
@@ -71,14 +71,14 @@ func TestFilter(t *testing.T) {
 		}
 	})
 
-	t.Run("nic neprojde", func(t *testing.T) {
+	t.Run("nothing passes", func(t *testing.T) {
 		got := exercise.Filter([]int{1, 3}, func(n int) bool { return n%2 == 0 })
 		if len(got) != 0 {
 			t.Errorf("Filter() = %v, chci prázdné", got)
 		}
 	})
 
-	t.Run("nil vstup", func(t *testing.T) {
+	t.Run("nil input", func(t *testing.T) {
 		got := exercise.Filter(nil, func(n int) bool { return true })
 		if len(got) != 0 {
 			t.Errorf("Filter(nil) = %v, chci prázdné", got)
@@ -86,8 +86,8 @@ func TestFilter(t *testing.T) {
 	})
 }
 
-// TestMapFilterSkladani ukazuje, proč Map potřebuje dva type parametry.
-func TestMapFilterSkladani(t *testing.T) {
+// TestMapFilterComposition ukazuje, proč Map potřebuje dva type parametry.
+func TestMapFilterComposition(t *testing.T) {
 	words := []string{"go", "php", "golang", "c"}
 	long := exercise.Filter(words, func(s string) bool { return len(s) > 2 })
 	lengths := exercise.Map(long, func(s string) int { return len(s) })
@@ -113,9 +113,9 @@ func TestSum(t *testing.T) {
 	}
 }
 
-// TestSumSVlastnimTypem projde jen díky vlnovce v constraintu Number.
+// TestSumWithCustomType projde jen díky vlnovce v constraintu Number.
 // Bez ní by kompilátor odmítl Celsius i UserID.
-func TestSumSVlastnimTypem(t *testing.T) {
+func TestSumWithCustomType(t *testing.T) {
 	temps := []Celsius{21.5, -3.5, 2}
 	if got := exercise.Sum(temps); got != Celsius(20) {
 		t.Errorf("Sum([]Celsius) = %v, chci 20", got)
@@ -212,8 +212,8 @@ func TestStackInt(t *testing.T) {
 	}
 }
 
-// TestStackJinyTyp instancuje ten samý typ podruhé, tentokrát strukturou.
-func TestStackJinyTyp(t *testing.T) {
+// TestStackOtherType instancuje ten samý typ podruhé, tentokrát strukturou.
+func TestStackOtherType(t *testing.T) {
 	type point struct{ X, Y int }
 
 	var s exercise.Stack[point]
@@ -265,9 +265,9 @@ func TestCache(t *testing.T) {
 	}
 }
 
-func TestCachePrepisNemeniPoradi(t *testing.T) {
+func TestCacheOverwritePreservesOrder(t *testing.T) {
 	c := exercise.NewCache[string, string](2)
-	c.Set("a", "první")
+	c.Set("a", "first")
 	c.Set("b", "druhá")
 	c.Set("a", "aktualizovaná") // jen přepis, "a" zůstává nejstarší
 
@@ -287,8 +287,8 @@ func TestCachePrepisNemeniPoradi(t *testing.T) {
 	}
 }
 
-// TestCacheSVlastnimKlicem instancuje Cache podruhé, jiným klíčem i hodnotou.
-func TestCacheSVlastnimKlicem(t *testing.T) {
+// TestCacheWithCustomKey instancuje Cache podruhé, jiným klíčem i hodnotou.
+func TestCacheWithCustomKey(t *testing.T) {
 	type profile struct{ Name string }
 
 	c := exercise.NewCache[UserID, profile](1)
@@ -308,7 +308,7 @@ func TestCacheSVlastnimKlicem(t *testing.T) {
 	}
 }
 
-func TestCacheMinimalniVelikost(t *testing.T) {
+func TestCacheMinimalSize(t *testing.T) {
 	for _, max := range []int{0, -5} {
 		c := exercise.NewCache[string, int](max)
 		c.Set("a", 1)

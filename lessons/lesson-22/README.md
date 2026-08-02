@@ -11,29 +11,6 @@
 - Zorientovat se v neznámém repozitáři za deset minut a rozhodnout, jestli si ho pustíš
   do `go.mod`.
 
-## PHP → Go most
-
-V PHP se do zdrojáků knihoven chodí nerado. Symfony komponenta je vrstva abstrakcí,
-`vendor/` má sto tisíc souborů a odpověď stejně najdeš v dokumentaci na webu.
-
-```php
-// Co přesně dělá tenhle řádek? Odpověď je pět tříd a dva compiler passy hluboko.
-$response = $this->httpClient->request('GET', $url);
-```
-
-V Go je čtení zdrojáku **první, ne poslední** volba. Stdlib je psaná tak, aby se četla:
-malé soubory, žádná dědičnost, doc comment nad každou exportovanou věcí a testy vedle.
-
-```go
-// go doc net/http Handler
-// type Handler interface {
-//     ServeHTTP(ResponseWriter, *Request)
-// }
-```
-
-Návyk k opuštění: **přestaň hledat tutoriál a otevři zdroják.** V devíti z deseti případů
-je kratší než blogpost o něm.
-
 ## Teorie
 
 ### Nástroje: `go doc`, pkg.go.dev, skok do zdrojáku
@@ -131,6 +108,29 @@ Před přidáním do `go.mod` se zeptej na pět věcí: kdy byl poslední commit
 závislostí, má tagovanou verzi `v1`+, kolik má otevřených issues bez odpovědi, a existuje
 řešení ve stdlib. Poslední otázka je nejdůležitější — v Go je odpověď překvapivě často ano.
 
+## Rozdíly proti PHP
+
+V PHP se do zdrojáků knihoven chodí nerado. Symfony komponenta je vrstva abstrakcí,
+`vendor/` má sto tisíc souborů a odpověď stejně najdeš v dokumentaci na webu.
+
+```php
+// Co přesně dělá tenhle řádek? Odpověď je pět tříd a dva compiler passy hluboko.
+$response = $this->httpClient->request('GET', $url);
+```
+
+V Go je čtení zdrojáku **první, ne poslední** volba. Stdlib je psaná tak, aby se četla:
+malé soubory, žádná dědičnost, doc comment nad každou exportovanou věcí a testy vedle.
+
+```go
+// go doc net/http Handler
+// type Handler interface {
+//     ServeHTTP(ResponseWriter, *Request)
+// }
+```
+
+Návyk k opuštění: **přestaň hledat tutoriál a otevři zdroják.** V devíti z deseti případů
+je kratší než blogpost o něm.
+
 ## Časté chyby
 
 | Chyba | Proč vzniká | Jak to udělat správně |
@@ -142,102 +142,52 @@ závislostí, má tagovanou verzi `v1`+, kolik má otevřených issues bez odpov
 | Struktura s malými písmeny do JSON | „vždyť je to pole" | reflexe neexportovaná pole nesmí nastavit |
 | `json.Unmarshal(data, v)` bez `&` | v PHP je objekt reference | vždycky ukazatel |
 
+## AI kvíz
+
+Po přečtení teorie spusť v Cursoru **`/go-deep-quiz 22`**. AI tě ~5 minut prověří mentální model (ne hotové cvičení). Slabiny si uloží do [`GAPS.md`](../../GAPS.md).
+
 ## Úkol
 
-Pracuj v `exercise/`. Postupuj A → B → C, po každé části spusť test.
+Pracuj v `exercise/`. Po doplnění spouštěj testy:
 
-Celá tahle sada je „přepiš si stdlib nanečisto". Než začneš, otevři si
-`go doc -src net/http.HandlerFunc` a `go doc net/http.ServeMux.Handler` — je to legální
-nápověda, a přesně o tom lekce je.
+Stupně jdou od jednodušších ke složitějším — po každém stupni spusť review, než jdeš dál.
 
-### A — rozcvička (~10 min)
+### Jednoduchý
 
-Interface `Handler` a typ `HandlerFunc` už v `exercise.go` jsou. Doplň jedinou metodu:
-
-```go
-func (f HandlerFunc) Handle(path string) string
-```
-
-Musí platit, že `var h Handler = HandlerFunc(nejakaFunkce)` se zkompiluje a `h.Handle("/x")`
-zavolá tu funkci. Je to jeden řádek — ale musíš pochopit, proč funguje.
-
-např. `HandlerFunc(...).Handle("/svete")` → `ahoj /svete`
-
-### B — jádro (~35 min)
-
-`Mux` je zjednodušený `ServeMux`. Jeho **zero value je použitelná**, konstruktor nepiš
-(`var mux Mux` musí fungovat, mapu inicializuj líně).
-
-`Register(pattern string, h Handler)`:
-
-- panikuje `"mux: empty pattern"` u prázdného vzoru;
-- panikuje `"mux: nil handler"` u `nil` handleru;
-- panikuje `"mux: multiple registrations for " + pattern` při druhé registraci téhož vzoru.
-
-Panika je tady správně, protože registrace rout se dělá při startu z konstant v kódu —
-je to chyba programátora, ne vstupu. `net/http` to dělá úplně stejně.
-
-`SetNotFound(h Handler)` uloží fallback; `nil` panikuje `"mux: nil handler"`.
-
-`Handle(path string) string`:
-
-- vzor bez koncového `/` odpovídá jen přesně stejné cestě;
-- vzor s koncovým `/` odpovídá každé cestě, která jím začíná;
-- vyhrává **nejdelší** vyhovující vzor;
-- handler dostane **celou** cestu, ne zbytek za vzorem;
-- bez shody se volá notFound handler, a když není nastavený, vrátí se
-  `"404 not found: " + path`.
-
-Ověř si na testech tuhle pointu: při vzorech `/`, `/api/` a `/api/users` jde `/api`
-na `/` (protože `/api/` není prefix `/api`), zatímco `/api/users/42` jde na `/api/`.
-
-Protože `Handle` má stejnou signaturu jako metoda v `Handler`, tvůj `*Mux` sám splňuje
-`Handler` a půjde vnořit do jiného muxu. Nic pro to dělat nemusíš — a to je ta lekce.
-
-např. `Handle("/api/users")` → `users:/api/users` (vzory `/`, `/api/`, `/api/users`)
-
-### C — rozšíření (~25 min)
-
-`Marshal(v any) (string, error)` — mini `encoding/json` **bez reflexe**, jen přes
-type switch.
-
-| Vstup | Výstup |
-|---|---|
-| `nil` | `null` |
-| `"ahoj"` | `"ahoj"` |
-| `42`, `-42`, `0` | `42`, `-42`, `0` |
-| `[]string{"a","b"}` | `["a","b"]` |
-| `[]string{}` | `[]` |
-| `[]string(nil)` | `null` |
-| `map[string]string{"b":"2","a":"1"}` | `{"a":"1","b":"2"}` |
-| `map[string]string{}` | `{}` |
-| `map[string]string(nil)` | `null` |
-| cokoli jiného | `""` a chyba `fmt.Errorf("%w: %T", ErrUnsupportedType, v)` |
-
-Detaily, na kterých to stojí:
-
-- Klíče mapy se **řadí vzestupně**. Iterace přes mapu je v Go náhodná, takže bez řazení
-  bys měl nedeterministický výstup — `encoding/json` řadí ze stejného důvodu.
-- Rozdíl mezi `nil` a prázdným slicem/mapou je záměrný a odpovídá chování `encoding/json`.
-- Escapují se čtyři znaky: `"` → `\"`, `\` → `\\`, nový řádek → `\n`, tabulátor → `\t`.
-- Text skládej přes `strings.Builder`.
-
-Až budeš hotový, spusť `go doc -src encoding/json.Marshal` a najdi, kde se ta funkce
-větví na reflexi. Kolik řádků má tvoje verze a kolik ta jejich?
-
-např. `Marshal("ahoj")` → `"ahoj"`
+Funkce: `Handle`
 
 ```bash
-make lesson L=22
+make lesson L=22 PART=1
 ```
 
-Až budeš hotový, porovnej se `solutions/` (spoiler).
+Pak **`/go-deep-review 22 easy`**.
 
-## Ověření
+### Střední
 
-Po dokončení úkolů spusť v Cursoru **`/go-deep-review`** a zadej třeba jen `22`. AI tě postupně projde body níže, doptá se a ověří pochopení — nestačí jen zelené testy.
+Funkce: `Register`, `SetNotFound`
 
-- [ ] `make lesson L=22` prochází
+```bash
+make lesson L=22 PART=2
+```
+
+Pak **`/go-deep-review 22 medium`**.
+
+### Obtížný
+
+Funkce: `Handle`, `Marshal`
+
+```bash
+make lesson L=22 PART=3
+```
+
+Pak **`/go-deep-review 22 hard`**.
+
+Až budou stupně hotové, porovnej se `solutions/` (spoiler).
+
+## Závěrečné otázky
+
+Spusť **`/go-deep-review 22 final`**. AI projde body níže, doptá se a ověří pochopení. Celé cvičení ověří `make lesson L=22` (+ `make race L=22`, pokud to lekce vyžaduje).
+
 - [ ] Umíš vysvětlit, proč `HandlerFunc(f).Handle(x)` zavolá `f(x)`
 - [ ] Umíš vysvětlit, proč `*Mux` splňuje `Handler`, aniž jsi to kdekoli napsal
 - [ ] Umíš vyjmenovat tři pravidla výběru vzoru v `ServeMux`

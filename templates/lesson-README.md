@@ -8,11 +8,6 @@
 - …
 - …
 
-## PHP → Go most
-
-Krátké srovnání konkrétního PHP/Symfony vzoru s Go protějškem. Ne tabulka pojmů,
-ale ukázka kódu vedle sebe a věta o tom, co se mění v uvažování.
-
 ## Teorie
 
 ### Podsekce 1
@@ -23,45 +18,64 @@ Vysvětlení s funkčním příkladem. Každý blok kódu musí jít zkopírovat
 
 …
 
+## Rozdíly proti PHP
+
+Krátké srovnání konkrétního PHP/Symfony vzoru s Go protějškem. Ne tabulka pojmů,
+ale ukázka kódu vedle sebe a věta o tom, co se mění v uvažování.
+
 ## Časté chyby
 
 | Chyba | Proč vzniká | Jak to udělat správně |
 |-------|-------------|------------------------|
 | … | … | … |
 
+## AI kvíz
+
+Po přečtení teorie spusť v Cursoru **`/go-deep-quiz NN`**. AI tě ~5 minut prověří
+mentální model (ne hotové cvičení). Slabiny si uloží do [`GAPS.md`](../../GAPS.md).
+
 ## Úkol
 
-Pracuj v `exercise/`. Postupuj A → B → C, po každé části spusť test.
+Pracuj v `exercise/`. Kontrakt je v komentáři nad funkcí. Stupně jdou od jednodušších
+ke složitějším — po každém stupni spusť review, než jdeš dál.
 
-### A — rozcvička (~10 min)
+### Jednoduchý
 
-…
-
-např. `…` → `…`
-
-### B — jádro (~35 min)
-
-…
-
-např. `…` → `…`
-
-### C — rozšíření (~20 min)
-
-…
-
-např. `…` → `…`
+Funkce: `…`
 
 ```bash
-make lesson L=NN
+make lesson L=NN PART=1
 ```
 
-Až budeš hotový, porovnej se `solutions/` (spoiler).
+Pak **`/go-deep-review NN easy`**.
 
-## Ověření
+### Střední
 
-Po dokončení úkolů spusť v Cursoru **`/go-deep-review`** a zadej třeba jen `NN`. AI tě postupně projde body níže, doptá se a ověří pochopení — nestačí jen zelené testy.
+Funkce: `…`
 
-- [ ] `make lesson L=NN` prochází
+```bash
+make lesson L=NN PART=2
+```
+
+Pak **`/go-deep-review NN medium`**.
+
+### Obtížný
+
+Funkce: `…`
+
+```bash
+make lesson L=NN PART=3
+```
+
+Pak **`/go-deep-review NN hard`** (nebo rovnou `final`, pokud checklist říká jinak).
+
+Až budou všechny stupně hotové, porovnej se `solutions/` (spoiler).
+
+## Závěrečné otázky
+
+Spusť **`/go-deep-review NN final`**. AI projde body níže, doptá se a ověří pochopení.
+Celé cvičení musí projít (`make lesson L=NN`); review mezitím kontrolovalo jen stupně.
+
 - [ ] Umíš vysvětlit: …
 - [ ] Umíš vysvětlit: …
 - [ ] Umíš vysvětlit: …
@@ -69,6 +83,8 @@ Po dokončení úkolů spusť v Cursoru **`/go-deep-review`** a zadej třeba jen
 ## AI režim
 
 `ZAKÁZÁNO` — viz [docs/ai-playbook.md](../../docs/ai-playbook.md).
+
+Mentor, kvíz i review (dialog) jsou vždy OK; v tomto režimu AI nesmí psát kód cvičení.
 
 ## Další čtení
 

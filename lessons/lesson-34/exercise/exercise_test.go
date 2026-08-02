@@ -81,7 +81,7 @@ func TestMoneyString(t *testing.T) {
 	}
 }
 
-func TestMoneyJeStringer(t *testing.T) {
+func TestMoneyIsStringer(t *testing.T) {
 	var s fmt.Stringer = mustMoney(t, 1999, "EUR")
 	if got := fmt.Sprintf("%v", s); got != "19.99 EUR" {
 		t.Errorf("Sprintf(%%v) = %q, chci %q", got, "19.99 EUR")
@@ -143,10 +143,6 @@ func TestMichaniMen(t *testing.T) {
 	if _, err := eur.Sub(czk); !errors.Is(err, exercise.ErrCurrencyMismatch) {
 		t.Errorf("Sub jiné měny = %v, chci ErrCurrencyMismatch", err)
 	}
-	if _, err := eur.Compare(czk); !errors.Is(err, exercise.ErrCurrencyMismatch) {
-		t.Errorf("Compare jiné měny = %v, chci ErrCurrencyMismatch", err)
-	}
-
 	var zero exercise.Money
 	if _, err := eur.Add(zero); !errors.Is(err, exercise.ErrCurrencyMismatch) {
 		t.Errorf("Add nulové hodnoty bez měny = %v, chci ErrCurrencyMismatch", err)
@@ -204,7 +200,7 @@ func TestCompare(t *testing.T) {
 	}
 }
 
-func TestMoneyJePorovnatelnaAKlicMapy(t *testing.T) {
+func TestMoneyIsComparableAndMapKey(t *testing.T) {
 	a := mustMoney(t, 1999, "EUR")
 	b := mustMoney(t, 1999, "EUR")
 	c := mustMoney(t, 1999, "CZK")
@@ -233,11 +229,11 @@ func TestAllocate(t *testing.T) {
 		want  []int64
 	}{
 		{"beze zbytku", 100, 2, []int64{50, 50}},
-		{"nedělitelné na tři", 100, 3, []int64{34, 33, 33}},
-		{"jeden díl", 1999, 1, []int64{1999}},
-		{"víc dílů než centů", 3, 5, []int64{1, 1, 1, 0, 0}},
+		{"not divisible by three", 100, 3, []int64{34, 33, 33}},
+		{"one part", 1999, 1, []int64{1999}},
+		{"more parts than cents", 3, 5, []int64{1, 1, 1, 0, 0}},
 		{"nula", 0, 4, []int64{0, 0, 0, 0}},
-		{"záporná částka", -100, 3, []int64{-34, -33, -33}},
+		{"negative amount", -100, 3, []int64{-34, -33, -33}},
 		{"zbytek dva", 5, 3, []int64{2, 2, 1}},
 	}
 	for _, tt := range tests {
@@ -262,7 +258,7 @@ func TestAllocate(t *testing.T) {
 	}
 }
 
-func TestAllocateNeplatnyPocet(t *testing.T) {
+func TestAllocateInvalidCount(t *testing.T) {
 	m := mustMoney(t, 100, "EUR")
 	for _, n := range []int{0, -1, -100} {
 		if _, err := m.Allocate(n); !errors.Is(err, exercise.ErrInvalidSplit) {
@@ -271,7 +267,7 @@ func TestAllocateNeplatnyPocet(t *testing.T) {
 	}
 }
 
-func TestAllocateNeztraciHalire(t *testing.T) {
+func TestAllocateDoesNotLoseCents(t *testing.T) {
 	// Generovaná data, aby nešlo projít zadrátovaným výsledkem.
 	rnd := rand.New(rand.NewSource(20240307))
 	for i := 0; i < 2000; i++ {
@@ -315,12 +311,12 @@ func TestAllocateRatio(t *testing.T) {
 		ratios []int
 		want   []int64
 	}{
-		{"klasický Fowler", 5, []int{3, 7}, []int64{2, 3}},
+		{"classic Fowler", 5, []int{3, 7}, []int64{2, 3}},
 		{"beze zbytku", 500, []int{3, 7}, []int64{150, 350}},
-		{"stejné podíly", 100, []int{1, 1, 1}, []int64{34, 33, 33}},
-		{"nulový podíl", 100, []int{0, 1}, []int64{0, 100}},
-		{"jediný podíl", 999, []int{5}, []int64{999}},
-		{"záporná částka", -5, []int{3, 7}, []int64{-2, -3}},
+		{"equal shares", 100, []int{1, 1, 1}, []int64{34, 33, 33}},
+		{"zero share", 100, []int{0, 1}, []int64{0, 100}},
+		{"single share", 999, []int{5}, []int64{999}},
+		{"negative amount", -5, []int{3, 7}, []int64{-2, -3}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -346,16 +342,16 @@ func TestAllocateRatio(t *testing.T) {
 	}
 }
 
-func TestAllocateRatioNeplatneVstupy(t *testing.T) {
+func TestAllocateRatioInvalidInputs(t *testing.T) {
 	m := mustMoney(t, 100, "EUR")
 	tests := []struct {
 		name   string
 		ratios []int
 	}{
 		{"nil", nil},
-		{"prázdné", []int{}},
-		{"záporný poměr", []int{1, -1}},
-		{"nulový součet", []int{0, 0}},
+		{"empty", []int{}},
+		{"negative ratio", []int{1, -1}},
+		{"zero sum", []int{0, 0}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -394,7 +390,7 @@ func TestParseMoney(t *testing.T) {
 	}
 }
 
-func TestParseMoneyChyby(t *testing.T) {
+func TestParseMoneyErrors(t *testing.T) {
 	bad := []string{
 		"",
 		"19.99",

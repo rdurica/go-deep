@@ -10,41 +10,6 @@
 - Rozhodnout mezi `http.ListenAndServe` a vlastním `http.Server` a odůvodnit to timeouty.
 - Otestovat handler bez jediného otevřeného portu přes `httptest.NewRecorder` a přes `httptest.NewServer`.
 
-## PHP → Go most
-
-V Symfony je controller metoda, která dostane `Request` a **vrátí** `Response`. Objekt
-odpovědi existuje jako hodnota, můžeš ho odložit, upravit, zahodit a vrátit jiný.
-
-```php
-final class HealthController
-{
-    #[Route('/healthz', methods: ['GET'])]
-    public function health(Request $request): JsonResponse
-    {
-        $response = new JsonResponse(['status' => 'ok']);
-        // ještě tady můžu všechno změnit — nic se neodeslalo
-        $response->setStatusCode(200);
-        return $response;
-    }
-}
-```
-
-V Go žádný `Response` objekt neexistuje. Handler dostane **zapisovač** a rovnou do něj píše:
-
-```go
-func health(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusOK)
-	// od téhle chvíle už status ani hlavičky nezměníš — jsou na drátě
-	_ = json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
-}
-```
-
-Návyk, který musíš opustit: *„chybu vyřeším později, odpověď ještě upravím."* Jakmile
-proběhl první `Write`, hlavičky i status kód jsou odeslané. Chyba, která nastane potom,
-už se do HTTP odpovědi nevejde — jediné, co s ní můžeš udělat, je zalogovat ji. To zásadně
-mění, kde v handleru validuješ: **všechno kontroluj dřív, než začneš psát tělo.**
-
 ## Teorie
 
 ### `http.Handler` a `http.HandlerFunc`
@@ -246,6 +211,41 @@ res, err := srv.Client().Get(srv.URL + "/healthz")
 `httptest.NewServer` si sám vybere volný port a `srv.URL` ti ho řekne. Nikdy do testu
 nedrátuj `:8080` — v CI běží testy paralelně a port ti někdo vezme.
 
+## Rozdíly proti PHP
+
+V Symfony je controller metoda, která dostane `Request` a **vrátí** `Response`. Objekt
+odpovědi existuje jako hodnota, můžeš ho odložit, upravit, zahodit a vrátit jiný.
+
+```php
+final class HealthController
+{
+    #[Route('/healthz', methods: ['GET'])]
+    public function health(Request $request): JsonResponse
+    {
+        $response = new JsonResponse(['status' => 'ok']);
+        // ještě tady můžu všechno změnit — nic se neodeslalo
+        $response->setStatusCode(200);
+        return $response;
+    }
+}
+```
+
+V Go žádný `Response` objekt neexistuje. Handler dostane **zapisovač** a rovnou do něj píše:
+
+```go
+func health(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
+	// od téhle chvíle už status ani hlavičky nezměníš — jsou na drátě
+	_ = json.NewEncoder(w).Encode(map[string]string{"status": "ok"})
+}
+```
+
+Návyk, který musíš opustit: *„chybu vyřeším později, odpověď ještě upravím."* Jakmile
+proběhl první `Write`, hlavičky i status kód jsou odeslané. Chyba, která nastane potom,
+už se do HTTP odpovědi nevejde — jediné, co s ní můžeš udělat, je zalogovat ji. To zásadně
+mění, kde v handleru validuješ: **všechno kontroluj dřív, než začneš psát tělo.**
+
 ## Časté chyby
 
 | Chyba | Proč vzniká | Jak to udělat správně |
@@ -257,65 +257,52 @@ nedrátuj `:8080` — v CI běží testy paralelně a port ti někdo vezme.
 | `http.ListenAndServe` v `main` | je to první řádek v každém tutoriálu | vlastní `http.Server` se čtyřmi timeouty |
 | Test startuje server na `:8080` | reflex z funkčních testů | `httptest.NewRecorder` nebo `httptest.NewServer` |
 
+## AI kvíz
+
+Po přečtení teorie spusť v Cursoru **`/go-deep-quiz 24`**. AI tě ~5 minut prověří mentální model (ne hotové cvičení). Slabiny si uloží do [`GAPS.md`](../../GAPS.md).
+
 ## Úkol
 
-Pracuj v `exercise/`. Postupuj A → B → C, po každé části spusť test.
+Pracuj v `exercise/`. Po doplnění spouštěj testy:
 
-Všechny odpovědi celé služby jsou JSON s hlavičkou `Content-Type: application/json`,
-chyby mají jednotný tvar `ErrorResponse` (`{"error":"..."}`).
+Stupně jdou od jednodušších ke složitějším — po každém stupni spusť review, než jdeš dál.
 
-### A — rozcvička (~10 min)
+### Jednoduchý
 
-1. `WriteJSON(w http.ResponseWriter, status int, v any) error` — nastaví
-   `Content-Type: application/json`, pošle `status` a zakóduje `v` přes
-   `json.NewEncoder`. Vrací chybu enkodéru. Pořadí operací musí být správné, test to hlídá.
-2. `HealthHandler() http.Handler` — na jakoukoli metodu odpoví 200 a tělem
-   `{"status":"ok"}` (typ `HealthResponse`).
-
-např. `HealthHandler()` → `200` + `{"status":"ok"}`
-
-### B — jádro (~35 min)
-
-`EchoHandler() http.Handler` přijímá `POST` s JSON tělem `EchoRequest`. Postup a hraniční
-případy:
-
-1. Jiná metoda než `POST` → **405**, navíc hlavička `Allow: POST`.
-2. `Content-Type`, jehož media type není `application/json` (včetně chybějící hlavičky) →
-   **415**. Parametr `; charset=utf-8` je platný a musí projít — použij `mime.ParseMediaType`.
-3. Tělo omez přes `http.MaxBytesReader` na `MaxBodyBytes`. Překročení → **413**
-   (rozliš přes `errors.As` a `*http.MaxBytesError`).
-4. Dekóduj s `DisallowUnknownFields()`. Nevalidní JSON i neznámé pole → **400**.
-5. Validace: `Message` po ořezání bílých znaků nesmí být prázdný → **400**.
-   `Repeat == 0` znamená „neposláno", doplň `1`. Výsledná hodnota mimo rozsah 1–10 → **400**.
-6. Úspěch → **200** a `EchoResponse{Echo: <message zopakovaná Repeat×>, Count: <Repeat>}`.
-
-Každá chybová větev vrací `ErrorResponse` s neprázdným textem.
-
-např. `POST /echo {"message":"ab","repeat":3}` → `200` + `Echo:"ababab", Count:3`
-
-### C — rozšíření (~25 min)
-
-1. `NotFoundHandler() http.Handler` — vždy **404** a `ErrorResponse`.
-2. `NewRouter() http.Handler` — `http.ServeMux` s `/healthz`, `/echo` a `/` jako
-   fallback na `NotFoundHandler`. Registruj bez HTTP metody ve vzoru; metodu si hlídá
-   `EchoHandler` sám.
-3. `NewServer(addr string, h http.Handler) *http.Server` — vyplněná `Addr`, `Handler`
-   a všechny čtyři timeouty kladnou hodnotou, přičemž `ReadHeaderTimeout` nesmí být delší
-   než `ReadTimeout`.
-
-např. `GET /healthz` přes `NewRouter()` → `200` + `{"status":"ok"}`
+Funkce: `WriteJSON`, `HealthHandler`
 
 ```bash
-make lesson L=24
+make lesson L=24 PART=1
 ```
 
-Až budeš hotový, porovnej se `solutions/` (spoiler).
+Pak **`/go-deep-review 24 easy`**.
 
-## Ověření
+### Střední
 
-Po dokončení úkolů spusť v Cursoru **`/go-deep-review`** a zadej třeba jen `24`. AI tě postupně projde body níže, doptá se a ověří pochopení — nestačí jen zelené testy.
+Funkce: `EchoHandler`, `NotFoundHandler`
 
-- [ ] `make lesson L=24` prochází
+```bash
+make lesson L=24 PART=2
+```
+
+Pak **`/go-deep-review 24 medium`**.
+
+### Obtížný
+
+Funkce: `NewRouter`, `NewServer`
+
+```bash
+make lesson L=24 PART=3
+```
+
+Pak **`/go-deep-review 24 hard`**.
+
+Až budou stupně hotové, porovnej se `solutions/` (spoiler).
+
+## Závěrečné otázky
+
+Spusť **`/go-deep-review 24 final`**. AI projde body níže, doptá se a ověří pochopení. Celé cvičení ověří `make lesson L=24` (+ `make race L=24`, pokud to lekce vyžaduje).
+
 - [ ] Umíš vysvětlit, proč v Go neexistuje `Response` objekt a co to dělá s error handlingem
 - [ ] Umíš vysvětlit, co se stane při `Header().Set` po `WriteHeader`
 - [ ] Umíš vysvětlit rozdíl mezi 400, 413 a 415 a kdy který vrátit

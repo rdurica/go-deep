@@ -31,6 +31,7 @@ type Stats struct {
 	Elapsed time.Duration
 }
 
+// --- Stupeň: jednoduchý ---
 // Total vrací počet dokončených úloh, tedy Processed + Failed.
 func (s Stats) Total() int { return s.Processed + s.Failed }
 
@@ -52,6 +53,7 @@ type Metrics struct {
 	maxInFlight atomic.Int64
 }
 
+// --- Stupeň: střední ---
 // Enter oznámí začátek jedné úlohy a aktualizuje maximum souběhu.
 func (m *Metrics) Enter() {
 	cur := m.inFlight.Add(1)
@@ -75,6 +77,7 @@ func (m *Metrics) Leave(err error) {
 	m.inFlight.Add(-1)
 }
 
+// --- Stupeň: obtížný ---
 // Snapshot vrátí aktuální metriky doplněné o dobu běhu.
 func (m *Metrics) Snapshot(elapsed time.Duration) Stats {
 	return Stats{

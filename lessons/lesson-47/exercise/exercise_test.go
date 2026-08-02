@@ -393,7 +393,7 @@ func TestRunAllDetachedIgnoresParentValuesLoss(t *testing.T) {
 }
 
 func TestCause(t *testing.T) {
-	base := errors.New("kořen")
+	base := errors.New("root")
 	tests := []struct {
 		name string
 		in   error
@@ -402,7 +402,7 @@ func TestCause(t *testing.T) {
 		{"nil", nil, nil},
 		{"bez obalu", base, base},
 		{"jeden obal", wrap("a", base), base},
-		{"tři obaly", wrap("c", wrap("b", wrap("a", base))), base},
+		{"three wrappers", wrap("c", wrap("b", wrap("a", base))), base},
 		{"context", wrap("task", context.Canceled), context.Canceled},
 	}
 	for _, tt := range tests {

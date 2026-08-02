@@ -21,13 +21,13 @@ func TestValidate(t *testing.T) {
 		in   exercise.Product
 		want error
 	}{
-		{"platný produkt", p("A-1", "Kniha", 1999), nil},
-		{"nulová cena je v pořádku", p("A-1", "Kniha", 0), nil},
-		{"prázdné SKU", p("", "Kniha", 1999), exercise.ErrEmptySKU},
+		{"valid product", p("A-1", "Kniha", 1999), nil},
+		{"zero price is ok", p("A-1", "Kniha", 0), nil},
+		{"empty SKU", p("", "Kniha", 1999), exercise.ErrEmptySKU},
 		{"SKU jen z mezer", p("   ", "Kniha", 1999), exercise.ErrEmptySKU},
-		{"prázdné jméno", p("A-1", "", 1999), exercise.ErrEmptyName},
-		{"jméno jen z mezer", p("A-1", "\t ", 1999), exercise.ErrEmptyName},
-		{"záporná cena", p("A-1", "Kniha", -1), exercise.ErrNegativeCents},
+		{"empty name", p("A-1", "", 1999), exercise.ErrEmptyName},
+		{"name only spaces", p("A-1", "\t ", 1999), exercise.ErrEmptyName},
+		{"negative price", p("A-1", "Kniha", -1), exercise.ErrNegativeCents},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -39,7 +39,7 @@ func TestValidate(t *testing.T) {
 	}
 }
 
-func TestValidateChybaNeseSKU(t *testing.T) {
+func TestValidateErrorCarriesSKU(t *testing.T) {
 	err := exercise.Validate(p("SKU-42", "", 100))
 	if err == nil {
 		t.Fatal("Validate u prázdného jména musí vrátit chybu")
@@ -50,7 +50,7 @@ func TestValidateChybaNeseSKU(t *testing.T) {
 }
 
 func TestBuildCatalog(t *testing.T) {
-	t.Run("prázdný katalog není chyba", func(t *testing.T) {
+	t.Run("empty catalog is not error", func(t *testing.T) {
 		c, err := exercise.BuildCatalog()
 		if err != nil {
 			t.Fatalf("BuildCatalog() = %v, chci nil", err)
@@ -60,14 +60,14 @@ func TestBuildCatalog(t *testing.T) {
 		}
 	})
 
-	t.Run("neplatný produkt propadne validací", func(t *testing.T) {
+	t.Run("invalid product fails validation", func(t *testing.T) {
 		_, err := exercise.BuildCatalog(p("A-1", "Kniha", 100), p("B-2", "", 100))
 		if !errors.Is(err, exercise.ErrEmptyName) {
 			t.Fatalf("BuildCatalog = %v, chci ErrEmptyName", err)
 		}
 	})
 
-	t.Run("duplicitní SKU", func(t *testing.T) {
+	t.Run("duplicate SKU", func(t *testing.T) {
 		_, err := exercise.BuildCatalog(p("A-1", "Kniha", 100), p("A-1", "Jiná kniha", 200))
 		if !errors.Is(err, exercise.ErrDuplicateSKU) {
 			t.Fatalf("BuildCatalog = %v, chci ErrDuplicateSKU", err)
@@ -99,7 +99,7 @@ func TestCatalogBySKU(t *testing.T) {
 	}
 }
 
-func TestCatalogAllJeSerazene(t *testing.T) {
+func TestCatalogAllIsSorted(t *testing.T) {
 	c, err := exercise.BuildCatalog(
 		p("C-3", "Guma", 100),
 		p("A-1", "Kniha", 1999),
@@ -129,15 +129,15 @@ func TestTotalOf(t *testing.T) {
 		items []exercise.Item
 		want  int64
 	}{
-		{"nil košík", nil, 0},
-		{"prázdný košík", []exercise.Item{}, 0},
+		{"nil cart", nil, 0},
+		{"empty cart", []exercise.Item{}, 0},
 		{
-			"jedna položka",
+			"one item",
 			[]exercise.Item{{Product: p("A-1", "Kniha", 1999), Qty: 3}},
 			5997,
 		},
 		{
-			"víc položek",
+			"multiple items",
 			[]exercise.Item{
 				{Product: p("A-1", "Kniha", 1999), Qty: 2},
 				{Product: p("B-2", "Tužka", 250), Qty: 4},
@@ -159,34 +159,34 @@ func TestTotalOf(t *testing.T) {
 	}
 }
 
-func TestTotalOfChyby(t *testing.T) {
+func TestTotalOfErrors(t *testing.T) {
 	tests := []struct {
 		name  string
 		items []exercise.Item
 		want  error
 	}{
 		{
-			"nulové množství",
+			"zero quantity",
 			[]exercise.Item{{Product: p("A-1", "Kniha", 1999), Qty: 0}},
 			exercise.ErrInvalidQty,
 		},
 		{
-			"záporné množství",
+			"negative quantity",
 			[]exercise.Item{{Product: p("A-1", "Kniha", 1999), Qty: -2}},
 			exercise.ErrInvalidQty,
 		},
 		{
-			"neplatný produkt",
+			"invalid product",
 			[]exercise.Item{{Product: p("", "Kniha", 1999), Qty: 1}},
 			exercise.ErrEmptySKU,
 		},
 		{
-			"přetečení násobení",
+			"multiply overflow",
 			[]exercise.Item{{Product: p("A-1", "Drahé", math.MaxInt64), Qty: 2}},
 			exercise.ErrOverflow,
 		},
 		{
-			"přetečení součtu",
+			"sum overflow",
 			[]exercise.Item{
 				{Product: p("A-1", "Drahé", math.MaxInt64), Qty: 1},
 				{Product: p("B-2", "Taky drahé", 1), Qty: 1},
@@ -242,7 +242,7 @@ func TestIDGen(t *testing.T) {
 	}
 }
 
-func TestIDGenTvar(t *testing.T) {
+func TestIDGenFormat(t *testing.T) {
 	re := regexp.MustCompile(`^order-\d{6}$`)
 	g := exercise.NewIDGen("order")
 	for i := 0; i < 5; i++ {
@@ -252,7 +252,7 @@ func TestIDGenTvar(t *testing.T) {
 	}
 }
 
-func TestIDGenSoubezne(t *testing.T) {
+func TestIDGenConcurrent(t *testing.T) {
 	const workers, perWorker = 8, 200
 
 	g := exercise.NewIDGen("c")

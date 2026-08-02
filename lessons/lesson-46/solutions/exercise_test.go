@@ -120,7 +120,7 @@ func TestSemaphoreAcquireRespectsContext(t *testing.T) {
 		}
 	})
 
-	t.Run("už zrušený kontext", func(t *testing.T) {
+	t.Run("already canceled context", func(t *testing.T) {
 		ctx, cancel := context.WithCancel(context.Background())
 		cancel()
 		if err := s.Acquire(ctx); !errors.Is(err, context.Canceled) {
@@ -130,7 +130,7 @@ func TestSemaphoreAcquireRespectsContext(t *testing.T) {
 
 	s.Release()
 
-	t.Run("místo se po neúspěchu nezabralo", func(t *testing.T) {
+	t.Run("slot not taken after failure", func(t *testing.T) {
 		if !s.TryAcquire() {
 			t.Error("TryAcquire() = false, neúspěšný Acquire nesmí zabrat místo")
 		}

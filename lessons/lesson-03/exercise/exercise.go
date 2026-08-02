@@ -13,44 +13,54 @@ const (
 	LevelError
 )
 
-// Classify vrací "negative", "zero" nebo "positive".
+// --- Stupeň: jednoduchý ---
+// Classify vrací "negative", "zero" nebo "positive" podle znaménka n.
+// Použij switch bez výrazu (switch { case n < 0: ... }), ne řetězec if/else.
 func Classify(n int) string {
-	// TODO: úkol A
+	// TODO
 	return ""
 }
 
 // ZeroValueOf vrací textovou podobu zero value pro název typu.
+// int/float64 → "0", string → "", bool → "false", slice/map/pointer/chan/interface → "nil".
+// Cokoli jiného → "unknown".
 func ZeroValueOf(kind string) string {
-	// TODO: úkol B
+	// TODO
 	return ""
 }
 
-// CentsToPrice převede celé centy na desetinnou cenu (1999 -> 19.99).
+// --- Stupeň: střední ---
+// CentsToPrice převede celé centy na desetinnou cenu (1999 → 19.99).
+// Pozor na pořadí konverze a dělení.
 func CentsToPrice(cents int) float64 {
-	// TODO: úkol B
+	// TODO
 	return 0
 }
 
-// ToInt8 vrátí n jako int8 a true, pokud se do rozsahu vejde.
+// ToInt8 vrátí n jako int8 a true, pokud se do rozsahu int8 vejde; jinak 0, false.
 func ToInt8(n int) (int8, bool) {
-	// TODO: úkol B
+	// TODO
 	return 0, false
 }
 
-// String implementuje fmt.Stringer.
+// --- Stupeň: obtížný ---
+// String implementuje fmt.Stringer: UNKNOWN, DEBUG, INFO, WARN, ERROR.
+// Hodnota mimo rozsah také vrací "UNKNOWN".
 func (l Level) String() string {
-	// TODO: úkol C
+	// TODO
 	return ""
 }
 
 // ParseLevel převede jméno úrovně (case-insensitive) na Level.
+// Neznámý vstup dá LevelUnknown.
 func ParseLevel(s string) Level {
-	// TODO: úkol C
+	// TODO
 	return *new(Level)
 }
 
 // Enabled vrací true, pokud je l alespoň na úrovni min.
+// LevelUnknown není povolený pro žádné min > Unknown.
 func (l Level) Enabled(min Level) bool {
-	// TODO: úkol C
+	// TODO
 	return false
 }

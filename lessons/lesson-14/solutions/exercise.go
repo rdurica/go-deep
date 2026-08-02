@@ -27,6 +27,7 @@ var knownUsers = map[string]struct{}{
 	"u2": {},
 }
 
+// --- Stupeň: jednoduchý ---
 // Divide dělí a a b. Při b == 0 vrací chybu obalující ErrDivideByZero.
 func Divide(a, b int) (int, error) {
 	if b == 0 {
@@ -35,11 +36,13 @@ func Divide(a, b int) (int, error) {
 	return a / b, nil
 }
 
+// --- Stupeň: obtížný ---
 // Error implementuje interface error.
 func (e *ValidationError) Error() string {
 	return fmt.Sprintf("invalid %s: %s", e.Field, e.Reason)
 }
 
+// --- Stupeň: střední ---
 // ValidateUser ověří jméno a e-mail a vrátí spojení všech nalezených chyb.
 func ValidateUser(name, email string) error {
 	var errs []error

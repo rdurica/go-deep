@@ -24,21 +24,17 @@ func TestRectAndCircleArea(t *testing.T) {
 	}
 }
 
-// TestShapeIsImplicitlyImplemented ověřuje, že Rect i Circle splňují Shape,
-// aniž by to kdekoli v kódu bylo napsané.
+// TestShapeIsImplicitlyImplemented ověřuje jen přiřazení do Shape —
+// Area je v pozdějším stupni, takže se tu nevolá.
 func TestShapeIsImplicitlyImplemented(t *testing.T) {
-	var s exercise.Shape
-
-	s = exercise.Rect{W: 1, H: 1}
-	if math.Abs(s.Area()-1) > eps {
-		t.Errorf("Shape(Rect{1,1}).Area() = %v, chci 1", s.Area())
-	}
-
-	s = exercise.Circle{R: 1}
-	if math.Abs(s.Area()-math.Pi) > eps {
-		t.Errorf("Shape(Circle{1}).Area() = %v, chci %v", s.Area(), math.Pi)
-	}
+	var _ exercise.Shape = exercise.Rect{}
+	var _ exercise.Shape = exercise.Circle{}
 }
+
+// stubShape je lokální Shape, aby TotalArea nevolal studentské Area z pozdějšího PART.
+type stubShape float64
+
+func (s stubShape) Area() float64 { return float64(s) }
 
 func TestTotalArea(t *testing.T) {
 	tests := []struct {
@@ -47,16 +43,16 @@ func TestTotalArea(t *testing.T) {
 		want float64
 	}{
 		{"nil slice", nil, 0},
-		{"prázdný slice", []exercise.Shape{}, 0},
-		{"jeden tvar", []exercise.Shape{exercise.Rect{W: 2, H: 5}}, 10},
+		{"empty slice", []exercise.Shape{}, 0},
+		{"jeden tvar", []exercise.Shape{stubShape(10)}, 10},
 		{
-			"mix tvarů",
-			[]exercise.Shape{exercise.Rect{W: 2, H: 5}, exercise.Circle{R: 1}},
+			"mixed shapes",
+			[]exercise.Shape{stubShape(10), stubShape(math.Pi)},
 			10 + math.Pi,
 		},
 		{
-			"nil prvek se přeskočí",
-			[]exercise.Shape{exercise.Rect{W: 2, H: 5}, nil, exercise.Rect{W: 1, H: 1}},
+			"nil element skipped",
+			[]exercise.Shape{stubShape(10), nil, stubShape(1)},
 			11,
 		},
 	}
@@ -79,15 +75,15 @@ func TestDescribe(t *testing.T) {
 	}{
 		{"nil", nil, "nil"},
 		{"int", 42, "int:42"},
-		{"záporný int", -7, "int:-7"},
+		{"negative int", -7, "int:-7"},
 		{"string", "ahoj", `string:"ahoj"`},
-		{"prázdný string", "", `string:""`},
+		{"empty string", "", `string:""`},
 		{"bool true", true, "bool:true"},
 		{"bool false", false, "bool:false"},
-		{"slice intů", []int{1, 2, 3}, "[]int:len=3"},
-		{"prázdný slice intů", []int{}, "[]int:len=0"},
+		{"int slice", []int{1, 2, 3}, "[]int:len=3"},
+		{"empty int slice", []int{}, "[]int:len=0"},
 		{"float", 1.5, "other:float64"},
-		{"vlastní struct", customStruct{X: 1}, fmt.Sprintf("other:%T", customStruct{X: 1})},
+		{"custom struct", customStruct{X: 1}, fmt.Sprintf("other:%T", customStruct{X: 1})},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -105,7 +101,7 @@ func TestRecorder(t *testing.T) {
 		t.Errorf("Messages() na prázdném Recorderu = %v, chci prázdné", got)
 	}
 
-	if err := r.Notify("první"); err != nil {
+	if err := r.Notify("first"); err != nil {
 		t.Fatalf("Notify() = %v, chci nil", err)
 	}
 	if err := r.Notify("druhá"); err != nil {
@@ -113,7 +109,7 @@ func TestRecorder(t *testing.T) {
 	}
 
 	got := r.Messages()
-	want := []string{"první", "druhá"}
+	want := []string{"first", "druhá"}
 	if len(got) != len(want) {
 		t.Fatalf("Messages() = %v, chci %v", got, want)
 	}
@@ -125,7 +121,7 @@ func TestRecorder(t *testing.T) {
 
 	// Messages musí vracet kopii, ne vnitřní slice.
 	got[0] = "podvrh"
-	if again := r.Messages(); again[0] != "první" {
+	if again := r.Messages(); again[0] != "first" {
 		t.Errorf("Messages() vrací vnitřní slice, změna zvenku se projevila: %v", again)
 	}
 }

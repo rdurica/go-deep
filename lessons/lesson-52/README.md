@@ -10,34 +10,6 @@
 - Rozhodnout, kdy je golden file lepší než ruční assert, a napsat k němu `-update` flag.
 - Snížit počet alokací v horké cestě a doložit to testem, ne dojmem.
 
-## PHP → Go most
-
-V PHP se výkon měří skoro vždy až v produkci — Blackfire, XHProf, Tideways. Do PHPUnit se
-mikrobenchmark nedává, protože běh interpretu je tak proměnlivý, že by to nic neřeklo.
-
-```php
-$t = microtime(true);
-for ($i = 0; $i < 100000; $i++) { normalize($s); }
-echo microtime(true) - $t;   // číslo, které příště vyjde jinak
-```
-
-V Go je měření součástí `go test`. Benchmark je funkce jako každá jiná, běží ve stejném
-balíčku a runtime si sám určí, kolikrát ji spustit, aby měření dávalo smysl:
-
-```go
-func BenchmarkNormalize(b *testing.B) {
-	in := "  Ahoj  Světe  "
-	b.ReportAllocs()
-	for b.Loop() {
-		_ = Normalize(in)
-	}
-}
-```
-
-Co se mění v uvažování: **výkon je testovatelná vlastnost, ne dojem.** Můžeš na něj napsat
-regresní test (`testing.AllocsPerRun`) úplně stejně jako na chování. A protože benchmark
-běží vedle unit testů, optimalizace nikdy neproběhne bez důkazu, že se něco zlepšilo.
-
 ## Teorie
 
 ### `testing.B` a jak číst výstup
@@ -104,7 +76,7 @@ Lokální proměnná u `b.N` nestačí — tu by escape analýza vyhodila taky.
 Benchmark ti řekne, jak na tom jsi. Test ti pohlídá, že to tak zůstane:
 
 ```go
-func TestNormalizeNealokuje(t *testing.T) {
+func TestNormalizeDoesNotAllocate(t *testing.T) {
 	in := "už čistý text"
 	if n := testing.AllocsPerRun(200, func() { sink = Normalize(in) }); n != 0 {
 		t.Errorf("Normalize alokuje %.1f×, chci 0", n)
@@ -201,6 +173,34 @@ func TestReport(t *testing.T) {
 `-update` je pohodlí i riziko: po jeho spuštění **musíš** diff přečíst, jinak si zafixuješ
 rozbitý výstup jako správný. Proto se golden soubory nikdy negenerují v CI.
 
+## Rozdíly proti PHP
+
+V PHP se výkon měří skoro vždy až v produkci — Blackfire, XHProf, Tideways. Do PHPUnit se
+mikrobenchmark nedává, protože běh interpretu je tak proměnlivý, že by to nic neřeklo.
+
+```php
+$t = microtime(true);
+for ($i = 0; $i < 100000; $i++) { normalize($s); }
+echo microtime(true) - $t;   // číslo, které příště vyjde jinak
+```
+
+V Go je měření součástí `go test`. Benchmark je funkce jako každá jiná, běží ve stejném
+balíčku a runtime si sám určí, kolikrát ji spustit, aby měření dávalo smysl:
+
+```go
+func BenchmarkNormalize(b *testing.B) {
+	in := "  Ahoj  Světe  "
+	b.ReportAllocs()
+	for b.Loop() {
+		_ = Normalize(in)
+	}
+}
+```
+
+Co se mění v uvažování: **výkon je testovatelná vlastnost, ne dojem.** Můžeš na něj napsat
+regresní test (`testing.AllocsPerRun`) úplně stejně jako na chování. A protože benchmark
+běží vedle unit testů, optimalizace nikdy neproběhne bez důkazu, že se něco zlepšilo.
+
 ## Časté chyby
 
 | Chyba | Proč vzniká | Jak to udělat správně |
@@ -212,101 +212,52 @@ rozbitý výstup jako správný. Proto se golden soubory nikdy negenerují v CI.
 | Fuzz invariant „výsledek == očekávaná konstanta" | myšlení table-driven testem | invariant musí platit pro **libovolný** vstup |
 | `-update` spuštěný bez přečtení diffu | golden test „opraven" | diff je součást review, ne vedlejší efekt |
 
+## AI kvíz
+
+Po přečtení teorie spusť v Cursoru **`/go-deep-quiz 52`**. AI tě ~5 minut prověří mentální model (ne hotové cvičení). Slabiny si uloží do [`GAPS.md`](../../GAPS.md).
+
 ## Úkol
 
-Pracuj v `exercise/`. Typy, konstanty a šířky sloupců jsou předvyplněné.
+Pracuj v `exercise/`. Po doplnění spouštěj testy:
 
-### A — rozcvička (~10 min)
+Stupně jdou od jednodušších ke složitějším — po každém stupni spusť review, než jdeš dál.
 
-`Normalize(s string) string` — ořízne bílé znaky na okrajích, každý souvislý úsek bílých
-znaků uvnitř nahradí **jednou mezerou** (U+0020) a převede na malá písmena. Bílý znak je
-cokoli, na co odpoví `unicode.IsSpace` (tedy i tabulátor a U+00A0).
+### Jednoduchý
 
-Test navíc vyžaduje, aby funkce měla **rychlou cestu**: když je vstup už normalizovaný,
-musí ho vrátit beze změny a **bez jediné alokace** (`testing.AllocsPerRun == 0`). Špinavý
-vstup smí alokovat nejvýš 4×.
-
-Napiš si k tomu vlastní benchmark pro čistý i špinavý vstup a porovnej je.
-
-např. `Normalize("  Ahoj   Svete \n")` → `"ahoj svete"`
-
-### B — jádro (~35 min)
-
-Textový formát pro `Record`. Jeden záznam na řádek, tři pole oddělená `|`:
-
-```
-u-001|Alice|42
-u-002|Bob|7
-```
-
-Protože `|` i konec řádku se můžou vyskytnout uvnitř pole, musí být `ID` a `Name`
-escapované. Používej přesně tyhle čtyři sekvence:
-
-| Znak | Zápis |
-|------|-------|
-| `\` | `\\` |
-| `\|` | `\p` |
-| LF | `\n` |
-| CR | `\r` |
-
-1. `Encode(recs []Record) string` — záznamy spojené `\n`, **bez** koncového konce řádku.
-   Prázdný vstup dá prázdný řetězec. Skóre se zapisuje `strconv.Itoa`.
-2. `Decode(s string) ([]Record, error)` — inverzní operace. Prázdný vstup vrátí prázdný,
-   ale **nenilový** slice. Chybou obalující `ErrFormat` je jiný počet polí než tři,
-   skóre, které není celé číslo, neznámá escape sekvence (`\q`) i useknutý backslash
-   na konci pole. Funkce **nesmí panikovat na žádném vstupu** — to hlídá fuzz test.
-
-Round-trip a odolnost proti panice ověřují `FuzzRoundTrip` a `FuzzDecodeNepanikuje`
-v `exercise_test.go` včetně seed korpusu v `testdata/fuzz/`. Pusť si je i v fuzz režimu:
+Funkce: `Normalize`
 
 ```bash
-go test -run xxx -fuzz=FuzzRoundTrip -fuzztime=10s .
+make lesson L=52 PART=1
 ```
 
-např. `Encode([{ID:"a", Name:"b", Score:1}])` → `"a|b|1"`
+Pak **`/go-deep-review 52 easy`**.
 
-### C — rozšíření (~20 min)
+### Střední
 
-Report o pevné šířce sloupců (`8 | 20 | 5`, oddělené jednou mezerou):
-
-```
-ID       NAME                 SCORE
------------------------------------
-u-001    Alice Nováková          42
------------------------------------
-records: 1  total: 42  avg: 42.00
-```
-
-1. `RenderReport(recs []Record) string` — naivní verze složená z `fmt.Sprintf` a `+=`.
-   Hlavička, linka, řádky, linka, patička. Průměr má dvě desetinná místa, prázdný report
-   má `avg: 0.00`. Řádky se **neořezávají**, delší hodnota sloupec roztáhne.
-   Výstup ověřuje golden test proti `testdata/report.golden`; první běh po změně formátu
-   spustíš s `-update` a diff si přečteš.
-2. `RenderReportFast(recs []Record) string` — **bajt po bajtu stejný** výstup postavený na
-   `strings.Builder` s `Grow`, `strconv.AppendInt` a `strconv.AppendFloat`. Test porovnává
-   obě verze na náhodně generovaných datech a vyžaduje, aby rychlá verze měla méně alokací
-   a nejvýš 4 celkem.
-
-   Pozor na jednu věc: `%-20s` počítá šířku v **runách**, ne v bajtech. Ruční doplňování
-   mezer musí použít `utf8.RuneCountInString`, jinak se sloupce u českých jmen rozjedou —
-   a přesně to je v testovacích datech.
-
-Referenční řešení dosahuje 23 → 2 alokací a 2574 → 716 ns/op.
-
-např. `RenderTable([{a1, Alice, 100}, …])` → shoda s `testdata/table.golden`
+Funkce: `Encode`, `Decode`
 
 ```bash
-make lesson L=52
-go test -run xxx -bench . -benchmem -count=5 .
+make lesson L=52 PART=2
 ```
 
-Až budeš hotový, porovnej se `solutions/` (spoiler).
+Pak **`/go-deep-review 52 medium`**.
 
-## Ověření
+### Obtížný
 
-Po dokončení úkolů spusť v Cursoru **`/go-deep-review`** a zadej třeba jen `52`. AI tě postupně projde body níže, doptá se a ověří pochopení — nestačí jen zelené testy.
+Funkce: `RenderTable`, `RenderTableFast`
 
-- [ ] `make lesson L=52` prochází
+```bash
+make lesson L=52 PART=3
+```
+
+Pak **`/go-deep-review 52 hard`**.
+
+Až budou stupně hotové, porovnej se `solutions/` (spoiler).
+
+## Závěrečné otázky
+
+Spusť **`/go-deep-review 52 final`**. AI projde body níže, doptá se a ověří pochopení. Celé cvičení ověří `make lesson L=52` (+ `make race L=52`, pokud to lekce vyžaduje).
+
 - [ ] Umíš vysvětlit, kdy stačí `b.Loop()` a kdy u starého `b.N` potřebuješ package-level sink
 - [ ] Umíš vysvětlit rozdíl mezi `b.Loop()`, `b.N`, `-benchtime=1s` a `-benchtime=100x`
 - [ ] Umíš uvést tři invarianty, na kterých se dá postavit fuzz test

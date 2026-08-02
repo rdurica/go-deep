@@ -9,48 +9,6 @@
 - Rozplést cyklický import a přeformulovat návrh tak, aby závislosti tekly jedním směrem.
 - Napsat vícesouborový a víc-balíčkový program s doc comments a bez `init()`.
 
-## PHP → Go most
-
-V PHP je jednotkou zapouzdření **třída**. Modifikátor visibility platí na úrovni objektu,
-takže ani jiná instance téže třídy… vlastně ano, může:
-
-```php
-final class Amount
-{
-    public function __construct(private readonly int $cents) {}
-
-    public function add(Amount $other): Amount
-    {
-        return new self($this->cents + $other->cents); // cizí instance, ale stejná třída → OK
-    }
-
-    public function cents(): int { return $this->cents; }
-}
-```
-
-Go tenhle princip rozšiřuje o řád: hranice není třída, ale **balíček**.
-
-```go
-package money
-
-type Amount struct {
-	cents int64 // malé písmeno = neexportované
-}
-
-func SumCents(amounts []Amount) int64 {
-	var total int64
-	for _, a := range amounts {
-		total += a.cents // jiná funkce, jiná instance — pořád stejný balíček, takže OK
-	}
-	return total
-}
-```
-
-Mimo balíček `money` pole `cents` neexistuje. Ani reflexí ho slušně nepřečteš, ani ho
-nenastavíš v composite literalu. Návyk, který je potřeba opustit: **přestaň dělit kód podle
-tříd a vrstev a začni ho dělit podle hranic, kde chceš mít kontrolu nad tím, co je vidět.**
-Balíček je tvůj `private`, jeden soubor není nic.
-
 ## Teorie
 
 ### Velké písmeno místo klíčových slov
@@ -219,6 +177,48 @@ a `golint`/revive to hlídají.
 ne z `main`. Proto se spustitelné programy dávají do `cmd/nazev/main.go` a veškerá
 skutečná logika žije v importovatelných balíčcích — jinak by nešla otestovat ani znovu použít.
 
+## Rozdíly proti PHP
+
+V PHP je jednotkou zapouzdření **třída**. Modifikátor visibility platí na úrovni objektu,
+takže ani jiná instance téže třídy… vlastně ano, může:
+
+```php
+final class Amount
+{
+    public function __construct(private readonly int $cents) {}
+
+    public function add(Amount $other): Amount
+    {
+        return new self($this->cents + $other->cents); // cizí instance, ale stejná třída → OK
+    }
+
+    public function cents(): int { return $this->cents; }
+}
+```
+
+Go tenhle princip rozšiřuje o řád: hranice není třída, ale **balíček**.
+
+```go
+package money
+
+type Amount struct {
+	cents int64 // malé písmeno = neexportované
+}
+
+func SumCents(amounts []Amount) int64 {
+	var total int64
+	for _, a := range amounts {
+		total += a.cents // jiná funkce, jiná instance — pořád stejný balíček, takže OK
+	}
+	return total
+}
+```
+
+Mimo balíček `money` pole `cents` neexistuje. Ani reflexí ho slušně nepřečteš, ani ho
+nenastavíš v composite literalu. Návyk, který je potřeba opustit: **přestaň dělit kód podle
+tříd a vrstev a začni ho dělit podle hranic, kde chceš mít kontrolu nad tím, co je vidět.**
+Balíček je tvůj `private`, jeden soubor není nic.
+
 ## Časté chyby
 
 | Chyba | Proč vzniká | Jak to udělat správně |
@@ -231,81 +231,52 @@ skutečná logika žije v importovatelných balíčcích — jinak by nešla ote
 | Exportováno „pro jistotu" | v PHP se `public` píše automaticky | začni neexportovaně, exportuj až když je potřeba |
 | `NewMoneyAmount` v balíčku `money` | jméno balíčku se nezapočítává | `money.New`, jméno balíčku je součást volání |
 
+## AI kvíz
+
+Po přečtení teorie spusť v Cursoru **`/go-deep-quiz 11`**. AI tě ~5 minut prověří mentální model (ne hotové cvičení). Slabiny si uloží do [`GAPS.md`](../../GAPS.md).
+
 ## Úkol
 
-Pracuj v `exercise/`. Cvičení je **víc-balíčkové**: kromě `exercise/exercise.go` upravuješ
-i `exercise/money/money.go`. Postupuj A → B → C, po každé části spusť test.
+Pracuj v `exercise/`. Po doplnění spouštěj testy:
 
-Testy jsou v `package exercise_test`, tedy mimo oba balíčky. Volají jen `exercise.*`,
-protože hlavní balíček má nad `money` tenkou fasádu (`NewAmount`, `SumCents`, `Split`) —
-ty jsou hotové, neimplementuj je. Zkus si po dokončení do testu napsat
-`a.cents` a podívej se, co řekne kompilátor.
+Stupně jdou od jednodušších ke složitějším — po každém stupni spusť review, než jdeš dál.
 
-### A — rozcvička (~10 min)
+### Jednoduchý
 
-V `exercise/money/money.go` implementuj:
-
-- `New(cents int64) Amount` — konstruktor, jediná cesta, jak částku vyrobit zvenku.
-- `func (a Amount) Cents() int64` — vrací hodnotu v centech.
-- `func (a Amount) String() string` — formát s právě dvěma desetinnými místy a znaménkem:
-  `0` → `"0.00"`, `5` → `"0.05"`, `1999` → `"19.99"`, `-1` → `"-0.01"`, `-250` → `"-2.50"`.
-  Tím zároveň splníš `fmt.Stringer`.
-
-Zero value `Amount{}` musí dál fungovat jako nula — nespoléhej na to, že konstruktor
-proběhl vždy.
-
-např. `New(1999).String()` → `"19.99"`
-
-### B — jádro (~35 min)
-
-V `exercise/exercise.go`, tedy **zvenku** balíčku `money`:
-
-1. `TotalOf(amounts []Amount) Amount` — součet částek. Prázdný nebo `nil` vstup dá nulovou
-   částku. Smíš použít jen veřejné API `money` — na `cents` se odsud nedostaneš.
-2. `MustParse(s string) Amount` — převede textový zápis na částku:
-   - volitelné znaménko `+` nebo `-` na začátku,
-   - povinná celá část z jedné a více číslic,
-   - volitelná desetinná část: tečka a jedna nebo dvě číslice (`"2.5"` je 250 centů).
-
-   Platné: `"0"`, `"7"`, `"19.99"`, `"-2.5"`, `"+3.05"`, `"-0.01"`.
-   Neplatné (funkce **panikuje**): `""`, `"abc"`, `"1.234"`, `"1."`, `".5"`, `"1.2.3"`,
-   `"--1"`, `"1,5"`, `" 1"`, `"1 "`. Bílé znaky se neořezávají.
-
-   Prefix `Must` je konvence: „při špatném vstupu panikuj místo vracení chyby".
-   Používá se jen tam, kde je vstup konstanta v kódu (viz `regexp.MustCompile`).
-   Pomocné funkce si klidně přidej — nech je neexportované.
-
-např. `MustParse("19.99").Cents()` → `1999`
-
-### C — rozšíření (~25 min)
-
-Zpět v `exercise/money/money.go`, tedy **uvnitř** balíčku:
-
-1. `SumCents(amounts []Amount) int64` — součet v centech. Napiš ho tak, aby sahal
-   **přímo na `a.cents`**, ne přes metodu `Cents()`. Tohle je ta ukázka zapouzdření:
-   uvnitř balíčku je pole cizí instance dostupné, mimo něj neexistuje. `nil` vstup dá 0.
-2. `Split(a Amount, n int) ([]Amount, bool)` — rozdělí částku na `n` dílů tak, aby se
-   **žádný cent neztratil**. Zbytek po celočíselném dělení rozdej po jednom centu od
-   prvního dílu: `1000` na 3 díly → `334, 333, 333`. U záporných částek jde zbytek taky
-   „ven od nuly": `-250` na 3 díly → `-84, -83, -83`. Pro `n <= 0` vrať `(nil, false)`.
-
-Bonus bez testu: vytvoř v repozitáři vedle sebe adresář `internal/` s balíčkem a zkus ho
-importovat z jiného modulu. Chyba `use of internal package ... not allowed` je to,
-co chceš vidět.
-
-např. `Split(1000, 3)` → `[334, 333, 333], true`
+Funkce: `NewAmount`
 
 ```bash
-make lesson L=11
+make lesson L=11 PART=1
 ```
 
-Až budeš hotový, porovnej se `solutions/` (spoiler).
+Pak **`/go-deep-review 11 easy`**.
 
-## Ověření
+### Střední
 
-Po dokončení úkolů spusť v Cursoru **`/go-deep-review`** a zadej třeba jen `11`. AI tě postupně projde body níže, doptá se a ověří pochopení — nestačí jen zelené testy.
+Funkce: `SumCents`, `Split`
 
-- [ ] `make lesson L=11` prochází
+```bash
+make lesson L=11 PART=2
+```
+
+Pak **`/go-deep-review 11 medium`**.
+
+### Obtížný
+
+Funkce: `TotalOf`, `MustParse`
+
+```bash
+make lesson L=11 PART=3
+```
+
+Pak **`/go-deep-review 11 hard`**.
+
+Až budou stupně hotové, porovnej se `solutions/` (spoiler).
+
+## Závěrečné otázky
+
+Spusť **`/go-deep-review 11 final`**. AI projde body níže, doptá se a ověří pochopení. Celé cvičení ověří `make lesson L=11` (+ `make race L=11`, pokud to lekce vyžaduje).
+
 - [ ] Umíš vysvětlit, proč `SumCents` smí na `a.cents` a `TotalOf` ne
 - [ ] Umíš vysvětlit, co přesně `internal/` zakazuje a komu
 - [ ] Umíš popsat tři způsoby, jak rozplést cyklický import
@@ -316,6 +287,7 @@ Po dokončení úkolů spusť v Cursoru **`/go-deep-review`** a zadej třeba jen
 
 `ZAKÁZÁNO` — viz [docs/ai-playbook.md](../../docs/ai-playbook.md).
 
+Mentor, kvíz i review (dialog) jsou vždy OK; v tomto režimu AI nesmí psát kód cvičení.
 ## Další čtení
 
 1. [Effective Go — Names](https://go.dev/doc/effective_go#names)

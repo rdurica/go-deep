@@ -42,7 +42,7 @@ func TestResultErr(t *testing.T) {
 	}
 }
 
-func TestResultNuloveHodnoty(t *testing.T) {
+func TestResultZeroValues(t *testing.T) {
 	var zero exercise.Result[int]
 	if !zero.IsOk() {
 		t.Error("nulový Result má být Ok")
@@ -74,7 +74,7 @@ func TestMap(t *testing.T) {
 	}
 }
 
-func TestMapZmenaTypu(t *testing.T) {
+func TestMapTypeChange(t *testing.T) {
 	// Řetěz Map přes tři různé typy ověří, že typový parametr U opravdu funguje.
 	step1 := exercise.Map(exercise.Ok("7"), func(s string) int {
 		n, _ := strconv.Atoi(s)
@@ -136,7 +136,7 @@ func TestStructToMapPointer(t *testing.T) {
 	overMapy(t, "StructToMap(&u)", got, map[string]any{"id": 1, "name": "Bob", "Active": false})
 }
 
-func TestStructToMapChyby(t *testing.T) {
+func TestStructToMapErrors(t *testing.T) {
 	var nilUser *exercise.User
 	bad := []any{nil, 42, "text", []int{1}, nilUser}
 	for _, in := range bad {
@@ -148,7 +148,7 @@ func TestStructToMapChyby(t *testing.T) {
 	}
 }
 
-func TestUserToMapSeShodujeSReflexi(t *testing.T) {
+func TestUserToMapMatchesReflection(t *testing.T) {
 	for i := 0; i < 5; i++ {
 		u := exercise.NewUser(i, fmt.Sprintf("user-%d", i), "x@example.com", i%2 == 0, "p")
 		want, err := exercise.StructToMap(u)
@@ -184,7 +184,7 @@ func TestSetDefaults(t *testing.T) {
 	}
 }
 
-func TestSetDefaultsNeprepisuje(t *testing.T) {
+func TestSetDefaultsDoesNotOverwrite(t *testing.T) {
 	c := exercise.Config{Host: "db.internal", Port: 5432}
 	if err := exercise.SetDefaults(&c); err != nil {
 		t.Fatalf("SetDefaults = chyba %v", err)
@@ -200,8 +200,8 @@ func TestSetDefaultsNeprepisuje(t *testing.T) {
 	}
 }
 
-func TestSetDefaultsChyby(t *testing.T) {
-	t.Run("není pointer", func(t *testing.T) {
+func TestSetDefaultsErrors(t *testing.T) {
+	t.Run("not a pointer", func(t *testing.T) {
 		if err := exercise.SetDefaults(exercise.Config{}); !errors.Is(err, exercise.ErrNotPointer) {
 			t.Errorf("chci ErrNotPointer, dostal jsem %v", err)
 		}
@@ -212,13 +212,13 @@ func TestSetDefaultsChyby(t *testing.T) {
 			t.Errorf("chci ErrNotPointer, dostal jsem %v", err)
 		}
 	})
-	t.Run("pointer na jiný typ", func(t *testing.T) {
+	t.Run("pointer to other type", func(t *testing.T) {
 		n := 0
 		if err := exercise.SetDefaults(&n); !errors.Is(err, exercise.ErrNotPointer) {
 			t.Errorf("chci ErrNotPointer, dostal jsem %v", err)
 		}
 	})
-	t.Run("nepodporovaný typ", func(t *testing.T) {
+	t.Run("unsupported type", func(t *testing.T) {
 		var bc exercise.BadConfig
 		if err := exercise.SetDefaults(&bc); !errors.Is(err, exercise.ErrUnsupportedKind) {
 			t.Errorf("chci ErrUnsupportedKind, dostal jsem %v", err)

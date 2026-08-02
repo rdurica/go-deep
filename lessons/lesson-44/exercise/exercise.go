@@ -17,6 +17,7 @@ const (
 	StressIterations = 100
 )
 
+// --- Stupeň: jednoduchý ---
 // SafeIncrement spustí n goroutin, z nichž každá zvýší společný čítač o jedna,
 // a vrátí jeho výslednou hodnotu.
 //
@@ -61,6 +62,7 @@ func (r *Registry) Get(key string) (int, bool) {
 	return v, ok
 }
 
+// --- Stupeň: střední ---
 // Len vrací počet uložených klíčů.
 //
 // ZÁVODNÍ implementace — oprav ji.
@@ -87,11 +89,11 @@ func ParallelAppend(nums []int) []int {
 }
 
 // StressTest zavolá f ve StressGoroutines goroutinách, každá StressIterations
-// krát, a počká na jejich dokončení. Slouží k tomu, aby závod dostal šanci se
-// projevit a aby ho race detektor uviděl.
+// krát, a počká na dokončení. Goroutiny vyrazí naráz (společný startovní kanál)
+// a helper volá t.Helper(). Slouží k zátěžovému testování race detektoru.
 func StressTest(t *testing.T, f func()) {
-	// TODO: úkol C
-	t.Fatal("TODO: úkol C")
+	// TODO
+	t.Fatal("TODO")
 }
 
 // Snapshot je konfigurace načtená v jednom okamžiku. Checksum musí vždy
@@ -112,6 +114,7 @@ func NewSnapshot(endpoint string, timeout int) Snapshot {
 	}
 }
 
+// --- Stupeň: obtížný ---
 // Consistent hlásí, jestli snapshot dává smysl jako celek.
 func (s Snapshot) Consistent() bool {
 	return s.Checksum == len(s.Endpoint)+s.Timeout

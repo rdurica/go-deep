@@ -14,38 +14,6 @@ kumulativní a na konci je bodovaná rubrika. Lekce zároveň zadává projekt
 - Přenášet hodnoty request scope kontextem tak, aby to nebyl skrytý globál.
 - Ohodnotit vlastní službu podle produkčních kritérií, ne podle „vrací to 200“.
 
-## PHP → Go most
-
-V Symfony dostaneš službu poskládanou frameworkem: `#[Route]` atribut, `kernel.request`
-listener, `LoggerInterface` autowiringem, `.env` a parametry. Kostra existuje dřív než
-tvůj první řádek kódu.
-
-```php
-#[Route('/tasks/{id}', methods: ['GET'])]
-public function show(string $id): JsonResponse
-{
-    return $this->json($this->repository->find($id) ?? throw new NotFoundHttpException());
-}
-```
-
-V Go tu kostru píšeš ty — a je to asi 150 řádků, které se vejdou do hlavy:
-
-```go
-mux.HandleFunc("GET /tasks/{id}", func(w http.ResponseWriter, r *http.Request) {
-	t, err := store.Get(r.PathValue("id"))
-	if err != nil {
-		writeDomainError(w, err)
-		return
-	}
-	writeJSON(w, http.StatusOK, newTaskResponse(t))
-})
-handler := Chain(mux, RequestID, Logging(logger), Recovery(logger))
-```
-
-Změna v uvažování: v Symfony hledáš **rozšiřovací bod** frameworku, v Go hledáš
-**místo v `main`**, kde se to poskládá. Nic se neděje magicky před tvým kódem — což
-znamená, že nic ani nemůže tiše zmizet při upgradu.
-
 ## Recap fáze 3
 
 ### Lekce 24–27 v tabulce
@@ -98,6 +66,38 @@ middleware z toho udělá řízenou `500`.
 **Proč `Shutdown` nesmí dostat zrušený kontext?** Protože kontext je pro `Shutdown` strop
 grace periody. Zrušený kontext znamená nulovou grace periodu, tedy totéž co `Close()`.
 
+## Rozdíly proti PHP
+
+V Symfony dostaneš službu poskládanou frameworkem: `#[Route]` atribut, `kernel.request`
+listener, `LoggerInterface` autowiringem, `.env` a parametry. Kostra existuje dřív než
+tvůj první řádek kódu.
+
+```php
+#[Route('/tasks/{id}', methods: ['GET'])]
+public function show(string $id): JsonResponse
+{
+    return $this->json($this->repository->find($id) ?? throw new NotFoundHttpException());
+}
+```
+
+V Go tu kostru píšeš ty — a je to asi 150 řádků, které se vejdou do hlavy:
+
+```go
+mux.HandleFunc("GET /tasks/{id}", func(w http.ResponseWriter, r *http.Request) {
+	t, err := store.Get(r.PathValue("id"))
+	if err != nil {
+		writeDomainError(w, err)
+		return
+	}
+	writeJSON(w, http.StatusOK, newTaskResponse(t))
+})
+handler := Chain(mux, RequestID, Logging(logger), Recovery(logger))
+```
+
+Změna v uvažování: v Symfony hledáš **rozšiřovací bod** frameworku, v Go hledáš
+**místo v `main`**, kde se to poskládá. Nic se neděje magicky před tvým kódem — což
+znamená, že nic ani nemůže tiše zmizet při upgradu.
+
 ## Časté chyby
 
 | Chyba | Proč vzniká | Jak to udělat správně |
@@ -109,68 +109,47 @@ grace periody. Zrušený kontext znamená nulovou grace periodu, tedy totéž co
 | Validace rozstrkaná po handlerech | copy-paste z prvního endpointu | jedno místo, které mapuje chyby domény |
 | `main` dělá všechno | skript se rozroste | `main` volá `run(ctx, getenv, out)` |
 
+## AI kvíz
+
+Po přečtení teorie spusť v Cursoru **`/go-deep-quiz 31`**. AI tě ~5 minut prověří mentální model (ne hotové cvičení). Slabiny si uloží do [`GAPS.md`](../../GAPS.md).
+
 ## Úkol
 
-Pracuj v `exercise/`. Kumulativní úloha: kostra REST API pro poznámky, na které si
-vyzkoušíš všechno z fáze 3 v malém. Projekt P02 pak dělá totéž ve velkém.
+Pracuj v `exercise/`. Po doplnění spouštěj testy:
 
-### A — rozcvička (~10 min)
+Stupně jdou od jednodušších ke složitějším — po každém stupni spusť review, než jdeš dál.
 
-`LoadConfig(getenv func(string) string) (Config, error)`:
+### Jednoduchý
 
-| Klíč | Pole | Výchozí | Pravidlo |
-|------|------|---------|----------|
-| `ADDR` | `Addr` | `127.0.0.1:8080` | — |
-| `LOG_LEVEL` | `LogLevel` | `slog.LevelInfo` | parsuj přes `slog.Level.UnmarshalText` |
-| `SHUTDOWN_TIMEOUT` | `ShutdownTimeout` | `5s` | `time.ParseDuration`, musí být kladný |
-
-Chyby posbírej přes `errors.Join` a obal `ErrInvalid`; text musí obsahovat jména
-vadných klíčů.
-
-např. `LoadConfig(prázdné env)` → `Addr:"127.0.0.1:8080", LogLevel:Info, ShutdownTimeout:5s`
-
-### B — jádro (~40 min)
-
-1. `Chain(h http.Handler, mws ...func(http.Handler) http.Handler) http.Handler` —
-   složí middleware tak, že **první uvedená je nejvíc vně**. Bez middleware vrátí `h`.
-2. `RequestIDMiddleware` — vezme `X-Request-ID` z požadavku, a když chybí, vygeneruje
-   nové. Uloží ho do kontextu (neexportovaný typ klíče!) a nastaví do hlavičky odpovědi.
-   `RequestIDFromContext(ctx) (string, bool)` ho vrátí; pro kontext bez ID vrátí `false`.
-3. `NewServer(logger *slog.Logger) http.Handler` — router s in-memory úložištěm poznámek
-   a middleware chainem:
-
-| Metoda | Cesta | Chování |
-|--------|-------|---------|
-| `GET` | `/healthz` | `200 {"status":"ok"}` |
-| `GET` | `/notes` | `200 {"notes":[…]}`, prázdné úložiště dá `[]`, ne `null` |
-| `POST` | `/notes` | `201` + `Location`, tělo `{"text":"…"}` |
-| `GET` | `/notes/{id}` | `200`, nebo `404` |
-| `DELETE` | `/notes/{id}` | `204`, nebo `404` |
-
-Chyby mají vždy tvar `{"error":{"code":"…","message":"…"}}` a `Content-Type`
-`application/json`. Kódy: `not_found`, `method_not_allowed`, `unsupported_media_type`,
-`bad_request`, `validation_failed`, `internal_error`. Neznámá cesta je `404`, špatná
-metoda `405` s hlavičkou `Allow`, chybějící nebo jiný `Content-Type` u `POST` je `415`,
-rozbitý JSON `400`, prázdný nebo delší než 500 znaků text `400`.
-
-např. `Chain(h, a, b, c)` → `"a>b>c>handler"`
-
-### C — rozšíření (~25 min)
-
-1. `RecoveryMiddleware(logger *slog.Logger) func(http.Handler) http.Handler` — zachytí
-   paniku, zaloguje ji na úrovni Error s atributem `request_id` z kontextu a odpoví
-   `500` v JSONu s kódem `internal_error`.
-2. `Run(ctx context.Context, cfg Config, h http.Handler, ln net.Listener) error` — obsluhuje
-listener, na zrušení kontextu udělá `Shutdown` s `cfg.ShutdownTimeout` a vrátí `nil`
-při čistém ukončení.
-
-např. panic v handleru → `500` + `{"error":{"code":"internal_error",…}}`
+Funkce: `LoadConfig`, `Chain`
 
 ```bash
-make lesson L=31
+make lesson L=31 PART=1
 ```
 
-Až budeš hotový, porovnej se `solutions/` (spoiler).
+Pak **`/go-deep-review 31 easy`**.
+
+### Střední
+
+Funkce: `RequestIDMiddleware`, `RequestIDFromContext`
+
+```bash
+make lesson L=31 PART=2
+```
+
+Pak **`/go-deep-review 31 medium`**.
+
+### Obtížný
+
+Funkce: `NewServer`, `RecoveryMiddleware`, `Run`
+
+```bash
+make lesson L=31 PART=3
+```
+
+Pak **`/go-deep-review 31 hard`**.
+
+Až budou stupně hotové, porovnej se `solutions/` (spoiler).
 
 ## Projekt P02
 
@@ -212,12 +191,10 @@ Bodovanou rubriku vyplň až po projektu P02. Za každý řádek 0–2 body
 | 8–12 | projdi znovu lekce 26, 27 a 30 a napiš cvičení znovu od nuly |
 | 0–7 | vrať se na lekci 24 a projdi fázi 3 celou; bez ní nedává fáze 4 smysl |
 
-## Ověření
+## Závěrečné otázky
 
-Po dokončení úkolů spusť v Cursoru **`/go-deep-review`** a zadej třeba jen `31`. AI tě postupně projde body níže, doptá se a ověří pochopení — nestačí jen zelené testy.
+Spusť **`/go-deep-review 31 final`**. AI projde body níže, doptá se a ověří pochopení. Celé cvičení ověří `make lesson L=31` (+ `make race L=31`, pokud to lekce vyžaduje).
 
-- [ ] `make lesson L=31` prochází
-- [ ] `go test -race ./projects/p02-http-api/...` prochází
 - [ ] Umíš vysvětlit, jak dostat 405 do JSONu bez vlastního routeru
 - [ ] Umíš vysvětlit, proč se klíč v kontextu nedělá jako `string`
 - [ ] Umíš vysvětlit, co se stane bez recovery middleware, když handler zapaníkuje

@@ -2,11 +2,14 @@
 
 Zdroj pravdy: `docs/ai-playbook.md`. Režim vždy ověř v hlavičce `lessons/lesson-NN/README.md`.
 
+**Mentor, `/go-deep-quiz` a `/go-deep-review` jsou vždy povolené** (dialog, dril, běh testů).
+`ZAKÁZÁNO` = zákaz generovat / dopisovat kód v `exercise/`.
+
 ## Mapa
 
 | Lekce | Režim | Mentor smí | Mentor nesmí |
 |-------|--------|------------|--------------|
-| 01–18 | `ZAKÁZÁNO` | Vysvětlit koncept, Sokratovské nápovědy, mentální model (slice backing array, nil interface…) | Psát / doplňovat kód v `exercise/`, paste hotové funkce, „řešení lekce N“ |
+| 01–18 | `ZAKÁZÁNO` | Vysvětlit koncept, Sokratovské nápovědy, mentální model, kvíz/review dialog | Psát / doplňovat kód v `exercise/`, paste hotové funkce, „řešení lekce N“ |
 | 19–23 | `JEN VYSVĚTLENÍ` | Review body: proč kód smrdí / co je neidiomatické | Přepsat cvičení za studenta |
 | 24–39 | `BOILERPLATE OK` | Po vlastním pokusu: JSON tagy, DTO scaffolding, repetitivní wiring, table-driven test kostra | Převzít API design, error model, hranice balíčků, acceptance kritéria |
 | 40–55 | `JUNIOR POD REVIEW` | Navrhovat implementaci až po spec + acceptance testech studenta; vyžadovat checklist a `-race` | Accept-all bez review; concurrency bez `make race` |
@@ -19,7 +22,7 @@ Stejný režim jako okolní fáze. Rubriku a sebehodnocení nech studentovi — 
 ## Abuse patterns (odmítni / přesměruj)
 
 - „Napiš řešení lekce N“ místo vlastního pokusu
-- Copilot / agent dopisuje celé M1 cvičení
+- Copilot / agent dopisuje celé cvičení za studenta
 - Accept-all diff bez checklistu
 - Concurrency bez `-race`
 - Gin/Echo dřív, než umí `net/http`

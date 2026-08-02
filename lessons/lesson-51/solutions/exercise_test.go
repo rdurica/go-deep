@@ -10,7 +10,7 @@ import (
 	exercise "github.com/rdurica/go-deep/lessons/lesson-51/solutions"
 )
 
-func TestParseSemverPlatne(t *testing.T) {
+func TestParseSemverValid(t *testing.T) {
 	tests := []struct {
 		in   string
 		want exercise.Version
@@ -37,7 +37,7 @@ func TestParseSemverPlatne(t *testing.T) {
 	}
 }
 
-func TestParseSemverChybne(t *testing.T) {
+func TestParseSemverInvalid(t *testing.T) {
 	bad := []string{
 		"", "v", "v1", "v1.2", "v1.2.3.4", "v1.2.x", "vx.2.3",
 		"v01.2.3", "v1.02.3", "v1.2.3-", "v1.2.3-rc..1", "v1.2.3-rc.01",
@@ -73,53 +73,45 @@ func TestVersionString(t *testing.T) {
 
 func TestCompare(t *testing.T) {
 	tests := []struct {
-		a, b string
+		a, b exercise.Version
 		want int
 	}{
-		{"v1.0.0", "v1.0.0", 0},
-		{"v1.0.0", "v1.0.1", -1},
-		{"v1.1.0", "v1.0.9", 1},
-		{"v2.0.0", "v10.0.0", -1},
-		{"v1.0.0-rc.1", "v1.0.0", -1},
-		{"v1.0.0", "v1.0.0-rc.1", 1},
-		{"v1.0.0-alpha", "v1.0.0-beta", -1},
-		{"v1.0.0-rc.1", "v1.0.0-rc.2", -1},
-		{"v1.0.0-rc.2", "v1.0.0-rc.10", -1},
-		{"v1.0.0-rc", "v1.0.0-rc.1", -1},
-		{"v1.0.0-1", "v1.0.0-alpha", -1},
+		{exercise.Version{Major: 1}, exercise.Version{Major: 1}, 0},
+		{exercise.Version{Major: 1}, exercise.Version{Major: 1, Patch: 1}, -1},
+		{exercise.Version{Major: 1, Minor: 1}, exercise.Version{Major: 1, Patch: 9}, 1},
+		{exercise.Version{Major: 2}, exercise.Version{Major: 10}, -1},
+		{exercise.Version{Major: 1, Pre: "rc.1"}, exercise.Version{Major: 1}, -1},
+		{exercise.Version{Major: 1}, exercise.Version{Major: 1, Pre: "rc.1"}, 1},
+		{exercise.Version{Major: 1, Pre: "alpha"}, exercise.Version{Major: 1, Pre: "beta"}, -1},
+		{exercise.Version{Major: 1, Pre: "rc.1"}, exercise.Version{Major: 1, Pre: "rc.2"}, -1},
+		{exercise.Version{Major: 1, Pre: "rc.2"}, exercise.Version{Major: 1, Pre: "rc.10"}, -1},
+		{exercise.Version{Major: 1, Pre: "rc"}, exercise.Version{Major: 1, Pre: "rc.1"}, -1},
+		{exercise.Version{Major: 1, Pre: "1"}, exercise.Version{Major: 1, Pre: "alpha"}, -1},
 	}
 	for _, tt := range tests {
-		a, err := exercise.ParseSemver(tt.a)
-		if err != nil {
-			t.Fatalf("ParseSemver(%q) = chyba %v", tt.a, err)
-		}
-		b, err := exercise.ParseSemver(tt.b)
-		if err != nil {
-			t.Fatalf("ParseSemver(%q) = chyba %v", tt.b, err)
-		}
-		if got := exercise.Compare(a, b); got != tt.want {
+		if got := exercise.Compare(tt.a, tt.b); got != tt.want {
 			t.Errorf("Compare(%s, %s) = %d, chci %d", tt.a, tt.b, got, tt.want)
 		}
-		if got := exercise.Compare(b, a); got != -tt.want {
+		if got := exercise.Compare(tt.b, tt.a); got != -tt.want {
 			t.Errorf("Compare(%s, %s) = %d, chci %d (antisymetrie)", tt.b, tt.a, got, -tt.want)
 		}
 	}
 }
 
-// TestCompareRadi ověří, že Compare je použitelné jako řadicí funkce.
+// TestCompareOrders ověří, že Compare je použitelné jako řadicí funkce.
 // Vstup je náhodně zamíchaný, takže test nejde splnit zadrátovanou hodnotou.
-func TestCompareRadi(t *testing.T) {
-	sorted := []string{
-		"v0.9.9", "v1.0.0-alpha", "v1.0.0-alpha.1", "v1.0.0-beta",
-		"v1.0.0-rc.1", "v1.0.0-rc.2", "v1.0.0", "v1.0.1", "v1.2.0", "v2.0.0",
-	}
-	vs := make([]exercise.Version, len(sorted))
-	for i, s := range sorted {
-		v, err := exercise.ParseSemver(s)
-		if err != nil {
-			t.Fatalf("ParseSemver(%q) = chyba %v", s, err)
-		}
-		vs[i] = v
+func TestCompareOrders(t *testing.T) {
+	vs := []exercise.Version{
+		{Minor: 9, Patch: 9},
+		{Major: 1, Pre: "alpha"},
+		{Major: 1, Pre: "alpha.1"},
+		{Major: 1, Pre: "beta"},
+		{Major: 1, Pre: "rc.1"},
+		{Major: 1, Pre: "rc.2"},
+		{Major: 1},
+		{Major: 1, Patch: 1},
+		{Major: 1, Minor: 2},
+		{Major: 2},
 	}
 	rnd := rand.New(rand.NewSource(42))
 	shuffled := make([]exercise.Version, len(vs))
@@ -172,7 +164,7 @@ func TestParsePseudoVersion(t *testing.T) {
 	}
 }
 
-func TestParsePseudoVersionChybne(t *testing.T) {
+func TestParsePseudoVersionInvalid(t *testing.T) {
 	bad := []string{
 		"",
 		"v1.2.3",
@@ -236,7 +228,7 @@ func TestMajorSuffix(t *testing.T) {
 	}
 }
 
-func TestMajorSuffixChybne(t *testing.T) {
+func TestMajorSuffixInvalid(t *testing.T) {
 	bad := []string{"example.com/m/v0", "example.com/m/v1", "example.com/m/v02", "", "example.com/m/"}
 	for _, in := range bad {
 		if _, err := exercise.MajorSuffix(in); err == nil {
@@ -274,7 +266,7 @@ func TestSelectVersions(t *testing.T) {
 	}
 }
 
-func TestSelectVersionsPrazdnyVstup(t *testing.T) {
+func TestSelectVersionsEmptyInput(t *testing.T) {
 	got, err := exercise.SelectVersions(map[string][]string{})
 	if err != nil {
 		t.Fatalf("SelectVersions(prázdná mapa) = chyba %v", err)
@@ -287,14 +279,14 @@ func TestSelectVersionsPrazdnyVstup(t *testing.T) {
 	}
 }
 
-func TestSelectVersionsChyby(t *testing.T) {
-	t.Run("modul bez verzí", func(t *testing.T) {
+func TestSelectVersionsErrors(t *testing.T) {
+	t.Run("module without versions", func(t *testing.T) {
 		_, err := exercise.SelectVersions(map[string][]string{"example.com/a": {}})
 		if !errors.Is(err, exercise.ErrNoVersions) {
 			t.Errorf("chci ErrNoVersions, dostal jsem %v", err)
 		}
 	})
-	t.Run("rozbitá verze", func(t *testing.T) {
+	t.Run("broken version", func(t *testing.T) {
 		_, err := exercise.SelectVersions(map[string][]string{"example.com/a": {"v1.0.0", "nesmysl"}})
 		if !errors.Is(err, exercise.ErrSyntax) {
 			t.Errorf("chci ErrSyntax, dostal jsem %v", err)
@@ -334,7 +326,7 @@ func TestCheckCompat(t *testing.T) {
 	}
 }
 
-func TestCheckCompatRozbityVstup(t *testing.T) {
+func TestCheckCompatBrokenInput(t *testing.T) {
 	if err := exercise.CheckCompat("example.com/m", "nesmysl"); !errors.Is(err, exercise.ErrSyntax) {
 		t.Errorf("chci ErrSyntax, dostal jsem %v", err)
 	}

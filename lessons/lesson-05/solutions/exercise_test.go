@@ -14,9 +14,9 @@ func TestPointAdd(t *testing.T) {
 		want exercise.Point
 	}{
 		{"zero values", exercise.Point{}, exercise.Point{}, exercise.Point{}},
-		{"kladné", exercise.Point{X: 1, Y: 2}, exercise.Point{X: 3, Y: 4}, exercise.Point{X: 4, Y: 6}},
-		{"záporné", exercise.Point{X: 1, Y: 2}, exercise.Point{X: -1, Y: -2}, exercise.Point{}},
-		{"poziční literál", exercise.Point{5, 5}, exercise.Point{-2, 7}, exercise.Point{3, 12}},
+		{"positive", exercise.Point{X: 1, Y: 2}, exercise.Point{X: 3, Y: 4}, exercise.Point{X: 4, Y: 6}},
+		{"negative", exercise.Point{X: 1, Y: 2}, exercise.Point{X: -1, Y: -2}, exercise.Point{}},
+		{"positional literal", exercise.Point{5, 5}, exercise.Point{-2, 7}, exercise.Point{3, 12}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -28,7 +28,7 @@ func TestPointAdd(t *testing.T) {
 	}
 }
 
-func TestPointAddNemeniPrijemce(t *testing.T) {
+func TestPointAddDoesNotMutateReceiver(t *testing.T) {
 	p := exercise.Point{X: 1, Y: 2}
 	p.Add(exercise.Point{X: 10, Y: 10})
 
@@ -54,14 +54,14 @@ func TestPointString(t *testing.T) {
 	}
 }
 
-func TestPointJeStringer(t *testing.T) {
+func TestPointIsStringer(t *testing.T) {
 	var s fmt.Stringer = exercise.Point{X: 7, Y: 8}
 	if got := fmt.Sprintf("%v", s); got != "(7,8)" {
 		t.Errorf("fmt.Sprintf(%%v, Point{7, 8}) = %q, chci %q", got, "(7,8)")
 	}
 }
 
-func TestPointPorovnatelnost(t *testing.T) {
+func TestPointComparability(t *testing.T) {
 	a := exercise.Point{X: 1, Y: 2}
 	b := exercise.Point{X: 1, Y: 2}
 	c := exercise.Point{X: 2, Y: 1}
@@ -98,7 +98,7 @@ func TestCounter(t *testing.T) {
 	}
 }
 
-func TestCounterPresPointer(t *testing.T) {
+func TestCounterViaPointer(t *testing.T) {
 	c := &exercise.Counter{}
 	c.Inc()
 	c.Add(4)
@@ -115,7 +115,7 @@ func incCopy(c exercise.Counter) int {
 	return c.Value()
 }
 
-func TestCounterKopieNemeniOriginal(t *testing.T) {
+func TestCounterCopyDoesNotMutateOriginal(t *testing.T) {
 	var c exercise.Counter
 	c.Inc()
 
@@ -161,7 +161,7 @@ func TestBaseDescribe(t *testing.T) {
 	}
 }
 
-func TestUserPromotionPole(t *testing.T) {
+func TestUserPromotionField(t *testing.T) {
 	u := exercise.User{Base: exercise.Base{ID: "u1"}, Name: "Radek"}
 
 	if got := u.ID; got != "u1" {
@@ -193,7 +193,7 @@ func newTestAdmin() exercise.Admin {
 	}
 }
 
-func TestAdminPromotionPresDveUrovne(t *testing.T) {
+func TestAdminPromotionTwoLevels(t *testing.T) {
 	a := newTestAdmin()
 
 	if got := a.ID; got != "a1" {
@@ -233,7 +233,7 @@ type describer interface {
 	Describe() string
 }
 
-func TestEmbeddingSplnujeInterface(t *testing.T) {
+func TestEmbeddingSatisfiesInterface(t *testing.T) {
 	// Promotovaná metoda se počítá do method setu, takže Admin splní
 	// interface, aniž by Describe sám implementoval.
 	var d describer = newTestAdmin()

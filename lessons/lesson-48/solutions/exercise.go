@@ -19,6 +19,7 @@ type AtomicFlag struct {
 	v atomic.Bool
 }
 
+// --- Stupeň: jednoduchý ---
 // Set nastaví hodnotu příznaku.
 func (f *AtomicFlag) Set(v bool) { f.v.Store(v) }
 
@@ -46,6 +47,7 @@ func (f *MutexFlag) Get() bool {
 	return f.v
 }
 
+// --- Stupeň: střední ---
 // StressFlag prožene příznak zátěží: writers goroutin ho nastavuje na true,
 // readers goroutin ho čte, každá z nich iterations krát. Funkce počká na
 // všechny a vrátí, kolikrát čtenáři viděli true.
@@ -146,6 +148,7 @@ type Box struct {
 	ready chan struct{}
 }
 
+// --- Stupeň: obtížný ---
 // NewBox vrátí prázdný box, ze kterého se dá číst až po Publish.
 func NewBox() *Box {
 	return &Box{ready: make(chan struct{})}

@@ -21,6 +21,7 @@ var (
 	ErrOverflow = errors.New("pricing: total overflow")
 )
 
+// --- Stupeň: jednoduchý ---
 // Total spočítá cenu košíku v centech.
 //
 // Každý produkt musí projít catalog.Validate, množství musí být kladné

@@ -9,40 +9,6 @@
 - Poskládat dekorátory (`io.LimitReader`, `io.TeeReader`, vlastní) do řetězu.
 - Vybrat mezi `bufio.Scanner`, `io.ReadAll` a `io.Copy` a vědět, kde má Scanner limit.
 
-## PHP → Go most
-
-V PHP je „něco, do čeho se dá psát" typicky `resource` z `fopen()` nebo objekt s vlastním
-API — a testovat to znamená sáhnout po `vfsStream`, po `php://memory` nebo po dočasném souboru:
-
-```php
-function writeReport(string $path, array $lines): void
-{
-    $fh = fopen($path, 'w');          // funkce si sama otevře soubor
-    foreach ($lines as $i => $line) {
-        fwrite($fh, sprintf("%d. %s\n", $i + 1, $line));
-    }
-    fclose($fh);
-}
-```
-
-Symfony to řeší přes `OutputInterface` v Console komponentě — správný instinkt, ale platí
-jen uvnitř té komponenty. Go má jeden takový interface pro **celý ekosystém**:
-
-```go
-func WriteReport(w io.Writer, lines []string) error {
-	for i, line := range lines {
-		if _, err := fmt.Fprintf(w, "%d. %s\n", i+1, line); err != nil {
-			return err
-		}
-	}
-	return nil
-}
-```
-
-Volající rozhodne, kam se píše: soubor, HTTP odpověď, gzip stream, `bytes.Buffer` v testu.
-Změna v uvažování: **funkce nemá vlastnit zdroj**. Otevírání a zavírání patří o patro výš.
-Je to dependency injection bez kontejneru, konfigurace a `services.yaml` — jen parametr.
-
 ## Teorie
 
 ### Dva interfacy, na kterých stojí celá stdlib
@@ -220,6 +186,40 @@ if s, ok := r.(io.Seeker); ok {
 }
 ```
 
+## Rozdíly proti PHP
+
+V PHP je „něco, do čeho se dá psát" typicky `resource` z `fopen()` nebo objekt s vlastním
+API — a testovat to znamená sáhnout po `vfsStream`, po `php://memory` nebo po dočasném souboru:
+
+```php
+function writeReport(string $path, array $lines): void
+{
+    $fh = fopen($path, 'w');          // funkce si sama otevře soubor
+    foreach ($lines as $i => $line) {
+        fwrite($fh, sprintf("%d. %s\n", $i + 1, $line));
+    }
+    fclose($fh);
+}
+```
+
+Symfony to řeší přes `OutputInterface` v Console komponentě — správný instinkt, ale platí
+jen uvnitř té komponenty. Go má jeden takový interface pro **celý ekosystém**:
+
+```go
+func WriteReport(w io.Writer, lines []string) error {
+	for i, line := range lines {
+		if _, err := fmt.Fprintf(w, "%d. %s\n", i+1, line); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+```
+
+Volající rozhodne, kam se píše: soubor, HTTP odpověď, gzip stream, `bytes.Buffer` v testu.
+Změna v uvažování: **funkce nemá vlastnit zdroj**. Otevírání a zavírání patří o patro výš.
+Je to dependency injection bez kontejneru, konfigurace a `services.yaml` — jen parametr.
+
 ## Časté chyby
 
 | Chyba | Proč vzniká | Jak to udělat správně |
@@ -232,73 +232,52 @@ if s, ok := r.(io.Seeker); ok {
 | Test přes dočasný soubor | zvyk na `vfsStream` / tmp soubory | `strings.NewReader` a `bytes.Buffer` |
 | Transformace celého `p` místo `p[:n]` | přehlédnuté `n` | pracuj jen s tím, co Read skutečně dodal |
 
+## AI kvíz
+
+Po přečtení teorie spusť v Cursoru **`/go-deep-quiz 13`**. AI tě ~5 minut prověří mentální model (ne hotové cvičení). Slabiny si uloží do [`GAPS.md`](../../GAPS.md).
+
 ## Úkol
 
-Pracuj v `exercise/`. Testy nesmí sáhnout na disk — všechno běží přes `strings.Reader`
-a `bytes.Buffer`. Postupuj A → B → C.
+Pracuj v `exercise/`. Po doplnění spouštěj testy:
 
-### A — rozcvička (~10 min)
+Stupně jdou od jednodušších ke složitějším — po každém stupni spusť review, než jdeš dál.
 
-`WriteReport(w io.Writer, lines []string) error` — zapíše číslovaný seznam a souhrn:
+### Jednoduchý
 
-```
-1. první
-2. druhý
-celkem: 2
-```
-
-Každý řádek ve tvaru `"%d. %s\n"` s číslováním od 1, na konci vždy `"celkem: %d\n"`
-(i pro prázdný vstup). Chybu z každého zápisu **propaguj** — test tě prověří writerem,
-který po prvním zápisu selže.
-
-např. `WriteReport(["první"])` → `"1. první\ncelkem: 1\n"`
-
-### B — jádro (~35 min)
-
-1. `CountLines(r io.Reader) (int, error)` — počet řádků. Prázdný vstup dá 0, `"a\nb"`
-   dá 2, `"a\nb\n"` taky 2, prázdné řádky se počítají. Použij `bufio.Scanner`,
-   nezapomeň na `sc.Err()` a **zvyš limit na délku řádku** — test posílá řádek
-   o 200 KiB.
-2. `NewUpperReader(r io.Reader) io.Reader` — dekorátor, který za běhu převádí ASCII
-   `a`–`z` na velká písmena. Nesmí si celý vstup načíst dopředu: test čte po třech
-   bajtech a taky ho obaluje do `io.LimitReader`. Ne-ASCII bajty nech být
-   (`"Světe"` → `"SVěTE"`).
-3. `Tail(r io.Reader, n int) ([]string, error)` — posledních `n` řádků v původním pořadí.
-   Je-li řádků méně, vrať všechny. Pro `n <= 0` vrať prázdný výsledek. Nepotřebuješ
-   držet v paměti víc než `n` řádků.
-
-např. `ReadAll(NewUpperReader("ahoj"))` → `"AHOJ"`
-
-### C — rozšíření (~25 min)
-
-1. `CountingWriter` — implementuj `Write`, `Bytes()` a `Lines()`:
-   - počítá **skutečně zapsané** bajty (tedy `n` z podkladového zápisu, ne `len(p)`),
-   - počítá znaky `'\n'` v zapsaných datech,
-   - je-li pole `W` nenulové, data přeposílá do něj a vrací jeho `n` a `err`,
-   - je-li `W` nil, chová se jako `io.Discard`, který jen počítá.
-
-   Zero value `var cw CountingWriter` musí fungovat bez konstruktoru — připomeň si lekci 3.
-2. `Pipeline(src io.Reader, dst io.Writer, transform func(string) string) (int, error)` —
-   čte `src` po řádcích, na každý řádek zavolá `transform` a výsledek zapíše do `dst`
-   i s koncovým `\n`. Vrací počet zpracovaných řádků. Při chybě zápisu skončí a vrátí
-   ji spolu s dosavadním počtem. `transform == nil` znamená identitu.
-
-Test na závěr spojí obojí dohromady: `Pipeline` čte z tvého `UpperReaderu` a píše do
-tvého `CountingWriteru`. Ani jeden o druhém neví — to je pointa.
-
-např. po `Write("ahoj\nsvete\n")`: `Bytes(), Lines()` → `11, 2`
+Funkce: `WriteReport`, `CountLines`
 
 ```bash
-make lesson L=13
+make lesson L=13 PART=1
 ```
 
-Až budeš hotový, porovnej se `solutions/` (spoiler).
+Pak **`/go-deep-review 13 easy`**.
 
-## Ověření
+### Střední
 
-Po dokončení úkolů spusť v Cursoru **`/go-deep-review`** a zadej třeba jen `13`. AI tě postupně projde body níže, doptá se a ověří pochopení — nestačí jen zelené testy.
+Funkce: `NewUpperReader`, `Tail`, `Write`
 
-- [ ] `make lesson L=13` prochází
+```bash
+make lesson L=13 PART=2
+```
+
+Pak **`/go-deep-review 13 medium`**.
+
+### Obtížný
+
+Funkce: `Bytes`, `Lines`, `Pipeline`
+
+```bash
+make lesson L=13 PART=3
+```
+
+Pak **`/go-deep-review 13 hard`**.
+
+Až budou stupně hotové, porovnej se `solutions/` (spoiler).
+
+## Závěrečné otázky
+
+Spusť **`/go-deep-review 13 final`**. AI projde body níže, doptá se a ověří pochopení. Celé cvičení ověří `make lesson L=13` (+ `make race L=13`, pokud to lekce vyžaduje).
+
 - [ ] Umíš vysvětlit, proč `Read` smí vrátit `n > 0` spolu s `io.EOF`
 - [ ] Umíš vysvětlit, proč funkce bere `io.Writer` a ne `*os.File`
 - [ ] Umíš říct, kdy použít `io.Copy`, kdy `io.ReadAll` a kdy `bufio.Scanner`
@@ -309,6 +288,7 @@ Po dokončení úkolů spusť v Cursoru **`/go-deep-review`** a zadej třeba jen
 
 `ZAKÁZÁNO` — viz [docs/ai-playbook.md](../../docs/ai-playbook.md).
 
+Mentor, kvíz i review (dialog) jsou vždy OK; v tomto režimu AI nesmí psát kód cvičení.
 ## Další čtení
 
 1. [pkg.go.dev — io](https://pkg.go.dev/io)

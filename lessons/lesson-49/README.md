@@ -10,31 +10,6 @@
 - Rozhodnout, kdy má ladění `GOMAXPROCS` smysl (spoiler: hlavně v kontejnerech).
 - Změřit dosažený souběh a cenu goroutiny místo hádání.
 
-## PHP → Go most
-
-V PHP-FPM je model plánování viditelný a triviální: jeden request = jeden proces, kolik
-procesů, tolik současně obsloužených requestů.
-
-```ini
-; php-fpm pool
-pm = static
-pm.max_children = 32   ; přesně 32 requestů naráz, 33. čeká ve frontě
-```
-
-Tvůj kód o tom nic neví a nemůže to ovlivnit. Souběžnost je konfigurace, ne kód.
-
-V Go je „pool workerů" runtime samotný a chová se na dvou úrovních:
-
-```go
-runtime.GOMAXPROCS(0) // kolik goroutin může BĚŽET současně (typicky = počet jader)
-runtime.NumGoroutine() // kolik goroutin EXISTUJE (klidně 100 000)
-```
-
-Co se mění v uvažování: přestaň si představovat „počet workerů" jako jedno číslo. V Go
-jsou to dvě různá čísla a mezi nimi vrstva, která goroutiny na vlákna namapuje. Když se
-tvůj program chová divně pod zatížením, odpověď je skoro vždycky v tom, jak se ta dvě
-čísla potkávají.
-
 ## Teorie
 
 ### G, M, P
@@ -174,6 +149,31 @@ počet goroutin (`runtime.NumGoroutine`), paměť zásobníků (`runtime.MemStat
 a chování scheduleru (`GODEBUG=schedtrace=1000`). Změna `GOMAXPROCS` bez měření je hádání
 s horším reportingem.
 
+## Rozdíly proti PHP
+
+V PHP-FPM je model plánování viditelný a triviální: jeden request = jeden proces, kolik
+procesů, tolik současně obsloužených requestů.
+
+```ini
+; php-fpm pool
+pm = static
+pm.max_children = 32   ; přesně 32 requestů naráz, 33. čeká ve frontě
+```
+
+Tvůj kód o tom nic neví a nemůže to ovlivnit. Souběžnost je konfigurace, ne kód.
+
+V Go je „pool workerů" runtime samotný a chová se na dvou úrovních:
+
+```go
+runtime.GOMAXPROCS(0) // kolik goroutin může BĚŽET současně (typicky = počet jader)
+runtime.NumGoroutine() // kolik goroutin EXISTUJE (klidně 100 000)
+```
+
+Co se mění v uvažování: přestaň si představovat „počet workerů" jako jedno číslo. V Go
+jsou to dvě různá čísla a mezi nimi vrstva, která goroutiny na vlákna namapuje. Když se
+tvůj program chová divně pod zatížením, odpověď je skoro vždycky v tom, jak se ta dvě
+čísla potkávají.
+
 ## Časté chyby
 
 | Chyba | Proč vzniká | Jak to udělat správně |
@@ -186,70 +186,52 @@ s horším reportingem.
 | `GOMAXPROCS(1)` „pro bezpečnost" místo synchronizace | „když poběží po jedné, není závod" | preempce může přerušit kdekoli, závod zůstává |
 | Ladění `GOMAXPROCS` bez měření | vypadá to jako levná optimalizace | změř souběh, latenci a throttling |
 
+## AI kvíz
+
+Po přečtení teorie spusť v Cursoru **`/go-deep-quiz 49`**. AI tě ~5 minut prověří mentální model (ne hotové cvičení). Slabiny si uloží do [`GAPS.md`](../../GAPS.md).
+
 ## Úkol
 
-Pracuj v `exercise/`. Postupuj A → B → C, po každé části spusť test. Testy jsou úmyslně
-tolerantní — měříme chování scheduleru, ne stopky.
+Pracuj v `exercise/`. Po doplnění spouštěj testy:
 
-### A — rozcvička (~10 min)
+Stupně jdou od jednodušších ke složitějším — po každém stupni spusť review, než jdeš dál.
 
-1. `RunWithMaxProcs(n int, f func())` — nastaví `GOMAXPROCS` na `n`, spustí `f` a
-   **v `defer`** obnoví původní hodnotu, takže obnova proběhne i při panice (a panika se
-   propaguje ven). Pro `n <= 0` `GOMAXPROCS` nemění, pro `f == nil` nedělá nic.
-   Nápověda: `runtime.GOMAXPROCS(n)` vrací předchozí hodnotu.
-2. `ObserveParallelism(workers int) int` — spustí `workers` goroutin, každá si připočte
-   k atomickému čítači souběhu (a udrží si jeho maximum) a pak počká na společné uvolnění.
-   Vrací naměřené maximum. Pro `workers <= 0` nulu, po návratu žádná živá goroutina.
+### Jednoduchý
 
-   Nápověda k determinismu: nejdřív nech všechny goroutiny „dorazit" (poslat do
-   bufferovaného kanálu), pak je pusť zavřením druhého kanálu. Tím je souběh měřitelný
-   spolehlivě, a ne podle štěstí.
-
-např. `ObserveParallelism(1)` → `1`
-
-### B — jádro (~35 min)
-
-1. `CPUBound(work int) uint64` — `work` iterací čistého počítání (klidně FNV hash),
-   deterministický výsledek, žádné čekání.
-2. `Blocking(d time.Duration)` — simulace blokujícího volání, `d <= 0` se vrací hned.
-3. `Compare(workers int) (cpu, blocking time.Duration)` — změří dobu `workers` souběžných
-   CPU-bound úloh a dobu `workers` souběžných volání `Blocking(BlockingDuration)`.
-   `workers <= 0` se chová jako 1.
-
-Test kontroluje to, o čem je celá lekce: blokující část **neškáluje s počtem workerů**,
-protože čekající goroutiny P uvolní, a tak osm spánků po 50 ms zabere zhruba 50 ms, ne
-400. CPU-bound část naopak omezuje `GOMAXPROCS`. Zkus si `Compare` pustit ručně pod
-`RunWithMaxProcs(1, …)` a porovnat čísla — to je ta lekce, kterou test nezachytí.
-
-např. `Compare(8)` → blocking ≈ `BlockingDuration` (ne 8×), ne sekvenční součet
-
-### C — rozšíření (~20 min)
-
-1. `StackGrowth(depth int) int` — rekurze do hloubky `depth`, každý rámec obsahuje
-   `[1024]byte`, které **musíš skutečně použít** (jinak ho kompilátor vyhodí). Vrací
-   dosaženou hloubku, pro `depth <= 0` nulu. Test jde do hloubky 1000, tedy zhruba
-   megabajt zásobníku — projde jen proto, že runtime zásobník zvětšuje.
-2. `GoroutineCost(n int) (before, after int)` — spustí `n` goroutin, počká, až všechny
-   opravdu běží, změří `runtime.NumGoroutine()` před a v tom okamžiku, a před návratem
-   je všechny uklidí.
-3. `BytesPerGoroutine(n int) uint64` — hrubý odhad zásobníku na goroutinu přes
-   `runtime.ReadMemStats` a `StackInuse`. Když měření nic nezachytí, vrať 0.
-
-např. `StackGrowth(1000)` → `1000`
+Funkce: `RunWithMaxProcs`, `ObserveParallelism`
 
 ```bash
-make lesson L=49
-make race L=49
+make lesson L=49 PART=1
 ```
 
-Až budeš hotový, porovnej se `solutions/` (spoiler).
+Pak **`/go-deep-review 49 easy`**.
 
-## Ověření
+### Střední
 
-Po dokončení úkolů spusť v Cursoru **`/go-deep-review`** a zadej třeba jen `49`. AI tě postupně projde body níže, doptá se a ověří pochopení — nestačí jen zelené testy.
+Funkce: `CPUBound`, `Blocking`, `Compare`
 
-- [ ] `make lesson L=49` prochází
-- [ ] `make race L=49` prochází (žádné hlášení race detektoru)
+```bash
+make lesson L=49 PART=2
+```
+
+Pak **`/go-deep-review 49 medium`**.
+
+### Obtížný
+
+Funkce: `StackGrowth`, `GoroutineCost`, `BytesPerGoroutine`
+
+```bash
+make lesson L=49 PART=3
+```
+
+Pak **`/go-deep-review 49 hard`**.
+
+Až budou stupně hotové, porovnej se `solutions/` (spoiler).
+
+## Závěrečné otázky
+
+Spusť **`/go-deep-review 49 final`**. AI projde body níže, doptá se a ověří pochopení. Celé cvičení ověří `make lesson L=49` (+ `make race L=49`, pokud to lekce vyžaduje).
+
 - [ ] Umíš vysvětlit rozdíl mezi G, M a P a co z nich je omezený zdroj
 - [ ] Umíš vysvětlit, proč může mít Go program víc vláken než jader
 - [ ] Umíš vysvětlit, proč `conn.Read` neblokuje vlákno, ale `os.ReadFile` ano

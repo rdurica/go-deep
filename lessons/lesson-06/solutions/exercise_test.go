@@ -15,7 +15,7 @@ func TestSwap(t *testing.T) {
 	}
 }
 
-func TestSwapStejnyPointer(t *testing.T) {
+func TestSwapSamePointer(t *testing.T) {
 	x := 7
 	exercise.Swap(&x, &x)
 
@@ -37,7 +37,7 @@ func TestSwapNil(t *testing.T) {
 
 func boolPtr(b bool) *bool { return &b }
 
-func TestApplyDefaultsPrazdnaKonfigurace(t *testing.T) {
+func TestApplyDefaultsEmptyConfig(t *testing.T) {
 	var c exercise.Config
 	exercise.ApplyDefaults(&c)
 
@@ -55,7 +55,7 @@ func TestApplyDefaultsPrazdnaKonfigurace(t *testing.T) {
 	}
 }
 
-func TestApplyDefaultsNepreplacujeNastavene(t *testing.T) {
+func TestApplyDefaultsKeepsSetValues(t *testing.T) {
 	debug := true
 	c := exercise.Config{Host: "example.com", Port: 9000, Debug: &debug}
 	exercise.ApplyDefaults(&c)
@@ -74,7 +74,7 @@ func TestApplyDefaultsNepreplacujeNastavene(t *testing.T) {
 	}
 }
 
-func TestApplyDefaultsZachovaExplicitniFalse(t *testing.T) {
+func TestApplyDefaultsKeepsExplicitFalse(t *testing.T) {
 	// Tohle je důvod, proč je Debug pointer: false nastavené uživatelem
 	// se musí odlišit od "nenastaveno".
 	c := exercise.Config{Debug: boolPtr(false)}
@@ -85,7 +85,7 @@ func TestApplyDefaultsZachovaExplicitniFalse(t *testing.T) {
 	}
 }
 
-func TestApplyDefaultsCastecna(t *testing.T) {
+func TestApplyDefaultsPartial(t *testing.T) {
 	c := exercise.Config{Port: 3000}
 	exercise.ApplyDefaults(&c)
 
@@ -112,7 +112,7 @@ func applyToCopy(c exercise.Config) exercise.Config {
 	return c
 }
 
-func TestConfigSePredavaHodnotou(t *testing.T) {
+func TestConfigPassedByValue(t *testing.T) {
 	original := exercise.Config{}
 	filled := applyToCopy(original)
 
@@ -136,12 +136,12 @@ func TestIncrementAll(t *testing.T) {
 	}
 }
 
-func TestIncrementAllPrazdny(t *testing.T) {
+func TestIncrementAllEmpty(t *testing.T) {
 	exercise.IncrementAll(nil)
 	exercise.IncrementAll([]int{})
 }
 
-func TestIncrementAllPresPodslice(t *testing.T) {
+func TestIncrementAllViaSubslice(t *testing.T) {
 	// Podslice sdílí podkladové pole, takže změna je vidět i v originálu.
 	nums := []int{1, 2, 3}
 	exercise.IncrementAll(nums[1:])
@@ -172,7 +172,7 @@ func TestAppendSafe(t *testing.T) {
 	}
 }
 
-func TestAppendSafeNesahaNaPodkladovePole(t *testing.T) {
+func TestAppendSafeDoesNotTouchBacking(t *testing.T) {
 	// Slice s rezervou v kapacitě: obyčejný append by zapsal do stejného pole.
 	backing := make([]int, 1, 8)
 	backing[0] = 1
@@ -185,7 +185,7 @@ func TestAppendSafeNesahaNaPodkladovePole(t *testing.T) {
 	}
 }
 
-func TestAppendSafeNilVstup(t *testing.T) {
+func TestAppendSafeNilInput(t *testing.T) {
 	got := exercise.AppendSafe(nil, 5)
 	if len(got) != 1 || got[0] != 5 {
 		t.Errorf("AppendSafe(nil, 5) = %v, chci [5]", got)
@@ -224,14 +224,23 @@ func TestPush(t *testing.T) {
 	}
 }
 
-func TestPushDoNilHlavy(t *testing.T) {
+func TestPushNilHead(t *testing.T) {
 	head := exercise.Push(nil, 42)
 	if head == nil {
-		t.Fatal("Push(nil, 42) vrátil nil, chci nový uzel")
+		t.Fatal("Push(nil, 42) vrátil nil, chci nový nod")
 	}
 	if head.Val != 42 || head.Next != nil {
-		t.Errorf("uzel = {%d, %v}, chci {42, nil}", head.Val, head.Next)
+		t.Errorf("nod = {%d, %v}, chci {42, nil}", head.Val, head.Next)
 	}
+}
+
+// listFrom sestaví seznam z literálů Node — bez volání studentova Push.
+func listFrom(vals ...int) *exercise.Node {
+	var head *exercise.Node
+	for i := len(vals) - 1; i >= 0; i-- {
+		head = &exercise.Node{Val: vals[i], Next: head}
+	}
+	return head
 }
 
 func TestLen(t *testing.T) {
@@ -239,11 +248,17 @@ func TestLen(t *testing.T) {
 		t.Errorf("Len(nil) = %d, chci 0", got)
 	}
 
-	var head *exercise.Node
-	for i := 0; i < 5; i++ {
-		head = exercise.Push(head, i)
-		if got := exercise.Len(head); got != i+1 {
-			t.Fatalf("po %d vloženích je Len = %d, chci %d", i+1, got, i+1)
+	tests := []struct {
+		head *exercise.Node
+		want int
+	}{
+		{&exercise.Node{Val: 0}, 1},
+		{&exercise.Node{Val: 1, Next: &exercise.Node{Val: 0}}, 2},
+		{listFrom(4, 3, 2, 1, 0), 5},
+	}
+	for _, tt := range tests {
+		if got := exercise.Len(tt.head); got != tt.want {
+			t.Fatalf("Len(%v) = %d, chci %d", toSlice(tt.head), got, tt.want)
 		}
 	}
 }
@@ -254,25 +269,20 @@ func TestReverse(t *testing.T) {
 		in   []int
 		want []int
 	}{
-		{"prázdný", nil, nil},
-		{"jeden prvek", []int{1}, []int{1}},
+		{"empty", nil, nil},
+		{"one element", []int{1}, []int{1}},
 		{"dva prvky", []int{1, 2}, []int{2, 1}},
-		{"pět prvků", []int{1, 2, 3, 4, 5}, []int{5, 4, 3, 2, 1}},
+		{"five elements", []int{1, 2, 3, 4, 5}, []int{5, 4, 3, 2, 1}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			var head *exercise.Node
-			// stavíme odzadu, ať je v seznamu pořadí tt.in
-			for i := len(tt.in) - 1; i >= 0; i-- {
-				head = exercise.Push(head, tt.in[i])
-			}
-
-			reversed := exercise.Reverse(head)
-			if got := toSlice(reversed); !equal(got, tt.want) {
+			reversed := exercise.Reverse(listFrom(tt.in...))
+			got := toSlice(reversed)
+			if !equal(got, tt.want) {
 				t.Errorf("Reverse(%v) = %v, chci %v", tt.in, got, tt.want)
 			}
-			if got, want := exercise.Len(reversed), len(tt.want); got != want {
-				t.Errorf("Len po Reverse = %d, chci %d", got, want)
+			if len(got) != len(tt.want) {
+				t.Errorf("délka po Reverse = %d, chci %d", len(got), len(tt.want))
 			}
 		})
 	}
@@ -284,11 +294,8 @@ func TestReverseNil(t *testing.T) {
 	}
 }
 
-func TestReverseDvakratJeIdentita(t *testing.T) {
-	var head *exercise.Node
-	for i := 5; i >= 1; i-- {
-		head = exercise.Push(head, i)
-	}
+func TestReverseTwiceIsIdentity(t *testing.T) {
+	head := listFrom(1, 2, 3, 4, 5)
 
 	back := exercise.Reverse(exercise.Reverse(head))
 	if got, want := toSlice(back), []int{1, 2, 3, 4, 5}; !equal(got, want) {

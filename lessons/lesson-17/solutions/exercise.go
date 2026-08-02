@@ -22,6 +22,7 @@ type Record struct {
 
 var wantHeader = []string{"name", "amount", "category"}
 
+// --- Stupeň: jednoduchý ---
 // Median vrací medián hodnot a false pro prázdný vstup.
 // Vstupní slice nemění.
 func Median(nums []float64) (float64, bool) {
@@ -38,6 +39,7 @@ func Median(nums []float64) (float64, bool) {
 	return (sorted[mid-1] + sorted[mid]) / 2, true
 }
 
+// --- Stupeň: střední ---
 // ParseRecords načte CSV s hlavičkou "name,amount,category" a vrátí datové řádky.
 func ParseRecords(r io.Reader) ([]Record, error) {
 	cr := csv.NewReader(r)
@@ -99,6 +101,7 @@ func SumByCategory(recs []Record) map[string]float64 {
 	return sums
 }
 
+// --- Stupeň: obtížný ---
 // TopN vrací n záznamů s nejvyšší částkou, při shodě v původním pořadí.
 func TopN(recs []Record, n int) []Record {
 	if n <= 0 || len(recs) == 0 {

@@ -1,43 +1,47 @@
 // Package exercise obsahuje cvičení lekce 04.
 package exercise
 
+// --- Stupeň: jednoduchý ---
 // Sum sečte libovolný počet čísel. Bez argumentů vrací 0.
 func Sum(nums ...int) int {
-	// TODO: úkol A
+	// TODO
 	return 0
 }
 
 // MinMax vrátí nejmenší a největší prvek slice.
-// Pro prázdný nebo nil vstup vrací (0, 0, false).
+// Pro prázdný nebo nil vstup vrací 0, 0, false. Vstup nemění.
+// Signatura má pojmenované návratové hodnoty — v těle piš explicitní return.
 func MinMax(nums []int) (min, max int, ok bool) {
-	// TODO: úkol A
+	// TODO
 	return
 }
 
-// Counter vrací funkci, která při každém zavolání vrátí o jedna víc.
-// První volání vrátí 1.
+// --- Stupeň: střední ---
+// Counter vrací funkci, která při každém zavolání vrátí o jedna víc (první volání → 1).
+// Dva čítače z dvou volání Counter() jsou nezávislé.
 func Counter() func() int {
-	// TODO: úkol B
+	// TODO
 	return nil
 }
 
-// Apply vrátí nový slice, ve kterém je na každý prvek použita funkce f.
-// Vstupní slice se nemění.
+// Apply vrátí nový slice se stejnou délkou, kde je na každý prvek použita f.
+// Vstup se nemění; výsledek nesdílí podkladové pole. Nil/prázdný vstup → slice délky 0.
 func Apply(nums []int, f func(int) int) []int {
-	// TODO: úkol B
+	// TODO
 	return nil
 }
 
+// --- Stupeň: obtížný ---
 // Compose složí funkce zleva doprava: Compose(f, g)(x) == g(f(x)).
 // Bez argumentů vrací identitu.
 func Compose(fs ...func(int) int) func(int) int {
-	// TODO: úkol B
+	// TODO
 	return nil
 }
 
-// Memoize vrátí memoizovanou variantu funkce f a funkci, která hlásí,
-// kolikrát byla f skutečně zavolána.
+// Memoize vrátí memoizovanou variantu f a funkci, která hlásí počet skutečných volání f.
+// Obě vrácené funkce sdílí stejný stav. Každé volání Memoize vytvoří nezávislou instanci.
 func Memoize(f func(int) int) (func(int) int, func() int) {
-	// TODO: úkol C
+	// TODO
 	return nil, nil
 }

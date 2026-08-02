@@ -56,10 +56,10 @@ func TestTotalOf(t *testing.T) {
 		in   []int64
 		want int64
 	}{
-		{"prázdný vstup", nil, 0},
-		{"jedna položka", []int64{1999}, 1999},
-		{"více položek", []int64{1999, 1, 100}, 2100},
-		{"záporné položky", []int64{500, -250, -250}, 0},
+		{"empty input", nil, 0},
+		{"one item", []int64{1999}, 1999},
+		{"multiple items", []int64{1999, 1, 100}, 2100},
+		{"negative items", []int64{500, -250, -250}, 0},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -139,8 +139,8 @@ func TestSplit(t *testing.T) {
 	}{
 		{"beze zbytku", 900, 3, []int64{300, 300, 300}},
 		{"se zbytkem", 1000, 3, []int64{334, 333, 333}},
-		{"na jeden díl", 1999, 1, []int64{1999}},
-		{"záporná částka", -250, 3, []int64{-84, -83, -83}},
+		{"into one part", 1999, 1, []int64{1999}},
+		{"negative amount", -250, 3, []int64{-84, -83, -83}},
 		{"nula", 0, 4, []int64{0, 0, 0, 0}},
 	}
 	for _, tt := range tests {

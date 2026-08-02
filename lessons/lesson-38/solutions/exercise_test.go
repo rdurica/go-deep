@@ -132,23 +132,23 @@ func TestNewOrder(t *testing.T) {
 	}
 }
 
-func TestNewOrderInvarianty(t *testing.T) {
+func TestNewOrderInvariants(t *testing.T) {
 	tests := []struct {
 		name    string
 		id      string
 		lines   []exercise.Line
 		wantErr error
 	}{
-		{"prázdné ID", "", lines(), exercise.ErrMissingID},
+		{"empty ID", "", lines(), exercise.ErrMissingID},
 		{"ID jen mezery", "   ", lines(), exercise.ErrMissingID},
-		{"nil položky", "ord-1", nil, exercise.ErrEmptyOrder},
-		{"prázdné položky", "ord-1", []exercise.Line{}, exercise.ErrEmptyOrder},
-		{"prázdné SKU", "ord-1", []exercise.Line{{SKU: " ", Quantity: 1, UnitPriceCents: 100}}, exercise.ErrInvalidLine},
-		{"nulové množství", "ord-1", []exercise.Line{{SKU: "x", Quantity: 0, UnitPriceCents: 100}}, exercise.ErrInvalidLine},
-		{"záporné množství", "ord-1", []exercise.Line{{SKU: "x", Quantity: -1, UnitPriceCents: 100}}, exercise.ErrInvalidLine},
-		{"nulová cena", "ord-1", []exercise.Line{{SKU: "x", Quantity: 1, UnitPriceCents: 0}}, exercise.ErrInvalidLine},
-		{"záporná cena", "ord-1", []exercise.Line{{SKU: "x", Quantity: 1, UnitPriceCents: -5}}, exercise.ErrInvalidLine},
-		{"vadná druhá položka", "ord-1", []exercise.Line{
+		{"nil items", "ord-1", nil, exercise.ErrEmptyOrder},
+		{"empty items", "ord-1", []exercise.Line{}, exercise.ErrEmptyOrder},
+		{"empty SKU", "ord-1", []exercise.Line{{SKU: " ", Quantity: 1, UnitPriceCents: 100}}, exercise.ErrInvalidLine},
+		{"zero quantity", "ord-1", []exercise.Line{{SKU: "x", Quantity: 0, UnitPriceCents: 100}}, exercise.ErrInvalidLine},
+		{"negative quantity", "ord-1", []exercise.Line{{SKU: "x", Quantity: -1, UnitPriceCents: 100}}, exercise.ErrInvalidLine},
+		{"zero price", "ord-1", []exercise.Line{{SKU: "x", Quantity: 1, UnitPriceCents: 0}}, exercise.ErrInvalidLine},
+		{"negative price", "ord-1", []exercise.Line{{SKU: "x", Quantity: 1, UnitPriceCents: -5}}, exercise.ErrInvalidLine},
+		{"bad second item", "ord-1", []exercise.Line{
 			{SKU: "x", Quantity: 1, UnitPriceCents: 100},
 			{SKU: "y", Quantity: 0, UnitPriceCents: 100},
 		}, exercise.ErrInvalidLine},
@@ -166,7 +166,7 @@ func TestNewOrderInvarianty(t *testing.T) {
 	}
 }
 
-func TestNewOrderKopirujePolozky(t *testing.T) {
+func TestNewOrderCopiesItems(t *testing.T) {
 	in := lines()
 	o, err := exercise.NewOrder("ord-1", in)
 	if err != nil {
@@ -185,7 +185,7 @@ func TestNewOrderKopirujePolozky(t *testing.T) {
 	}
 }
 
-func TestPrechodyStavu(t *testing.T) {
+func TestStatusTransitions(t *testing.T) {
 	type step struct {
 		name string
 		fn   func(exercise.Order) (exercise.Order, error)
@@ -229,7 +229,7 @@ func TestPrechodyStavu(t *testing.T) {
 	}
 }
 
-func TestOdeslanouObjednavkuNelzeZrusit(t *testing.T) {
+func TestShippedOrderCannotCancel(t *testing.T) {
 	o := mustOrder(t)
 	paid, err := o.Pay()
 	if err != nil {
@@ -244,7 +244,7 @@ func TestOdeslanouObjednavkuNelzeZrusit(t *testing.T) {
 	}
 }
 
-func TestPrechodNemeniPuvodniObjednavku(t *testing.T) {
+func TestTransitionDoesNotMutateOriginalOrder(t *testing.T) {
 	o := mustOrder(t)
 	if _, err := o.Pay(); err != nil {
 		t.Fatalf("Pay = chyba %v", err)
@@ -283,7 +283,7 @@ func TestServicePlace(t *testing.T) {
 	}
 }
 
-func TestServicePlaceNeukladaNeplatnou(t *testing.T) {
+func TestServicePlaceDoesNotStoreInvalid(t *testing.T) {
 	repo := newFakeRepo()
 	svc := exercise.NewService(repo, &stubIDs{})
 
@@ -296,7 +296,7 @@ func TestServicePlaceNeukladaNeplatnou(t *testing.T) {
 	}
 }
 
-func TestServicePlaceObaliChybuUlozeni(t *testing.T) {
+func TestServicePlaceWrapsStoreError(t *testing.T) {
 	sentinel := errors.New("disk plný")
 	repo := newFakeRepo()
 	repo.saveErr = sentinel
@@ -328,7 +328,7 @@ func TestServiceGet(t *testing.T) {
 	}
 }
 
-func TestServiceZivotniCyklus(t *testing.T) {
+func TestServiceLifecycle(t *testing.T) {
 	repo := newFakeRepo()
 	svc := exercise.NewService(repo, &stubIDs{})
 	ctx := context.Background()
@@ -364,7 +364,7 @@ func TestServiceZivotniCyklus(t *testing.T) {
 	}
 }
 
-func TestServiceNepovolenyPrechodNeuklada(t *testing.T) {
+func TestServiceDisallowedTransitionDoesNotStore(t *testing.T) {
 	repo := newFakeRepo()
 	svc := exercise.NewService(repo, &stubIDs{})
 	ctx := context.Background()
@@ -383,7 +383,7 @@ func TestServiceNepovolenyPrechodNeuklada(t *testing.T) {
 	}
 }
 
-func TestServiceNaNeexistujici(t *testing.T) {
+func TestServiceOnMissing(t *testing.T) {
 	svc := exercise.NewService(newFakeRepo(), &stubIDs{})
 	ctx := context.Background()
 
@@ -435,7 +435,7 @@ func TestMemoryRepository(t *testing.T) {
 	}
 }
 
-func TestMemoryRepositoryIzolujeData(t *testing.T) {
+func TestMemoryRepositoryIsolatesData(t *testing.T) {
 	repo := exercise.NewMemoryRepository()
 	ctx := context.Background()
 	o := mustOrder(t)
@@ -463,7 +463,7 @@ func TestMemoryRepositoryIzolujeData(t *testing.T) {
 	}
 }
 
-func TestMemoryRepositorySoubezne(t *testing.T) {
+func TestMemoryRepositoryConcurrent(t *testing.T) {
 	repo := exercise.NewMemoryRepository()
 	ctx := context.Background()
 
@@ -495,9 +495,9 @@ func TestMemoryRepositorySoubezne(t *testing.T) {
 
 // ---------- hranice balíčků ----------
 
-// TestHraniceBalicku hlídá směr závislostí strojově. Slovní dohoda „doména
+// TestPackageBoundaries hlídá směr závislostí strojově. Slovní dohoda „doména
 // nezná HTTP" vydrží do prvního spěchu; tenhle test vydrží i po něm.
-func TestHraniceBalicku(t *testing.T) {
+func TestPackageBoundaries(t *testing.T) {
 	zakazane := map[string]bool{
 		"net/http":      true,
 		"encoding/json": true,
@@ -571,7 +571,7 @@ func decodeBody(t *testing.T, rec *httptest.ResponseRecorder) map[string]any {
 	return out
 }
 
-func TestHTTPZalozeniObjednavky(t *testing.T) {
+func TestHTTPCreateOrder(t *testing.T) {
 	h := newTestHandler()
 	rec := do(t, h, http.MethodPost, "/orders", validBody)
 
@@ -590,18 +590,18 @@ func TestHTTPZalozeniObjednavky(t *testing.T) {
 	}
 }
 
-func TestHTTPChybneVstupy(t *testing.T) {
+func TestHTTPInvalidInputs(t *testing.T) {
 	tests := []struct {
 		name       string
 		body       string
 		wantStatus int
 	}{
-		{"rozbitý JSON", `{"lines":`, http.StatusBadRequest},
-		{"prázdné tělo", `{}`, http.StatusUnprocessableEntity},
-		{"prázdné položky", `{"lines":[]}`, http.StatusUnprocessableEntity},
-		{"nulové množství", `{"lines":[{"sku":"x","quantity":0,"unit_price_cents":100}]}`, http.StatusUnprocessableEntity},
-		{"záporná cena", `{"lines":[{"sku":"x","quantity":1,"unit_price_cents":-1}]}`, http.StatusUnprocessableEntity},
-		{"prázdné SKU", `{"lines":[{"sku":"","quantity":1,"unit_price_cents":100}]}`, http.StatusUnprocessableEntity},
+		{"broken JSON", `{"lines":`, http.StatusBadRequest},
+		{"empty body", `{}`, http.StatusUnprocessableEntity},
+		{"empty items", `{"lines":[]}`, http.StatusUnprocessableEntity},
+		{"zero quantity", `{"lines":[{"sku":"x","quantity":0,"unit_price_cents":100}]}`, http.StatusUnprocessableEntity},
+		{"negative price", `{"lines":[{"sku":"x","quantity":1,"unit_price_cents":-1}]}`, http.StatusUnprocessableEntity},
+		{"empty SKU", `{"lines":[{"sku":"","quantity":1,"unit_price_cents":100}]}`, http.StatusUnprocessableEntity},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -623,7 +623,7 @@ func TestHTTPChybneVstupy(t *testing.T) {
 	}
 }
 
-func TestHTTPNenalezeno(t *testing.T) {
+func TestHTTPNotFound(t *testing.T) {
 	h := newTestHandler()
 	for _, path := range []string{"/orders/neexistuje", "/orders/neexistuje/pay", "/orders/neexistuje/cancel"} {
 		method := http.MethodGet
@@ -640,7 +640,7 @@ func TestHTTPNenalezeno(t *testing.T) {
 	}
 }
 
-func TestHTTPZivotniCyklus(t *testing.T) {
+func TestHTTPLifecycle(t *testing.T) {
 	h := newTestHandler()
 
 	created := do(t, h, http.MethodPost, "/orders", validBody)
@@ -678,7 +678,7 @@ func TestHTTPZivotniCyklus(t *testing.T) {
 	}
 }
 
-func TestHTTPKonfliktStavu(t *testing.T) {
+func TestHTTPStatusConflict(t *testing.T) {
 	h := newTestHandler()
 	created := do(t, h, http.MethodPost, "/orders", validBody)
 	id, _ := decodeBody(t, created)["id"].(string)
@@ -704,7 +704,7 @@ func TestHTTPKonfliktStavu(t *testing.T) {
 	}
 }
 
-func TestHTTPZruseni(t *testing.T) {
+func TestHTTPCancel(t *testing.T) {
 	h := newTestHandler()
 	created := do(t, h, http.MethodPost, "/orders", validBody)
 	id, _ := decodeBody(t, created)["id"].(string)
@@ -718,7 +718,7 @@ func TestHTTPZruseni(t *testing.T) {
 	}
 }
 
-func TestHTTPMetodyARouting(t *testing.T) {
+func TestHTTPMethodsAndRouting(t *testing.T) {
 	h := newTestHandler()
 	if rec := do(t, h, http.MethodGet, "/healthz", ""); rec.Code != http.StatusOK {
 		t.Errorf("GET /healthz = %d, chci 200", rec.Code)
@@ -731,7 +731,7 @@ func TestHTTPMetodyARouting(t *testing.T) {
 	}
 }
 
-func TestHTTPNeprozradiInterniChybu(t *testing.T) {
+func TestHTTPDoesNotLeakInternalError(t *testing.T) {
 	repo := newFakeRepo()
 	repo.saveErr = errors.New("pq: connection to 10.0.0.7 refused")
 	h := exercise.NewHandler(exercise.NewService(repo, &stubIDs{}))

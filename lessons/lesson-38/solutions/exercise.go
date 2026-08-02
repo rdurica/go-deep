@@ -44,12 +44,15 @@ var (
 // ProblemContentType je Content-Type chybové odpovědi podle RFC 7807.
 const ProblemContentType = httpapi.ProblemContentType
 
+// --- Stupeň: jednoduchý ---
 // NewOrder je fasáda nad order.New. Hotová, neimplementuj ji.
 func NewOrder(id string, lines []Line) (Order, error) { return order.New(id, lines) }
 
+// --- Stupeň: střední ---
 // NewMemoryRepository je fasáda nad memstore.New. Hotová, neimplementuj ji.
 func NewMemoryRepository() Repository { return memstore.New() }
 
+// --- Stupeň: obtížný ---
 // NewService je fasáda nad app.NewService. Hotová, neimplementuj ji.
 func NewService(repo Repository, ids IDGen) *Service { return app.NewService(repo, ids) }
 

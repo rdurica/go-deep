@@ -10,35 +10,6 @@
 - Vysvětlit, proč se v cyklu skládá text přes `strings.Builder` a ne přes `+=`.
 - Změřit rozdíl mezi oběma přístupy benchmarkem a přečíst si jeho výstup.
 
-## PHP → Go most
-
-V PHP je `$s[0]` jeden bajt, `strlen()` počítá bajty a `mb_strlen()` znaky — a když
-zapomeneš na `mb_`, rozbiješ češtinu. Tenhle dvojí svět znáš.
-
-```php
-$s = "žluť";
-strlen($s);        // 6 bajtů
-mb_strlen($s);     // 4 znaky
-strrev($s);        // rozbité — otáčí bajty
-mb_substr($s, 0, 2);
-```
-
-Go dvojí sadu funkcí nemá. Má jeden typ `string`, který je **vždycky posloupnost bajtů**,
-a jazykové konstrukce, které ti dovolí dívat se na něj jako na znaky, když chceš.
-
-```go
-s := "žluť"
-len(s)                       // 6 — bajty, vždycky bajty
-utf8.RuneCountInString(s)    // 4 — znaky (runy)
-s[0]                         // 197 (byte), ne "ž"
-for i, r := range s { }      // i je bajtový offset, r je runa
-[]rune(s)[0]                 // 'ž'
-```
-
-Přenos návyku: přestaň hledat `mb_` variantu. Místo toho se u každé operace zeptej,
-jestli pracuješ s bajty (I/O, protokoly, hashe) nebo se znaky (uživatelský text, délka
-pro zobrazení, otáčení). Go tě k té otázce donutí tím, že `len` má jen jeden význam.
-
 ## Teorie
 
 ### String je neměnná sekvence bajtů
@@ -260,6 +231,35 @@ normalizace, kterou stdlib nemá.
 A `strconv` je vždycky lepší než `fmt.Sprintf("%d", n)`: je rychlejší, nealokuje
 interface a jasně říká, co dělá.
 
+## Rozdíly proti PHP
+
+V PHP je `$s[0]` jeden bajt, `strlen()` počítá bajty a `mb_strlen()` znaky — a když
+zapomeneš na `mb_`, rozbiješ češtinu. Tenhle dvojí svět znáš.
+
+```php
+$s = "žluť";
+strlen($s);        // 6 bajtů
+mb_strlen($s);     // 4 znaky
+strrev($s);        // rozbité — otáčí bajty
+mb_substr($s, 0, 2);
+```
+
+Go dvojí sadu funkcí nemá. Má jeden typ `string`, který je **vždycky posloupnost bajtů**,
+a jazykové konstrukce, které ti dovolí dívat se na něj jako na znaky, když chceš.
+
+```go
+s := "žluť"
+len(s)                       // 6 — bajty, vždycky bajty
+utf8.RuneCountInString(s)    // 4 — znaky (runy)
+s[0]                         // 197 (byte), ne "ž"
+for i, r := range s { }      // i je bajtový offset, r je runa
+[]rune(s)[0]                 // 'ž'
+```
+
+Přenos návyku: přestaň hledat `mb_` variantu. Místo toho se u každé operace zeptej,
+jestli pracuješ s bajty (I/O, protokoly, hashe) nebo se znaky (uživatelský text, délka
+pro zobrazení, otáčení). Go tě k té otázce donutí tím, že `len` má jen jeden význam.
+
 ## Časté chyby
 
 | Chyba | Proč vzniká | Jak to udělat správně |
@@ -272,79 +272,52 @@ interface a jasně říká, co dělá.
 | `i` z `range` jako index znaku | vypadá jako běžný `range` | `i` je bajtový offset |
 | `fmt.Sprintf("%d", n)` pro převod | univerzální nástroj na všechno | `strconv.Itoa(n)` |
 
+## AI kvíz
+
+Po přečtení teorie spusť v Cursoru **`/go-deep-quiz 09`**. AI tě ~5 minut prověří mentální model (ne hotové cvičení). Slabiny si uloží do [`GAPS.md`](../../GAPS.md).
+
 ## Úkol
 
-Pracuj v `exercise/`. Postupuj A → B → C, po každé části spusť test.
+Pracuj v `exercise/`. Po doplnění spouštěj testy:
 
-### A — rozcvička (~10 min)
+Stupně jdou od jednodušších ke složitějším — po každém stupni spusť review, než jdeš dál.
 
-1. `ByteLen(s string) int` — počet bajtů.
-2. `RuneLen(s string) int` — počet run. Použij `utf8.RuneCountInString`, ne `[]rune`.
+### Jednoduchý
 
-Pro `"go"` obojí vrátí `2`, pro `"kůň"` `5` a `3` — `ů` i `ň` zaberou po dvou bajtech.
-
-např. `ByteLen("kůň")` → `5`
-
-### B — jádro (~35 min)
-
-1. `ReverseRunes(s string) string` — otočí pořadí run. Musí správně zvládnout češtinu
-   (`"kůň"` → `"ňůk"`) i emoji (`"a🐹b"` → `"b🐹a"`). Prázdný vstup vrací prázdný string.
-2. `Truncate(s string, maxRunes int) string` — zkrátí text tak, aby měl **nejvýš
-   `maxRunes` run včetně** připojeného znaku `…` (U+2026, jedna runa):
-   - `maxRunes <= 0` → prázdný string,
-   - text kratší nebo přesně dlouhý `maxRunes` run → vrací se beze změny, **bez** `…`,
-   - jinak prvních `maxRunes-1` run plus `…`.
-
-   Takže `Truncate("příliš", 4)` je `"pří…"` a `Truncate("příliš", 6)` je `"příliš"`.
-3. `Initials(fullName string) string` — iniciály z celého jména: první runa každého slova,
-   převedená na velké písmeno. `"Radek Ďurica"` → `"RĎ"`. Ošetři vícenásobné mezery,
-   tabulátory a okrajové mezery (`"  jan   novák "` → `"JN"`) i prázdný vstup (`""`).
-   Hodí se `strings.Fields` a `unicode.ToUpper`.
-
-např. `ReverseRunes("kůň")` → `"ňůk"`
-
-### C — rozšíření (~25 min)
-
-1. `Join(parts []string, sep string) string` — spojí kusy oddělovačem. **Nesmíš použít
-   `strings.Join`.** Postav to na `strings.Builder` a **předalokuj** přes `Grow` na
-   přesnou výslednou délku v bajtech, kterou si spočítáš dopředu. Prázdný vstup vrací
-   `""`, jeden prvek vrací ten prvek bez oddělovače.
-
-   Test kontroluje počet alokací přes `testing.AllocsPerRun` — bez `Grow` neprojde.
-2. `CountRunes(s string) map[rune]int` — spočítá výskyty jednotlivých run. Vždy vrací
-   ne-nil mapu. Nesmíš alokovat `[]rune` — projdi text přes `range`.
-
-V testu jsou navíc připravené benchmarky `BenchmarkBuilder` a `BenchmarkConcat`.
-Až budeš hotový, spusť je a podívej se na rozdíl:
+Funkce: `ByteLen`, `RuneLen`
 
 ```bash
-cd exercise && go test -bench=. -benchmem -run=^$
+make lesson L=09 PART=1
 ```
 
-Na 1000 kouscích to vypadá zhruba takhle:
+Pak **`/go-deep-review 09 easy`**.
 
-```
-BenchmarkBuilder-16      168592          7269 ns/op       12288 B/op          1 allocs/op
-BenchmarkConcat-16          968       1288358 ns/op    12504270 B/op       1998 allocs/op
-```
+### Střední
 
-Sto sedmdesátkrát pomalejší a tisíckrát víc naalokované paměti — protože `+=` pokaždé
-zkopíruje celý dosavadní výsledek. Benchmarky se při běžném `go test` nespouštějí, takže
-ti nic nerozbijí.
-
-např. `Join([]string{"go", "php"}, ", ")` → `"go, php"`
+Funkce: `ReverseRunes`, `Truncate`
 
 ```bash
-make lesson L=09
+make lesson L=09 PART=2
 ```
 
-Až budeš hotový, porovnej se `solutions/` (spoiler).
+Pak **`/go-deep-review 09 medium`**.
 
-## Ověření
+### Obtížný
 
-Po dokončení úkolů spusť v Cursoru **`/go-deep-review`** a zadej třeba jen `09`. AI tě postupně projde body níže, doptá se a ověří pochopení — nestačí jen zelené testy.
+Funkce: `Initials`, `Join`, `CountRunes`
 
-- [ ] `make lesson L=09` prochází
+```bash
+make lesson L=09 PART=3
+```
+
+Pak **`/go-deep-review 09 hard`**.
+
+Až budou stupně hotové, porovnej se `solutions/` (spoiler).
+
+## Závěrečné otázky
+
+Spusť **`/go-deep-review 09 final`**. AI projde body níže, doptá se a ověří pochopení. Celé cvičení ověří `make lesson L=09` (+ `make race L=09`, pokud to lekce vyžaduje).
+
 - [ ] Umíš vysvětlit, proč `len("kůň")` je 5 a ne 3
 - [ ] Umíš vysvětlit, co znamená první proměnná v `for i, r := range s`
 - [ ] Umíš vysvětlit, proč otočení po bajtech rozbije `ř` a otočení po runách ne
@@ -355,6 +328,7 @@ Po dokončení úkolů spusť v Cursoru **`/go-deep-review`** a zadej třeba jen
 
 `ZAKÁZÁNO` — viz [docs/ai-playbook.md](../../docs/ai-playbook.md).
 
+Mentor, kvíz i review (dialog) jsou vždy OK; v tomto režimu AI nesmí psát kód cvičení.
 ## Další čtení
 
 1. [Go blog — Strings, bytes, runes and characters in Go](https://go.dev/blog/strings)

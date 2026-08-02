@@ -10,35 +10,6 @@
 - Udržet si znalost Go i po kurzu a vědět, co číst a kam přispívat dál.
 - Udělat z tohohle repozitáře kurz pro ostatní.
 
-## PHP → Go most
-
-V Symfony přichází „produkční připravenost" z velké části s frameworkem a s tím, co má
-tvoje firma nastavené: rate limiter je bundle, security hlavičky přidává nginx,
-graceful reload dělá PHP-FPM, logy formátuje Monolog.
-
-```yaml
-framework:
-    rate_limiter:
-        anonymous_api: { policy: 'token_bucket', limit: 100, rate: { interval: '1 minute' } }
-```
-
-V Go je proces **tvůj**. Nikdo za tebe neukončí požadavky při deploy, nikdo neomezí
-velikost těla a nikdo neschová heslo v logu. Zato všechno vidíš na jednom místě
-a v jednom jazyce:
-
-```go
-srv := &http.Server{
-	Handler:           Harden(mux, opts),
-	ReadHeaderTimeout: 5 * time.Second,
-	WriteTimeout:      10 * time.Second,
-}
-// a shutdown je tvoje funkce, ne konfigurace
-```
-
-Poslední přenos návyku celého kurzu: **produkční vlastnosti jsou kód, který napíšeš
-a otestuješ**, ne konfigurace, kterou zdědíš. Proto je taky můžeš otestovat přes
-`httptest` a mít je zelené v CI.
-
 ## Recap
 
 Kurz měl osm fází. Tady je celá mapa: co umíš, kde to bylo a čím si to ověříš, když si
@@ -116,6 +87,35 @@ Před publikací zkontroluj tři věci: řešení v `solutions/` možná chceš 
 větve, `LICENSE` odpovídá tomu, jak chceš materiál šířit, a `make check` prochází na
 čisté kopii repozitáře.
 
+## Rozdíly proti PHP
+
+V Symfony přichází „produkční připravenost" z velké části s frameworkem a s tím, co má
+tvoje firma nastavené: rate limiter je bundle, security hlavičky přidává nginx,
+graceful reload dělá PHP-FPM, logy formátuje Monolog.
+
+```yaml
+framework:
+    rate_limiter:
+        anonymous_api: { policy: 'token_bucket', limit: 100, rate: { interval: '1 minute' } }
+```
+
+V Go je proces **tvůj**. Nikdo za tebe neukončí požadavky při deploy, nikdo neomezí
+velikost těla a nikdo neschová heslo v logu. Zato všechno vidíš na jednom místě
+a v jednom jazyce:
+
+```go
+srv := &http.Server{
+	Handler:           Harden(mux, opts),
+	ReadHeaderTimeout: 5 * time.Second,
+	WriteTimeout:      10 * time.Second,
+}
+// a shutdown je tvoje funkce, ne konfigurace
+```
+
+Poslední přenos návyku celého kurzu: **produkční vlastnosti jsou kód, který napíšeš
+a otestuješ**, ne konfigurace, kterou zdědíš. Proto je taky můžeš otestovat přes
+`httptest` a mít je zelené v CI.
+
 ## Časté chyby
 
 | Chyba | Proč vzniká | Jak to udělat správně |
@@ -127,82 +127,63 @@ větve, `LICENSE` odpovídá tomu, jak chceš materiál šířit, a `make check`
 | `/healthz` kontrolující databázi | záměna liveness a readiness | liveness = žiju, readiness = mohu obsluhovat |
 | Audit „myslím, že jsme ready" | checklist není v kódu | vyhodnoť ho funkcí a nech kritické položky blokovat |
 
+## Co dál
+
+1. **Dokonči a zveřejni P05.** Přidej README s příkazy, `Dockerfile` a jeden skutečný
+   deployment. Služba, kterou nikdo nespustil, nic nedokazuje.
+2. **Volitelný bonus P06** — nahraď in-memory store PostgreSQL (sqlc + pgx) a Redis
+   cache: [`projects/p06-bookmarks-persist`](../../projects/p06-bookmarks-persist/README.md).
+   Je to ADR z lekce 56 v praxi; Chi nepotřebuješ.
+3. **Přepiš jeden vlastní PHP nástroj do Go.** Ideálně CLI nebo malý démon. Rozsah na
+   jeden víkend, ne na půl roku.
+4. **Přečti si `net/http` a `errors` celé.** Ne dokumentaci, zdrojáky. Po tomhle kurzu
+   na to máš.
+5. **Zavěs si vlastní linter z lekce 57 do CI** a nech ho hlídat i cizí PR.
+6. **Přispěj do OSS.** Knihovna, kterou používáš, má issues označené `help wanted`.
+7. **Veď kurz dál.** Repozitář jde exportovat podle
+   [docs/course-export.md](../../docs/course-export.md) — nejrychleji se učí ten, kdo učí.
+
+## AI kvíz
+
+Po přečtení teorie spusť v Cursoru **`/go-deep-quiz 60`**. AI tě ~5 minut prověří mentální model (ne hotové cvičení). Slabiny si uloží do [`GAPS.md`](../../GAPS.md).
+
 ## Úkol
 
-Pracuj v `exercise/`. Cvičení je **kumulativní** — kombinuje souběžnost (fáze 5),
-`net/http` a middleware (fáze 3), doménové chyby (fáze 1) a produkční disciplínu (fáze 6).
+Pracuj v `exercise/`. Po doplnění spouštěj testy:
 
-### A — token bucket (~20 min)
+Stupně jdou od jednodušších ke složitějším — po každém stupni spusť review, než jdeš dál.
 
-`NewRateLimiter(capacity int, refill time.Duration, now func() time.Time) *RateLimiter`.
-Neplatná kapacita (`< 1`) se opraví na `1`, `refill <= 0` na jednu sekundu, `now == nil`
-znamená `time.Now`.
+### Jednoduchý
 
-- `Allow(key string) bool` — každý klíč má vlastní kbelík. Nový klíč začíná plný. Před
-  odebráním tokenu doplň `elapsed / refill` tokenů (nikdy nad kapacitu) a posuň značku
-  posledního doplnění **o vyčerpaný násobek** `refill`, ne na aktuální čas — jinak by se
-  zbytek času ztrácel. Prázdný kbelík vrací `false`.
-- `Cleanup(idle time.Duration) int` — zahodí kbelíky, které se nepoužily aspoň `idle`
-  (podle času posledního `Allow`), a vrátí jejich počet.
-- `Len() int` — počet sledovaných klíčů.
-
-Test běží s `-race` a osm goroutin se pere o 500 tokenů; musí projít **přesně** 500.
-
-např. `Allow("a")` ×4 při kapacitě 3 → `true, true, true, false`
-
-### B — middleware chain (~35 min)
-
-`Harden(h http.Handler, opts HardenOptions) http.Handler` složí (od vnějšku dovnitř):
-
-1. **recovery** — `recover()`, `500` a tělo `internal server error\n`; panika nesmí uniknout,
-2. **bezpečnostní hlavičky** — všechny z `SecurityHeaders`, i u chybových odpovědí,
-3. **rate limiting** — jen když `opts.Limiter != nil`; klíč z `opts.KeyFunc`, a když je
-   `nil`, z `r.RemoteAddr` bez portu; odmítnutí je `429` a tělo `too many requests\n`,
-4. **limit těla** — jen když `opts.MaxBodyBytes > 0`; `ContentLength` nad limit je `413`
-   a tělo `request body too large\n`, jinak se tělo obalí do `http.MaxBytesReader`,
-   aby se ořízlo i při neznámé délce,
-5. **timeout** — jen když `opts.Timeout > 0`; použij `http.TimeoutHandler` se zprávou
-   `timeout` (odpoví `503`).
-
-Každá vlastnost má vlastní test přes `httptest`; testy nesmí spoléhat na reálný čas
-kromě samotného timeoutu.
-
-např. `Harden` + limiter kapacita 2 → 3. požadavek `429`
-
-### C — audit a pokrok (~25 min)
-
-1. `AuditReport(checks []Check) (Report, error)`:
-   - prázdný vstup → `ErrNoChecks`, kontrola bez ID → `ErrInvalidCheck`, duplicitní ID →
-     `ErrDuplicateCheck`,
-   - `Total`, `Passed`, `CriticalFailed` (nesplněné kritické), `Score = Passed / Total`,
-   - `Missing` — ID nesplněných kontrol, seřazená,
-   - `Ready` — `true`, jen když není žádný kritický nedodělek **a** `Score >= 0.8`.
-2. `Coverage(lessons []LessonResult) Summary`:
-   - `Total`, `Passed`, `Percent` (0–100; prázdný vstup dá 0),
-   - `ByPhase` — vždy inicializovaná mapa fáze → `PhaseStat`,
-   - `WeakestPhase` — fáze s nejnižším poměrem splněných; při shodě nižší číslo fáze,
-     u prázdného vstupu `0`.
-
-např. `AuditReport` (8/10, 1 kritický chybí) → `Ready=false`, `Score=0.8`
+Funkce: `NewRateLimiter`, `Allow`
 
 ```bash
-make lesson L=60
-make race L=60
+make lesson L=60 PART=1
 ```
 
-Až budeš hotový, porovnej se `solutions/` (spoiler). Pak zapoj `Harden` do
-`projects/p05-capstone/` a projdi `ACCEPTANCE.md`.
+Pak **`/go-deep-review 60 easy`**.
 
-## Ověření
+### Střední
 
-Po dokončení úkolů spusť v Cursoru **`/go-deep-review`** a zadej třeba jen `60`. AI tě postupně projde body níže, doptá se a ověří pochopení — nestačí jen zelené testy.
+Funkce: `Cleanup`, `Len`
 
-- [ ] `make lesson L=60` i `make race L=60` prochází
-- [ ] `go test -race ./projects/p05-capstone/...` prochází
-- [ ] `ACCEPTANCE.md` projektu P05 je odškrtaný celý
-- [ ] Umíš vysvětlit pořadí middleware v `Harden` a co se rozbije při prohození
-- [ ] Umíš vysvětlit rozdíl mezi liveness a readiness na příkladu své služby
-- [ ] Umíš říct, proč se čas do limiteru injektuje, a co by jinak bylo v testu flaky
+```bash
+make lesson L=60 PART=2
+```
+
+Pak **`/go-deep-review 60 medium`**.
+
+### Obtížný
+
+Funkce: `Harden`, `AuditReport`, `Coverage`
+
+```bash
+make lesson L=60 PART=3
+```
+
+Pak **`/go-deep-review 60 hard`**.
+
+Až budou stupně hotové, porovnej se `solutions/` (spoiler).
 
 ## Sebehodnocení
 
@@ -235,21 +216,14 @@ Za každou položku 0–2 body (0 = neumím, 1 = s dokumentací, 2 = z hlavy a u
 | 13–19 | Chybí ti jedna nebo dvě fáze celé. Podívej se na `Coverage` ze svého cvičení — nejslabší fáze projdi znovu, včetně cvičení. |
 | 0–12 | Vracíš se na fázi 1. Není to prohra: kurz je 80 hodin práce a přeskakovat se nedá. Projdi znovu lekce 03–18 a udělej P01. |
 
-## Co dál
+## Závěrečné otázky
 
-1. **Dokonči a zveřejni P05.** Přidej README s příkazy, `Dockerfile` a jeden skutečný
-   deployment. Služba, kterou nikdo nespustil, nic nedokazuje.
-2. **Volitelný bonus P06** — nahraď in-memory store PostgreSQL (sqlc + pgx) a Redis
-   cache: [`projects/p06-bookmarks-persist`](../../projects/p06-bookmarks-persist/README.md).
-   Je to ADR z lekce 56 v praxi; Chi nepotřebuješ.
-3. **Přepiš jeden vlastní PHP nástroj do Go.** Ideálně CLI nebo malý démon. Rozsah na
-   jeden víkend, ne na půl roku.
-4. **Přečti si `net/http` a `errors` celé.** Ne dokumentaci, zdrojáky. Po tomhle kurzu
-   na to máš.
-5. **Zavěs si vlastní linter z lekce 57 do CI** a nech ho hlídat i cizí PR.
-6. **Přispěj do OSS.** Knihovna, kterou používáš, má issues označené `help wanted`.
-7. **Veď kurz dál.** Repozitář jde exportovat podle
-   [docs/course-export.md](../../docs/course-export.md) — nejrychleji se učí ten, kdo učí.
+Spusť **`/go-deep-review 60 final`**. AI projde body níže, doptá se a ověří pochopení. Celé cvičení ověří `make lesson L=60` (+ `make race L=60`, pokud to lekce vyžaduje).
+
+- [ ] `ACCEPTANCE.md` projektu P05 je odškrtaný celý
+- [ ] Umíš vysvětlit pořadí middleware v `Harden` a co se rozbije při prohození
+- [ ] Umíš vysvětlit rozdíl mezi liveness a readiness na příkladu své služby
+- [ ] Umíš říct, proč se čas do limiteru injektuje, a co by jinak bylo v testu flaky
 
 ## AI režim
 

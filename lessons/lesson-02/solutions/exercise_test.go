@@ -14,14 +14,14 @@ func TestApplyDiscount(t *testing.T) {
 		want    int
 	}{
 		{"bez slevy", 1000, 0, 1000},
-		{"plná sleva", 1000, 100, 0},
+		{"full discount", 1000, 100, 0},
 		{"desetina z 19.99", 1999, 10, 1799},
-		{"zaokrouhlení půlky nahoru", 5, 50, 3},
-		{"třetinová sleva", 1999, 33, 1339},
-		{"záporné procento se ořízne", 1000, -20, 1000},
-		{"procento nad sto se ořízne", 1000, 250, 0},
-		{"nulová cena", 0, 50, 0},
-		{"záporná cena", -100, 10, 0},
+		{"round half up", 5, 50, 3},
+		{"one-third discount", 1999, 33, 1339},
+		{"negative percent clamped", 1000, -20, 1000},
+		{"percent over 100 clamped", 1000, 250, 0},
+		{"zero price", 0, 50, 0},
+		{"negative price", -100, 10, 0},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -32,7 +32,7 @@ func TestApplyDiscount(t *testing.T) {
 	}
 }
 
-func TestApplyDiscountNulovaSlevaNemeniCenu(t *testing.T) {
+func TestApplyDiscountZeroDoesNotChangePrice(t *testing.T) {
 	// Vlastnost, kterou nejde splnit zadrátovanou hodnotou.
 	for price := 0; price < 5000; price += 37 {
 		if got := exercise.ApplyDiscount(price, 0); got != price {
@@ -48,19 +48,19 @@ func TestTotalCents(t *testing.T) {
 		want  int
 	}{
 		{"nil slice", nil, 0},
-		{"prázdný slice", []exercise.Item{}, 0},
+		{"empty slice", []exercise.Item{}, 0},
 		{
-			"jedna položka",
+			"one item",
 			[]exercise.Item{{Name: "kava", PriceCents: 4500, Qty: 1}},
 			4500,
 		},
 		{
-			"množství se počítá",
+			"quantity is counted",
 			[]exercise.Item{{Name: "kava", PriceCents: 4500, Qty: 3}},
 			13500,
 		},
 		{
-			"víc položek",
+			"multiple items",
 			[]exercise.Item{
 				{Name: "kava", PriceCents: 4500, Qty: 2},
 				{Name: "caj", PriceCents: 3200, Qty: 1},
@@ -68,7 +68,7 @@ func TestTotalCents(t *testing.T) {
 			12200,
 		},
 		{
-			"nulové a záporné množství se ignoruje",
+			"zero and negative qty ignored",
 			[]exercise.Item{
 				{Name: "kava", PriceCents: 4500, Qty: 0},
 				{Name: "caj", PriceCents: 3200, Qty: -2},
@@ -86,7 +86,7 @@ func TestTotalCents(t *testing.T) {
 	}
 }
 
-func TestTotalCentsNemeniVstup(t *testing.T) {
+func TestTotalCentsDoesNotMutateInput(t *testing.T) {
 	items := []exercise.Item{
 		{Name: "kava", PriceCents: 4500, Qty: 2},
 		{Name: "caj", PriceCents: 3200, Qty: 1},
@@ -118,7 +118,7 @@ func TestCheapest(t *testing.T) {
 	}
 }
 
-func TestCheapestPrazdnyVstup(t *testing.T) {
+func TestCheapestEmptyInput(t *testing.T) {
 	for _, items := range [][]exercise.Item{nil, {}} {
 		got, ok := exercise.Cheapest(items)
 		if ok {
@@ -130,7 +130,7 @@ func TestCheapestPrazdnyVstup(t *testing.T) {
 	}
 }
 
-func TestCheapestPrvniPriShode(t *testing.T) {
+func TestCheapestFirstOnTie(t *testing.T) {
 	items := []exercise.Item{
 		{Name: "prvni", PriceCents: 100, Qty: 1},
 		{Name: "druhy", PriceCents: 100, Qty: 1},
@@ -141,7 +141,7 @@ func TestCheapestPrvniPriShode(t *testing.T) {
 	}
 }
 
-func TestCheapestVraciKopii(t *testing.T) {
+func TestCheapestReturnsCopy(t *testing.T) {
 	items := []exercise.Item{{Name: "voda", PriceCents: 1000, Qty: 1}}
 	got, _ := exercise.Cheapest(items)
 	got.PriceCents = 1
@@ -172,14 +172,14 @@ func TestCatalogPrice(t *testing.T) {
 	}
 }
 
-func TestCatalogPrazdny(t *testing.T) {
+func TestCatalogEmpty(t *testing.T) {
 	c := exercise.NewCatalog(nil)
 	if _, ok := c.Price("kava"); ok {
 		t.Error("prázdný ceník nemá nic znát")
 	}
 }
 
-func TestCatalogKopirujeVstup(t *testing.T) {
+func TestCatalogCopiesInput(t *testing.T) {
 	items := []exercise.Item{{Name: "kava", PriceCents: 4500, Qty: 1}}
 	c := exercise.NewCatalog(items)
 	items[0].PriceCents = 1
@@ -199,12 +199,12 @@ func TestCatalogCheckout(t *testing.T) {
 		want    int
 		wantOK  bool
 	}{
-		{"jedna položka bez slevy", []string{"kava"}, 0, 4500, true},
-		{"dvě položky bez slevy", []string{"kava", "voda"}, 0, 5500, true},
-		{"stejná položka dvakrát", []string{"voda", "voda"}, 0, 2000, true},
+		{"one item no discount", []string{"kava"}, 0, 4500, true},
+		{"two items no discount", []string{"kava", "voda"}, 0, 5500, true},
+		{"same item twice", []string{"voda", "voda"}, 0, 2000, true},
 		{"se slevou", []string{"kava", "caj"}, 10, 6930, true},
-		{"prázdná objednávka", nil, 20, 0, true},
-		{"neznámá položka", []string{"kava", "pivo"}, 0, 0, false},
+		{"empty order", nil, 20, 0, true},
+		{"unknown item", []string{"kava", "pivo"}, 0, 0, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

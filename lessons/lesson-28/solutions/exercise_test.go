@@ -36,10 +36,10 @@ func TestLookupString(t *testing.T) {
 		def  string
 		want string
 	}{
-		{"nastavená hodnota vyhraje nad výchozí", "ADDR", "0.0.0.0", "127.0.0.1"},
-		{"nenastavený klíč dá výchozí hodnotu", "MISSING", "0.0.0.0", "0.0.0.0"},
-		{"prázdná hodnota se bere jako nenastavená", "EMPTY", "0.0.0.0", "0.0.0.0"},
-		{"prázdná výchozí hodnota je v pořádku", "MISSING", "", ""},
+		{"set value wins over default", "ADDR", "0.0.0.0", "127.0.0.1"},
+		{"unset key yields default", "MISSING", "0.0.0.0", "0.0.0.0"},
+		{"empty value treated as unset", "EMPTY", "0.0.0.0", "0.0.0.0"},
+		{"empty default is ok", "MISSING", "", ""},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -67,11 +67,11 @@ func TestLookupInt(t *testing.T) {
 		want    int
 		wantErr bool
 	}{
-		{"platné číslo", "PORT", 8080, 9090, false},
-		{"záporné číslo je platný int", "NEGATIVE", 8080, -3, false},
-		{"nenastavený klíč dá výchozí hodnotu", "MISSING", 8080, 8080, false},
-		{"prázdná hodnota dá výchozí hodnotu", "EMPTY", 8080, 8080, false},
-		{"nečíselná hodnota je chyba", "JUNK", 8080, 0, true},
+		{"valid number", "PORT", 8080, 9090, false},
+		{"negative number is valid int", "NEGATIVE", 8080, -3, false},
+		{"unset key yields default", "MISSING", 8080, 8080, false},
+		{"empty value yields default", "EMPTY", 8080, 8080, false},
+		{"non-numeric value is error", "JUNK", 8080, 0, true},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

@@ -51,7 +51,7 @@ func TestWriteJSON(t *testing.T) {
 	}
 }
 
-func TestWriteJSONNastavujeHlavickuPredWriteHeader(t *testing.T) {
+func TestWriteJSONSetsHeaderBeforeWriteHeader(t *testing.T) {
 	rec := httptest.NewRecorder()
 	if err := exercise.WriteJSON(rec, http.StatusTeapot, map[string]int{"n": 1}); err != nil {
 		t.Fatalf("WriteJSON vrátil chybu: %v", err)
@@ -85,16 +85,16 @@ func TestHealthHandler(t *testing.T) {
 	}
 }
 
-func TestEchoHandlerUspech(t *testing.T) {
+func TestEchoHandlerSuccess(t *testing.T) {
 	tests := []struct {
 		name      string
 		body      string
 		wantEcho  string
 		wantCount int
 	}{
-		{"bez repeat se doplní 1", `{"message":"ahoj"}`, "ahoj", 1},
+		{"without repeat defaults to 1", `{"message":"ahoj"}`, "ahoj", 1},
 		{"repeat 3", `{"message":"ab","repeat":3}`, "ababab", 3},
-		{"repeat 10 je horní hranice", `{"message":"x","repeat":10}`, strings.Repeat("x", 10), 10},
+		{"repeat 10 is upper bound", `{"message":"x","repeat":10}`, strings.Repeat("x", 10), 10},
 	}
 
 	for _, tt := range tests {
@@ -126,7 +126,7 @@ func TestEchoHandlerUspech(t *testing.T) {
 	}
 }
 
-func TestEchoHandlerPrijmeContentTypeSParametrem(t *testing.T) {
+func TestEchoHandlerAcceptsContentTypeWithParam(t *testing.T) {
 	req := httptest.NewRequest(http.MethodPost, "/echo", strings.NewReader(`{"message":"a"}`))
 	req.Header.Set("Content-Type", "application/json; charset=utf-8")
 	rec := httptest.NewRecorder()
@@ -138,7 +138,7 @@ func TestEchoHandlerPrijmeContentTypeSParametrem(t *testing.T) {
 	}
 }
 
-func TestEchoHandlerChyby(t *testing.T) {
+func TestEchoHandlerErrors(t *testing.T) {
 	velkeTelo := `{"message":"` + strings.Repeat("a", 4*exercise.MaxBodyBytes) + `"}`
 
 	tests := []struct {
@@ -148,16 +148,16 @@ func TestEchoHandlerChyby(t *testing.T) {
 		body        string
 		wantStatus  int
 	}{
-		{"GET místo POST", http.MethodGet, "application/json", "", http.StatusMethodNotAllowed},
-		{"PUT místo POST", http.MethodPut, "application/json", `{"message":"a"}`, http.StatusMethodNotAllowed},
-		{"chybějící Content-Type", http.MethodPost, "", `{"message":"a"}`, http.StatusUnsupportedMediaType},
+		{"GET instead of POST", http.MethodGet, "application/json", "", http.StatusMethodNotAllowed},
+		{"PUT instead of POST", http.MethodPut, "application/json", `{"message":"a"}`, http.StatusMethodNotAllowed},
+		{"missing Content-Type", http.MethodPost, "", `{"message":"a"}`, http.StatusUnsupportedMediaType},
 		{"text/plain", http.MethodPost, "text/plain", `{"message":"a"}`, http.StatusUnsupportedMediaType},
-		{"rozbitý JSON", http.MethodPost, "application/json", `{"message":`, http.StatusBadRequest},
-		{"neznámé pole", http.MethodPost, "application/json", `{"message":"a","nope":1}`, http.StatusBadRequest},
-		{"prázdná zpráva", http.MethodPost, "application/json", `{"message":"   "}`, http.StatusBadRequest},
-		{"záporný repeat", http.MethodPost, "application/json", `{"message":"a","repeat":-2}`, http.StatusBadRequest},
-		{"příliš velký repeat", http.MethodPost, "application/json", `{"message":"a","repeat":11}`, http.StatusBadRequest},
-		{"příliš velké tělo", http.MethodPost, "application/json", velkeTelo, http.StatusRequestEntityTooLarge},
+		{"broken JSON", http.MethodPost, "application/json", `{"message":`, http.StatusBadRequest},
+		{"unknown field", http.MethodPost, "application/json", `{"message":"a","nope":1}`, http.StatusBadRequest},
+		{"empty message", http.MethodPost, "application/json", `{"message":"   "}`, http.StatusBadRequest},
+		{"negative repeat", http.MethodPost, "application/json", `{"message":"a","repeat":-2}`, http.StatusBadRequest},
+		{"repeat too large", http.MethodPost, "application/json", `{"message":"a","repeat":11}`, http.StatusBadRequest},
+		{"body too large", http.MethodPost, "application/json", velkeTelo, http.StatusRequestEntityTooLarge},
 	}
 
 	for _, tt := range tests {
@@ -188,7 +188,7 @@ func TestEchoHandlerChyby(t *testing.T) {
 	}
 }
 
-func TestEchoHandlerPosilaAllowPri405(t *testing.T) {
+func TestEchoHandlerSendsAllowOn405(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/echo", nil)
 	rec := httptest.NewRecorder()
 
@@ -214,7 +214,7 @@ func TestNotFoundHandler(t *testing.T) {
 	checkJSONContentType(t, res.Header.Get("Content-Type"))
 }
 
-func TestNewRouterSmerovani(t *testing.T) {
+func TestNewRouterRouting(t *testing.T) {
 	router := exercise.NewRouter()
 
 	tests := []struct {
@@ -227,8 +227,8 @@ func TestNewRouterSmerovani(t *testing.T) {
 		{"health", http.MethodGet, "/healthz", "", http.StatusOK},
 		{"echo POST", http.MethodPost, "/echo", `{"message":"a"}`, http.StatusOK},
 		{"echo GET je 405", http.MethodGet, "/echo", "", http.StatusMethodNotAllowed},
-		{"neznámá cesta", http.MethodGet, "/tohle-neexistuje", "", http.StatusNotFound},
-		{"kořen", http.MethodGet, "/", "", http.StatusNotFound},
+		{"unknown path", http.MethodGet, "/tohle-neexistuje", "", http.StatusNotFound},
+		{"root", http.MethodGet, "/", "", http.StatusNotFound},
 	}
 
 	for _, tt := range tests {
@@ -252,7 +252,7 @@ func TestNewRouterSmerovani(t *testing.T) {
 	}
 }
 
-func TestNewRouterPresSkutecnyServer(t *testing.T) {
+func TestNewRouterViaRealServer(t *testing.T) {
 	srv := httptest.NewServer(exercise.NewRouter())
 	defer srv.Close()
 
@@ -287,7 +287,7 @@ func TestNewRouterPresSkutecnyServer(t *testing.T) {
 	}
 }
 
-func TestNewServerMaTimeouty(t *testing.T) {
+func TestNewServerHasTimeouts(t *testing.T) {
 	router := exercise.NewRouter()
 	srv := exercise.NewServer(":8080", router)
 

@@ -32,15 +32,20 @@ v review cvičeních; CI ho nepouští — stačí `gofmt` + `go vet` + testy.
 ## Běžné příkazy
 
 ```bash
-make lesson L=07     # testy cvičení jedné lekce
-make race L=44       # totéž s -race
-make solutions       # všechna referenční řešení
-make project P=02    # testy projektu
-make check           # to samé co CI (bez race na solutions)
-make mirror          # zkopíruje testy z exercise/ do solutions/
-make fmt             # gofmt -w .
-make lint            # golangci-lint, pokud je nainstalovaný
+make lesson L=07          # celé cvičení
+make lesson L=07 PART=1   # jen stupeň 1 (tiers.txt)
+make race L=44            # s -race (volitelně PART=)
+make solutions            # všechna referenční řešení
+make project P=02         # testy projektu
+make check                # to samé co CI (bez race na solutions)
+make mirror               # zkopíruje testy z exercise/ do solutions/
+make fmt                  # gofmt -w .
+make lint                 # golangci-lint, pokud je nainstalovaný
 ```
+
+`make mirror` / `scripts/mirror_tests.sh` přepíše `exercise_test` → `solutions_test`
+(a import cesty) nebo whitebox `package exercise` → `package solutions`. Testy musí
+izolovat stuby — viz [authoring.md](authoring.md#izolace-stubů).
 
 ## CI
 

@@ -9,12 +9,13 @@ type Config struct {
 	Debug *bool
 }
 
-// Node je prvek jednosměrně zřetězeného seznamu.
+// Node je nod jednosměrně zřetězeného seznamu.
 type Node struct {
 	Val  int
 	Next *Node
 }
 
+// --- Stupeň: jednoduchý ---
 // Swap prohodí hodnoty, na které ukazují a a b.
 // Pokud je kterýkoli pointer nil, neudělá nic.
 func Swap(a, b *int) {
@@ -42,6 +43,7 @@ func ApplyDefaults(c *Config) {
 	}
 }
 
+// --- Stupeň: střední ---
 // IncrementAll zvýší každý prvek slice o jedna přímo na místě.
 func IncrementAll(nums []int) {
 	for i := range nums {
@@ -57,12 +59,13 @@ func AppendSafe(nums []int, v int) []int {
 	return append(out, v)
 }
 
-// Push vloží hodnotu na začátek seznamu a vrátí novou hlavu.
+// --- Stupeň: obtížný ---
+// Push vloží hodnotu na začátek seznamu a vrátí nový první nod.
 func Push(head *Node, v int) *Node {
 	return &Node{Val: v, Next: head}
 }
 
-// Len vrací počet prvků seznamu. Nil hlava znamená 0.
+// Len vrací počet prvků seznamu. nil (prázdný seznam) znamená 0.
 func Len(head *Node) int {
 	n := 0
 	for node := head; node != nil; node = node.Next {
@@ -71,7 +74,7 @@ func Len(head *Node) int {
 	return n
 }
 
-// Reverse otočí pořadí prvků seznamu a vrátí novou hlavu.
+// Reverse otočí pořadí prvků seznamu a vrátí nový první nod.
 func Reverse(head *Node) *Node {
 	var prev *Node
 	for node := head; node != nil; {

@@ -10,31 +10,6 @@
 - Načíst a zvalidovat query parametry tak, aby špatný vstup skončil na 400 a ne na 500.
 - Postavit endpoint servírující soubory, který neumožní útok path traversal.
 
-## PHP → Go most
-
-V Symfony je routa atribut nad metodou controlleru a parametry ti přijdou jako argumenty,
-už přetypované a případně i převedené na entitu.
-
-```php
-#[Route('/items/{id}', name: 'item_show', methods: ['GET'], requirements: ['id' => '\d+'])]
-public function show(int $id): JsonResponse { /* ... */ }
-```
-
-Go 1.22 dostal do `http.ServeMux` metody a wildcardy, takže totéž vypadá takhle:
-
-```go
-mux.HandleFunc("GET /items/{id}", func(w http.ResponseWriter, r *http.Request) {
-	id := r.PathValue("id") // vždy string, žádná konverze ani validace
-	// ...
-})
-```
-
-Co se mění v uvažování: **router ti nic nekonvertuje a nic nevaliduje.** Neexistuje
-`requirements`, neexistuje ParamConverter, neexistuje `int $id` v signatuře. Dostaneš
-řetězec ze segmentu cesty a jsi za něj zodpovědný ty. Znělo by to jako krok zpět, ale
-je to poctivější: validace je vidět v kódu handleru, ne schovaná v atributu, a chybová
-odpověď má tvar, který jsi navrhl ty.
-
 ## Teorie
 
 ### Vzory ServeMux (od Go 1.22)
@@ -195,6 +170,31 @@ a hodnotu wildcardu nastavujeme přes `r.SetPathValue`, abychom otestovali handl
 Pokud jen servíruješ statický adresář a nepotřebuješ vlastní logiku, použij
 `http.FileServer(http.Dir(root))` nebo `http.FileServerFS` — mají tuhle ochranu uvnitř.
 
+## Rozdíly proti PHP
+
+V Symfony je routa atribut nad metodou controlleru a parametry ti přijdou jako argumenty,
+už přetypované a případně i převedené na entitu.
+
+```php
+#[Route('/items/{id}', name: 'item_show', methods: ['GET'], requirements: ['id' => '\d+'])]
+public function show(int $id): JsonResponse { /* ... */ }
+```
+
+Go 1.22 dostal do `http.ServeMux` metody a wildcardy, takže totéž vypadá takhle:
+
+```go
+mux.HandleFunc("GET /items/{id}", func(w http.ResponseWriter, r *http.Request) {
+	id := r.PathValue("id") // vždy string, žádná konverze ani validace
+	// ...
+})
+```
+
+Co se mění v uvažování: **router ti nic nekonvertuje a nic nevaliduje.** Neexistuje
+`requirements`, neexistuje ParamConverter, neexistuje `int $id` v signatuře. Dostaneš
+řetězec ze segmentu cesty a jsi za něj zodpovědný ty. Znělo by to jako krok zpět, ale
+je to poctivější: validace je vidět v kódu handleru, ne schovaná v atributu, a chybová
+odpověď má tvar, který jsi navrhl ty.
+
 ## Časté chyby
 
 | Chyba | Proč vzniká | Jak to udělat správně |
@@ -206,66 +206,52 @@ Pokud jen servíruješ statický adresář a nepotřebuješ vlastní logiku, pou
 | Catch-all `/` vedle vzorů s metodami | snaha mít JSON 404 | rozhodni se: buď catch-all, nebo vestavěné 405 |
 | Sáhnutí po chi/gin na první routě | framework-first reflex | `ServeMux` a přidej závislost, až narazíš |
 
+## AI kvíz
+
+Po přečtení teorie spusť v Cursoru **`/go-deep-quiz 25`**. AI tě ~5 minut prověří mentální model (ne hotové cvičení). Slabiny si uloží do [`GAPS.md`](../../GAPS.md).
+
 ## Úkol
 
-Pracuj v `exercise/`. `Store` i `WriteJSON` už jsou hotové — soustřeď se na routing.
-Chybové odpovědi mají tvar `ErrorResponse`.
+Pracuj v `exercise/`. Po doplnění spouštěj testy:
 
-### A — rozcvička (~10 min)
+Stupně jdou od jednodušších ke složitějším — po každém stupni spusť review, než jdeš dál.
 
-`ItemsRouter(store *Store) http.Handler` postavený na `http.ServeMux`:
+### Jednoduchý
 
-- `GET /{$}` → **200** a `ServiceInfo{Service: "items"}`. Cokoli jiného než přesný kořen
-  musí skončit na 404, takže `{$}` je povinné.
-- `GET /items/{id}` → **200** a položku ze `Store.Get`, nebo **404** s `ErrorResponse`,
-  pokud neexistuje.
-
-např. `GET /items/2` → `200` + `{ID:"2", Name:"Banana"}`
-
-### B — jádro (~35 min)
-
-1. `ParseListQuery(values url.Values) (limit int, q string, err error)`:
-   chybějící nebo prázdný `limit` → `0` (bez omezení); jinak celé číslo ≥ 1.
-   Nečíselná, nulová i záporná hodnota → chyba (`ErrInvalidQuery`). `q` se ořízne
-   od bílých znaků. Při chybě vracej nulové hodnoty.
-2. Doplň do `ItemsRouter`:
-   - `GET /items` → **200** a JSON **pole** položek v pořadí vložení. Parametry přes
-     `ParseListQuery`; chyba → **400**. `q` filtruje podle podřetězce ve jménu
-     case-insensitive, `limit` ořízne počet výsledků. Prázdný výsledek je `[]`, ne `null`.
-   - `POST /items` → tělo `CreateItemRequest`. Rozbitý JSON i prázdné jméno (po ořezání)
-     → **400**. Úspěch → **201**, hlavička `Location: /items/{id}` a tělo s vytvořenou
-     položkou.
-   - `DELETE /items/{id}` → **204** bez těla, neexistující ID → **404**.
-
-Ověř si v testu, že `PUT /items/1` vrací 405 s hlavičkou `Allow` — a že jsi pro to
-nenapsal ani řádek.
-
-např. `ParseListQuery("limit=5&q=ban")` → `5, "ban", nil`
-
-### C — rozšíření (~25 min)
-
-1. `SafeJoin(root, rel string) (string, error)` — vrátí cestu k souboru pod `root`,
-   nebo `ErrInvalidPath`. Odmítni prázdný `rel`, absolutní cestu a jakýkoli segment
-   `""`, `"."` nebo `".."`. Nakonec ověř, že absolutní výsledek leží pod absolutním `root`.
-2. `FilesHandler(root string) http.Handler` — přečte `r.PathValue("path")`, zavolá
-   `SafeJoin` (chyba → **400**), ověří přes `os.Stat`, že cíl existuje a není adresář
-   (jinak **404**), a soubor pošle přes `http.ServeFile`.
-3. `FilesRouter(root string) http.Handler` — `ServeMux` se vzorem
-   `GET /files/{path...}` napojeným na `FilesHandler`.
-
-např. `SafeJoin(root, "sub/hello.txt")` → `root/sub/hello.txt`
+Funkce: `NewStore`, `Add`, `Get`
 
 ```bash
-make lesson L=25
+make lesson L=25 PART=1
 ```
 
-Až budeš hotový, porovnej se `solutions/` (spoiler).
+Pak **`/go-deep-review 25 easy`**.
 
-## Ověření
+### Střední
 
-Po dokončení úkolů spusť v Cursoru **`/go-deep-review`** a zadej třeba jen `25`. AI tě postupně projde body níže, doptá se a ověří pochopení — nestačí jen zelené testy.
+Funkce: `Delete`, `List`, `WriteJSON`, `ItemsRouter`
 
-- [ ] `make lesson L=25` prochází
+```bash
+make lesson L=25 PART=2
+```
+
+Pak **`/go-deep-review 25 medium`**.
+
+### Obtížný
+
+Funkce: `ParseListQuery`, `SafeJoin`, `FilesHandler`, `FilesRouter`
+
+```bash
+make lesson L=25 PART=3
+```
+
+Pak **`/go-deep-review 25 hard`**.
+
+Až budou stupně hotové, porovnej se `solutions/` (spoiler).
+
+## Závěrečné otázky
+
+Spusť **`/go-deep-review 25 final`**. AI projde body níže, doptá se a ověří pochopení. Celé cvičení ověří `make lesson L=25` (+ `make race L=25`, pokud to lekce vyžaduje).
+
 - [ ] Umíš vysvětlit rozdíl mezi `{id}`, `{path...}` a `{$}`
 - [ ] Umíš vysvětlit, proč pořadí registrace vzorů nehraje roli a kdy mux panikuje
 - [ ] Umíš vysvětlit, kdy `ServeMux` sám vrátí 405 a proč to catch-all `/` vypne

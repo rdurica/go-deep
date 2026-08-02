@@ -54,6 +54,7 @@ type ShutdownStep struct {
 // statusOK je hodnota, kterou v odpovědi nese úspěšná kontrola.
 const statusOK = "ok"
 
+// --- Stupeň: jednoduchý ---
 // String vrací "verze (commit, čas)"; prázdná pole nahradí výchozími hodnotami.
 func (b BuildInfo) String() string {
 	return fmt.Sprintf("%s (%s, %s)",
@@ -68,6 +69,7 @@ func Current() BuildInfo {
 	return BuildInfo{Version: version, Commit: commit, BuildTime: buildTime}
 }
 
+// --- Stupeň: střední ---
 // VersionHandler vrací JSON s informacemi o buildu.
 func VersionHandler(info BuildInfo) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -96,6 +98,7 @@ func (h *HealthChecker) Register(name string, check Check) {
 	h.checks[name] = check
 }
 
+// --- Stupeň: obtížný ---
 // LiveHandler odpovídá 200, dokud proces žije.
 func (h *HealthChecker) LiveHandler() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {

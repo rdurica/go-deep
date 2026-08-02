@@ -18,6 +18,7 @@ import (
 // wordRE hledá slova jako souvislé úseky písmen a číslic.
 var wordRE = regexp.MustCompile(`[\p{L}\p{N}]+`)
 
+// --- Stupeň: jednoduchý ---
 // SumDigitsSlow sečte desítkové číslice v řetězci. Referenční, ale pomalá varianta:
 // každou runu převede na string a nechá ji rozparsovat strconv.
 func SumDigitsSlow(s string) int {
@@ -47,6 +48,7 @@ func IsWordRune(r rune) bool {
 	return unicode.IsLetter(r) || unicode.IsNumber(r)
 }
 
+// --- Stupeň: střední ---
 // SumDigits sečte desítkové číslice v řetězci bez jediné alokace.
 func SumDigits(s string) int {
 	sum := 0
@@ -99,6 +101,7 @@ func JoinIDs(ids []int) string {
 	return b.String()
 }
 
+// --- Stupeň: obtížný ---
 // CaptureCPUProfile spustí f a zapíše CPU profil jejího běhu do w.
 func CaptureCPUProfile(w io.Writer, f func()) error {
 	if w == nil {

@@ -10,33 +10,6 @@
 - Vyhnout se deadlocku z pořadí zámků a vysvětlit, proč pevné pořadí problém řeší.
 - Zdůvodnit, proč `RWMutex` a `sync.Map` skoro nikdy nechceš jako první volbu.
 
-## PHP → Go most
-
-V PHP sdílený stav v paměti prostě neexistuje. Request má vlastní proces, po odpovědi je
-paměť pryč. Když potřebuješ, aby si dva requesty něco předaly, musí to jít přes něco
-mimo proces — a s tím přijde i zamykání, na které nikdo nemyslí, dokud to nerozbije data:
-
-```php
-// dva souběžné requesty, klasický lost update
-$balance = $cache->get('balance');
-$cache->set('balance', $balance + 100);
-```
-
-Symfony ti na to nabídne `LockFactory` nebo `Cache` s `CacheInterface::get()` a callbackem
-(což je mimochodem přesně single-flight). V Go je sdílený stav **normální stav věcí**:
-mapa v paměti serveru žije mezi requesty a sahá na ni každá goroutina.
-
-```go
-type Cache struct {
-    mu    sync.RWMutex      // zámek stojí hned nad daty, která chrání
-    items map[string]string
-}
-```
-
-Změna v uvažování: v PHP je sdílený stav něco výjimečného, kolem čeho se staví
-infrastruktura. V Go je to obyčejná struktura a **jediná ochrana, kterou má, je ta,
-kterou napíšeš ty**. Kompilátor ti nic nepřipomene, chybu najde až race detektor.
-
 ## Teorie
 
 ### Kdy zámek a kdy kanál
@@ -192,6 +165,33 @@ goroutiny pracují nad disjunktními množinami klíčů. Za to platíš ztráto
 (`any` klíč i hodnota), horším výkonem u zápisů a horší čitelností. Výchozí volba je
 `map[K]V` plus `sync.Mutex`.
 
+## Rozdíly proti PHP
+
+V PHP sdílený stav v paměti prostě neexistuje. Request má vlastní proces, po odpovědi je
+paměť pryč. Když potřebuješ, aby si dva requesty něco předaly, musí to jít přes něco
+mimo proces — a s tím přijde i zamykání, na které nikdo nemyslí, dokud to nerozbije data:
+
+```php
+// dva souběžné requesty, klasický lost update
+$balance = $cache->get('balance');
+$cache->set('balance', $balance + 100);
+```
+
+Symfony ti na to nabídne `LockFactory` nebo `Cache` s `CacheInterface::get()` a callbackem
+(což je mimochodem přesně single-flight). V Go je sdílený stav **normální stav věcí**:
+mapa v paměti serveru žije mezi requesty a sahá na ni každá goroutina.
+
+```go
+type Cache struct {
+    mu    sync.RWMutex      // zámek stojí hned nad daty, která chrání
+    items map[string]string
+}
+```
+
+Změna v uvažování: v PHP je sdílený stav něco výjimečného, kolem čeho se staví
+infrastruktura. V Go je to obyčejná struktura a **jediná ochrana, kterou má, je ta,
+kterou napíšeš ty**. Kompilátor ti nic nepřipomene, chybu najde až race detektor.
+
 ## Časté chyby
 
 | Chyba | Proč vzniká | Jak to udělat správně |
@@ -203,61 +203,52 @@ goroutiny pracují nad disjunktními množinami klíčů. Za to platíš ztráto
 | `sync.Map` jako výchozí mapa | jméno slibuje víc, než dělá | `map[K]V` + `Mutex` |
 | Mutex kolem čítače | „stav se musí zamknout" | `atomic.Int64` |
 
+## AI kvíz
+
+Po přečtení teorie spusť v Cursoru **`/go-deep-quiz 43`**. AI tě ~5 minut prověří mentální model (ne hotové cvičení). Slabiny si uloží do [`GAPS.md`](../../GAPS.md).
+
 ## Úkol
 
-Pracuj v `exercise/`. Postupuj A → B → C, po každé části spusť test.
+Pracuj v `exercise/`. Po doplnění spouštěj testy:
 
-### A — rozcvička (~10 min)
+Stupně jdou od jednodušších ke složitějším — po každém stupni spusť review, než jdeš dál.
 
-`Counter` — čítač bezpečný pro souběžné použití s metodami `Inc()`, `Add(n int64)` a
-`Value() int64`. Podmínka: **zero value musí být rovnou použitelná**, tedy `var c Counter`
-funguje bez konstruktoru. Test spustí 100 goroutin po 1000 zvýšeních a běží s `-race`.
+### Jednoduchý
 
-např. `Inc(); Add(41); Add(-2)` → `Value() = 40`
-
-### B — jádro (~35 min)
-
-`Cache` — mapa chráněná zámkem:
-
-- `NewCache() *Cache`, `Get(key) (string, bool)`, `Set(key, value)`, `Delete(key)`, `Len() int`.
-- `GetOrCompute(key string, f func() string) string` — vrátí uloženou hodnotu, nebo ji
-  spočítá pomocí `f`, uloží a vrátí. Klíčová podmínka: pro daný klíč se `f` zavolá
-  **právě jednou**, i když `GetOrCompute` volá sto goroutin naráz. Ostatní počkají na
-  výsledek toho prvního. Test to hlídá atomickým čítačem volání.
-- Během volání `f` nesmíš držet zámek cache — pomalý výpočet jednoho klíče nesmí
-  zablokovat práci s ostatními klíči.
-
-např. `GetOrCompute("drahý", f→"spočítáno")` ze 100 goroutin → `"spočítáno"`, `f` jen 1×
-
-### C — rozšíření (~25 min)
-
-`Bank` — účty s převody:
-
-- `NewBank(balances map[string]int64) *Bank`, `Balance(name) (int64, bool)`, `Total() int64`.
-- `Transfer(from, to string, amount int64) error` — vrací `ErrUnknownAccount`,
-  `ErrInvalidAmount` (pro `amount <= 0`) a `ErrInsufficientFunds`. Neúspěšný převod
-  nesmí změnit žádný zůstatek. Převod na stejný účet je no-op s `nil` chybou.
-- `Transfer` musí být odolný vůči souběžným převodům v **opačném směru** — test pouští
-  všechny dvojice účtů proti sobě ve třiceti goroutinách a hlídá deadlock časovým
-  limitem.
-- `Total()` musí vracet konzistentní součet i uprostřed převodů. Test ho volá souběžně
-  a jakákoli jiná hodnota než počáteční suma je chyba.
-
-např. `Transfer("a", "b", 30)` pro `a=100, b=50` → `a=70, b=80`
+Funkce: `Inc`, `Add`, `Value`, `NewCache`
 
 ```bash
-make lesson L=43
-make race L=43
+make lesson L=43 PART=1
 ```
 
-Až budeš hotový, porovnej se `solutions/` (spoiler).
+Pak **`/go-deep-review 43 easy`**.
 
-## Ověření
+### Střední
 
-Po dokončení úkolů spusť v Cursoru **`/go-deep-review`** a zadej třeba jen `43`. AI tě postupně projde body níže, doptá se a ověří pochopení — nestačí jen zelené testy.
+Funkce: `Get`, `Set`, `Delete`, `Len`
 
-- [ ] `make lesson L=43` prochází
-- [ ] `make race L=43` prochází
+```bash
+make lesson L=43 PART=2
+```
+
+Pak **`/go-deep-review 43 medium`**.
+
+### Obtížný
+
+Funkce: `GetOrCompute`, `NewBank`, `Balance`, `Total`, `Transfer`
+
+```bash
+make lesson L=43 PART=3
+```
+
+Pak **`/go-deep-review 43 hard`**.
+
+Až budou stupně hotové, porovnej se `solutions/` (spoiler).
+
+## Závěrečné otázky
+
+Spusť **`/go-deep-review 43 final`**. AI projde body níže, doptá se a ověří pochopení. Celé cvičení ověří `make lesson L=43` (+ `make race L=43`, pokud to lekce vyžaduje).
+
 - [ ] Umíš na příkladu vysvětlit, kdy volíš zámek a kdy kanál
 - [ ] Umíš říct, proč `go vet` hlásí kopírování struktury se zámkem
 - [ ] Umíš vysvětlit, proč se `f` v `GetOrCompute` nevolá pod zámkem

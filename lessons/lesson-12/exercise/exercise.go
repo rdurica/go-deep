@@ -32,63 +32,74 @@ type Recorder struct {
 // Slouží k ukázce pasti "nil pointer v non-nil interfacu".
 type MyErr struct{}
 
-// Area vrací obsah obdélníku.
+// --- Stupeň: obtížný ---
+// Area vrací obsah obdélníku W * H.
 func (r Rect) Area() float64 {
-	// TODO: úkol A
+	// TODO
 	return 0
 }
 
-// Area vrací obsah kruhu.
+// Area vrací obsah kruhu π·R².
+// Použij math.Pi (ne vlastní přibližnou konstantu).
 func (c Circle) Area() float64 {
-	// TODO: úkol A
+	// TODO
 	return 0
 }
 
-// TotalArea sečte obsahy všech tvarů. Prvky rovné nil přeskočí.
+// --- Stupeň: jednoduchý ---
+// TotalArea sečte obsahy všech tvarů. Prvky rovné nil přeskočí (bez paniky).
+// Nil i prázdný slice dají 0.
 func TotalArea(shapes []Shape) float64 {
-	// TODO: úkol A
+	// TODO
 	return 0
 }
 
-// Describe vrací popis dynamického typu hodnoty.
+// --- Stupeň: střední ---
+// Describe vrací popis dynamického typu přes type switch:
+// nil → "nil", int → "int:42", string → "string:%q", bool → "bool:true/false",
+// []int → "[]int:len=3", ostatní → "other:<typ>".
 func Describe(v any) string {
-	// TODO: úkol B
+	// TODO
 	return ""
 }
 
-// Notify zaznamená zprávu, nebo vrátí r.Err.
+// Notify zaznamená zprávu, pokud r.Err je nil. Při nenulové r.Err vrátí ji a nezaznamená zprávu.
+// Zero value Recorder musí fungovat bez konstruktoru.
 func (r *Recorder) Notify(msg string) error {
-	// TODO: úkol B
+	// TODO
 	return nil
 }
 
-// Messages vrací kopii zaznamenaných zpráv.
+// Messages vrací kopii zaznamenaných zpráv v pořadí vložení.
+// Volající nesmí mutací výsledku změnit vnitřní stav Recorderu.
 func (r *Recorder) Messages() []string {
-	// TODO: úkol B
+	// TODO
 	return nil
 }
 
-// NotifyAll pošle zprávu všem příjemcům a vrátí první chybu.
+// NotifyAll pošle msg všem notifierům. Nil prvky přeskočí.
+// Při první chybě skončí a vrátí ji. Bez chyb vrací nil.
 func NotifyAll(ns []Notifier, msg string) error {
-	// TODO: úkol B
+	// TODO
 	return nil
 }
 
-// Area splňuje Shape s pointer receiverem, takže Shape implementuje *MyErr.
+// Area vrací 0. Pointer receiver nesahá na pole — metoda funguje i na nil *MyErr.
 func (e *MyErr) Area() float64 {
-	// TODO: úkol C
+	// TODO
 	return 0
 }
 
-// ReturnsNilPointer vrací Shape, uvnitř kterého je nil pointer typu *MyErr.
-// Výsledek NENÍ roven nil, i když ukazatel uvnitř nil je.
+// ReturnsNilPointer vrací Shape s dynamickým typem *MyErr a dynamickou hodnotou nil.
+// Výsledek NENÍ roven nil (nesmíš vracet nil literál).
 func ReturnsNilPointer() Shape {
-	// TODO: úkol C
+	// TODO
 	return *new(Shape)
 }
 
-// IsNilInterface vrací true, jen když je celá interface hodnota nil.
+// IsNilInterface vrací true jen když je celá interface hodnota nil (s == nil).
+// Typed-nil (non-nil interface s nil pointerem uvnitř) vrací false.
 func IsNilInterface(s Shape) bool {
-	// TODO: úkol C
+	// TODO
 	return false
 }

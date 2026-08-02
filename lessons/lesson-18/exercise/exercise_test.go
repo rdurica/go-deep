@@ -35,7 +35,7 @@ func TestMoneyString(t *testing.T) {
 	}
 }
 
-func TestMoneyJeStringer(t *testing.T) {
+func TestMoneyIsStringer(t *testing.T) {
 	var s fmt.Stringer = exercise.Money(1999)
 	if got := fmt.Sprintf("%v", s); got != "19.99" {
 		t.Errorf("fmt.Sprintf(%%v, Money(1999)) = %q, chci %q", got, "19.99")
@@ -69,7 +69,7 @@ func TestParseTransactions(t *testing.T) {
 	}
 }
 
-func TestParseTransactionsPrazdnePole(t *testing.T) {
+func TestParseTransactionsEmptyArray(t *testing.T) {
 	txs, err := exercise.ParseTransactions(strings.NewReader(`[]`))
 	if err != nil {
 		t.Fatalf("ParseTransactions([]) = _, %v, chci nil", err)
@@ -79,7 +79,7 @@ func TestParseTransactionsPrazdnePole(t *testing.T) {
 	}
 }
 
-func TestParseTransactionsValidace(t *testing.T) {
+func TestParseTransactionsValidation(t *testing.T) {
 	tests := map[string]struct {
 		in    string
 		field string
@@ -94,7 +94,7 @@ func TestParseTransactionsValidace(t *testing.T) {
 		"chybí kategorie": {
 			`[{"id":"t1","payee":"Albert","amount":100,"category":""}]`, "category", 0,
 		},
-		"nulová částka": {
+		"zero amount": {
 			`[{"id":"t1","payee":"Albert","amount":100,"category":"food"},
 			  {"id":"t2","payee":"DPP","amount":0,"category":"transport"}]`, "amount", 1,
 		},
@@ -120,7 +120,7 @@ func TestParseTransactionsValidace(t *testing.T) {
 	}
 }
 
-func TestParseTransactionsRozbityJSON(t *testing.T) {
+func TestParseTransactionsBrokenJSON(t *testing.T) {
 	for _, in := range []string{``, `[`, `{"id":"t1"}`, `[{"id":"t1","amount":"hodně"}]`} {
 		if _, err := exercise.ParseTransactions(strings.NewReader(in)); err == nil {
 			t.Errorf("ParseTransactions(%q) = _, nil, chci chybu", in)
@@ -129,9 +129,11 @@ func TestParseTransactionsRozbityJSON(t *testing.T) {
 }
 
 func TestTotalsByCategory(t *testing.T) {
-	txs, err := exercise.ParseTransactions(strings.NewReader(sampleJSON))
-	if err != nil {
-		t.Fatalf("ParseTransactions(...) = _, %v, chci nil", err)
+	txs := []exercise.Transaction{
+		{ID: "t1", Payee: "Albert", Amount: 12050, Category: "food"},
+		{ID: "t2", Payee: "DPP", Amount: 8000, Category: "transport"},
+		{ID: "t3", Payee: "Rohlik", Amount: 20025, Category: "food"},
+		{ID: "t4", Payee: "Kino", Amount: -3000, Category: "fun"},
 	}
 
 	got := exercise.TotalsByCategory(txs)
@@ -146,7 +148,7 @@ func TestTotalsByCategory(t *testing.T) {
 	}
 }
 
-func TestTotalsByCategoryPrazdny(t *testing.T) {
+func TestTotalsByCategoryEmpty(t *testing.T) {
 	got := exercise.TotalsByCategory(nil)
 	if got == nil {
 		t.Fatal("TotalsByCategory(nil) = nil, chci prázdnou mapu")
@@ -157,10 +159,12 @@ func TestTotalsByCategoryPrazdny(t *testing.T) {
 }
 
 func TestGroupBy(t *testing.T) {
-	t.Run("transakce podle kategorie", func(t *testing.T) {
-		txs, err := exercise.ParseTransactions(strings.NewReader(sampleJSON))
-		if err != nil {
-			t.Fatalf("ParseTransactions(...) = _, %v, chci nil", err)
+	t.Run("transactions by category", func(t *testing.T) {
+		txs := []exercise.Transaction{
+			{ID: "t1", Payee: "Albert", Amount: 12050, Category: "food"},
+			{ID: "t2", Payee: "DPP", Amount: 8000, Category: "transport"},
+			{ID: "t3", Payee: "Rohlik", Amount: 20025, Category: "food"},
+			{ID: "t4", Payee: "Kino", Amount: -3000, Category: "fun"},
 		}
 
 		groups := exercise.GroupBy(txs, func(tx exercise.Transaction) string { return tx.Category })
@@ -175,7 +179,7 @@ func TestGroupBy(t *testing.T) {
 		}
 	})
 
-	t.Run("jiný typ prvku i klíče", func(t *testing.T) {
+	t.Run("different element and key types", func(t *testing.T) {
 		words := []string{"ada", "bob", "eva", "ken", "li"}
 		groups := exercise.GroupBy(words, func(s string) int { return len(s) })
 		if len(groups[3]) != 4 || len(groups[2]) != 1 {
@@ -183,7 +187,7 @@ func TestGroupBy(t *testing.T) {
 		}
 	})
 
-	t.Run("prázdný vstup", func(t *testing.T) {
+	t.Run("empty input", func(t *testing.T) {
 		groups := exercise.GroupBy(nil, func(n int) int { return n })
 		if groups == nil {
 			t.Fatal("GroupBy(nil, ...) = nil, chci prázdnou mapu")
@@ -209,7 +213,7 @@ func TestReportString(t *testing.T) {
 	}
 }
 
-func TestReportJeStringer(t *testing.T) {
+func TestReportIsStringer(t *testing.T) {
 	var s fmt.Stringer = exercise.Report{Count: 1, Total: 100, Top: "food"}
 	if got := fmt.Sprint(s); !strings.Contains(got, "1.00") {
 		t.Errorf("fmt.Sprint(Report) = %q, chci částku 1.00", got)
@@ -227,7 +231,7 @@ func TestBuildReport(t *testing.T) {
 	}
 }
 
-func TestBuildReportShodaKategorii(t *testing.T) {
+func TestBuildReportCategoryMatch(t *testing.T) {
 	in := `[
 		{"id":"t1","payee":"A","amount":5000,"category":"zzz"},
 		{"id":"t2","payee":"B","amount":5000,"category":"aaa"}
@@ -241,15 +245,15 @@ func TestBuildReportShodaKategorii(t *testing.T) {
 	}
 }
 
-func TestBuildReportChyby(t *testing.T) {
-	t.Run("prázdná kniha", func(t *testing.T) {
+func TestBuildReportErrors(t *testing.T) {
+	t.Run("empty book", func(t *testing.T) {
 		_, err := exercise.BuildReport(strings.NewReader(`[]`))
 		if !errors.Is(err, exercise.ErrEmptyLedger) {
 			t.Errorf("BuildReport([]) = _, %v, chci ErrEmptyLedger", err)
 		}
 	})
 
-	t.Run("neplatná transakce", func(t *testing.T) {
+	t.Run("invalid transaction", func(t *testing.T) {
 		in := `[{"id":"t1","payee":"A","amount":0,"category":"food"}]`
 		_, err := exercise.BuildReport(strings.NewReader(in))
 		var verr *exercise.ValidationError
@@ -261,7 +265,7 @@ func TestBuildReportChyby(t *testing.T) {
 		}
 	})
 
-	t.Run("rozbitý vstup", func(t *testing.T) {
+	t.Run("broken input", func(t *testing.T) {
 		if _, err := exercise.BuildReport(strings.NewReader(`{`)); err == nil {
 			t.Error("BuildReport(rozbitý JSON) = _, nil, chci chybu")
 		}

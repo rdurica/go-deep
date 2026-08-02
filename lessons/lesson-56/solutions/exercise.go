@@ -30,6 +30,7 @@ const (
 	StatusSuperseded
 )
 
+// --- Stupeň: obtížný ---
 // String implementuje fmt.Stringer.
 func (s Status) String() string {
 	switch s {
@@ -46,6 +47,7 @@ func (s Status) String() string {
 	}
 }
 
+// --- Stupeň: jednoduchý ---
 // ParseStatus převede jméno stavu (case-insensitive) na Status.
 func ParseStatus(s string) (Status, error) {
 	switch strings.ToLower(strings.TrimSpace(s)) {
@@ -123,6 +125,7 @@ type ADR struct {
 	Consequences string
 }
 
+// --- Stupeň: střední ---
 // Filename vrací jméno souboru ADR, například "0007-use-stdlib-router.md".
 func (a ADR) Filename() string {
 	slug := Slug(a.Title)

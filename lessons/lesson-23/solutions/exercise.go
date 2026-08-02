@@ -33,6 +33,7 @@ type Loader interface {
 	Load(sku string) (Record, error)
 }
 
+// --- Stupeň: jednoduchý ---
 // Describe vrátí čitelný popis položky ve tvaru "Name: Qty ks".
 func Describe(l Loader, sku string) (string, error) {
 	if l == nil {
@@ -103,6 +104,7 @@ type Store struct {
 	records map[string]Record
 }
 
+// --- Stupeň: střední ---
 // Put uloží nebo přepíše položku.
 func (s *Store) Put(r Record) error {
 	if r.SKU == "" {
@@ -139,6 +141,7 @@ func (s *Store) Load(sku string) (Record, error) {
 	return r, nil
 }
 
+// --- Stupeň: obtížný ---
 // Remove smaže položku podle SKU.
 func (s *Store) Remove(sku string) error {
 	if _, ok := s.records[sku]; !ok {

@@ -189,16 +189,16 @@ func TestParseADRErrors(t *testing.T) {
 		in   string
 		want error
 	}{
-		{"prázdný vstup", "   \n\n", exercise.ErrInvalidHeader},
-		{"chybí mřížka", strings.TrimPrefix(full, "# "), exercise.ErrInvalidHeader},
-		{"chybí číslo", "# Použij stdlib router\n\n- Status: Accepted\n", exercise.ErrInvalidHeader},
-		{"nečíselné číslo", "# X. Titulek\n\n- Status: Accepted\n", exercise.ErrInvalidHeader},
-		{"neznámý status", strings.Replace(full, "Accepted", "Done", 1), exercise.ErrInvalidStatus},
-		{"neplatné datum", strings.Replace(full, "2024-05-01", "1. 5. 2024", 1), exercise.ErrInvalidDate},
-		{"chybí status", strings.Replace(full, "- Status: Accepted\n", "", 1), exercise.ErrMissingSection},
-		{"chybí datum", strings.Replace(full, "- Date: 2024-05-01\n", "", 1), exercise.ErrMissingSection},
-		{"chybí Decision", strings.Replace(full, "Použijeme net/http ServeMux se vzory (metody, wildcardy).", "", 1), exercise.ErrMissingSection},
-		{"chybí sekce Consequences", strings.Split(full, "## Consequences")[0], exercise.ErrMissingSection},
+		{"empty input", "   \n\n", exercise.ErrInvalidHeader},
+		{"missing hash", strings.TrimPrefix(full, "# "), exercise.ErrInvalidHeader},
+		{"missing number", "# Použij stdlib router\n\n- Status: Accepted\n", exercise.ErrInvalidHeader},
+		{"non-numeric number", "# X. Titulek\n\n- Status: Accepted\n", exercise.ErrInvalidHeader},
+		{"unknown status", strings.Replace(full, "Accepted", "Done", 1), exercise.ErrInvalidStatus},
+		{"invalid date", strings.Replace(full, "2024-05-01", "1. 5. 2024", 1), exercise.ErrInvalidDate},
+		{"missing status", strings.Replace(full, "- Status: Accepted\n", "", 1), exercise.ErrMissingSection},
+		{"missing date", strings.Replace(full, "- Date: 2024-05-01\n", "", 1), exercise.ErrMissingSection},
+		{"missing Decision", strings.Replace(full, "Použijeme net/http ServeMux se vzory (metody, wildcardy).", "", 1), exercise.ErrMissingSection},
+		{"missing Consequences section", strings.Split(full, "## Consequences")[0], exercise.ErrMissingSection},
 	}
 
 	for _, tt := range tests {

@@ -37,7 +37,7 @@ func TestParseBearerOK(t *testing.T) {
 	}
 }
 
-func TestParseBearerChyby(t *testing.T) {
+func TestParseBearerErrors(t *testing.T) {
 	tests := []struct {
 		header  string
 		wantErr error
@@ -120,7 +120,7 @@ func echoUser(called *bool) http.Handler {
 	})
 }
 
-func TestAuthenticatePropustiPlatnyToken(t *testing.T) {
+func TestAuthenticateAllowsValidToken(t *testing.T) {
 	tokens := map[string]string{"tok-alice": "alice", "tok-bob": "bob"}
 	called := false
 	handler := exercise.Authenticate(tokens)(echoUser(&called))
@@ -147,13 +147,13 @@ func TestAuthenticatePropustiPlatnyToken(t *testing.T) {
 	}
 }
 
-func TestAuthenticateOdmitne(t *testing.T) {
+func TestAuthenticateRejects(t *testing.T) {
 	tokens := map[string]string{"tok-alice": "alice"}
 	tests := map[string]string{
 		"bez hlavičky":     "",
 		"prázdná hlavička": "   ",
-		"jiné schéma":      "Basic dG9rLWFsaWNl",
-		"neznámý token":    "Bearer tok-mallory",
+		"other scheme":      "Basic dG9rLWFsaWNl",
+		"unknown token":    "Bearer tok-mallory",
 		"prefix tokenu":    "Bearer tok-alic",
 		"token s příponou": "Bearer tok-alice2",
 		"chybí token":      "Bearer",
@@ -185,7 +185,7 @@ func TestAuthenticateOdmitne(t *testing.T) {
 	}
 }
 
-func TestUserFromPrazdnyKontext(t *testing.T) {
+func TestUserFromEmptyContext(t *testing.T) {
 	user, ok := exercise.UserFrom(context.Background())
 	if ok {
 		t.Errorf("UserFrom(prázdný kontext) = (%q, true), chci false", user)
@@ -254,7 +254,7 @@ func TestMetricsIncObserve(t *testing.T) {
 	}
 }
 
-func TestMetricsPrvniPozorovaniNastaviMinMax(t *testing.T) {
+func TestMetricsFirstObservationSetsMinMax(t *testing.T) {
 	m := exercise.NewMetrics()
 	m.Observe("latency", 7)
 	got := m.Snapshot()["latency"]
@@ -264,7 +264,7 @@ func TestMetricsPrvniPozorovaniNastaviMinMax(t *testing.T) {
 	}
 }
 
-func TestSnapshotJeKopie(t *testing.T) {
+func TestSnapshotIsCopy(t *testing.T) {
 	m := exercise.NewMetrics()
 	m.Observe("latency", 1)
 
@@ -302,7 +302,7 @@ func TestMetricsText(t *testing.T) {
 	}
 }
 
-func TestMetricsSoubezne(t *testing.T) {
+func TestMetricsConcurrent(t *testing.T) {
 	const (
 		goroutines = 8
 		perG       = 500
@@ -337,13 +337,13 @@ func TestMetricsSoubezne(t *testing.T) {
 	}
 }
 
-func TestRouteFromPrazdnyKontext(t *testing.T) {
+func TestRouteFromEmptyContext(t *testing.T) {
 	if got := exercise.RouteFrom(context.Background()); got != exercise.RouteUnknown {
 		t.Errorf("RouteFrom(prázdný kontext) = %q, chci %q", got, exercise.RouteUnknown)
 	}
 }
 
-func TestWithRoutePredaVzor(t *testing.T) {
+func TestWithRoutePassesPattern(t *testing.T) {
 	var seen string
 	h := exercise.WithRoute("/items/{id}", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		seen = exercise.RouteFrom(r.Context())
@@ -355,7 +355,7 @@ func TestWithRoutePredaVzor(t *testing.T) {
 	}
 }
 
-func TestInstrumentKardinalita(t *testing.T) {
+func TestInstrumentCardinality(t *testing.T) {
 	m := exercise.NewMetrics()
 	item := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprint(w, r.PathValue("id"))
@@ -425,7 +425,7 @@ func TestInstrumentStatusLabel(t *testing.T) {
 	}
 }
 
-func TestInstrumentBezVzoruCesty(t *testing.T) {
+func TestInstrumentWithoutPathPattern(t *testing.T) {
 	m := exercise.NewMetrics()
 	ok := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {})
 	h := exercise.Instrument(m)(ok)
@@ -437,7 +437,7 @@ func TestInstrumentBezVzoruCesty(t *testing.T) {
 	}
 }
 
-func TestInstrumentZachovaTelo(t *testing.T) {
+func TestInstrumentPreservesBody(t *testing.T) {
 	m := exercise.NewMetrics()
 	h := exercise.Instrument(m)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		fmt.Fprint(w, "ahoj")

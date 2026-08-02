@@ -8,6 +8,7 @@ import (
 	"time"
 )
 
+// --- Stupeň: jednoduchý ---
 // TrySend se pokusí neblokujícím způsobem poslat v do ch.
 func TrySend(ch chan<- int, v int) bool {
 	select {
@@ -18,6 +19,7 @@ func TrySend(ch chan<- int, v int) bool {
 	}
 }
 
+// --- Stupeň: střední ---
 // RecvWithTimeout přečte hodnotu z kanálu, nejdéle však po dobu d.
 func RecvWithTimeout(ch <-chan int, d time.Duration) (int, bool) {
 	// time.After by tady taky fungoval, ale timer by žil až do vypršení.
@@ -82,6 +84,7 @@ func First(ctx context.Context, fns ...func(context.Context) (string, error)) (s
 	return "", errors.Join(errs...)
 }
 
+// --- Stupeň: obtížný ---
 // Debounce propustí hodnotu, až když po dobu d nepřijde nic nového.
 func Debounce(in <-chan string, d time.Duration) <-chan string {
 	out := make(chan string)

@@ -22,32 +22,35 @@ type Group struct {
 	started atomic.Bool
 }
 
-// WithContext vrátí skupinu a odvozený kontext, který se zruší, jakmile
-// první úloha vrátí chybu — nebo až Wait skončí, podle toho, co nastane dřív.
+// --- Stupeň: jednoduchý ---
+// WithContext vrátí skupinu a odvozený kontext zrušený při první chybě.
+// Použij context.WithCancelCause; Wait musí kontext zrušit i v úspěšné větvi.
 func WithContext(ctx context.Context) (*Group, context.Context) {
-	// TODO: úkol B
-	return nil, *new(context.Context)
+	// TODO
+	return nil, nil
 }
 
-// SetLimit omezí počet souběžně běžících úloh. Pro n <= 0 se limit zruší.
-// Volání po prvním Go panikuje — limit se za běhu měnit nedá.
+// SetLimit omezí počet souběžně běžících úloh; pro n <= 0 limit ruší.
+// Volání po prvním Go panikuje. Vstupenku ber v Go, ne uvnitř goroutiny.
 func (g *Group) SetLimit(n int) {
-	// TODO: úkol B
+	// TODO
 }
 
-// Go spustí f v nové goroutině. Při nastaveném limitu blokuje, dokud se
-// neuvolní místo. Chybu si skupina zapamatuje jen z prvního neúspěchu.
-// Nil funkce se tiše přeskočí.
+// Go spustí f v nové goroutině; nulová Group je použitelná.
+// Go(nil) se tiše přeskočí. Při limitu blokuje volajícího, dokud se neuvolní místo.
+// První chyba se zapamatuje přes sync.Once; Wait ji vrátí po doběhnutí všech úloh.
 func (g *Group) Go(f func() error) {
-	// TODO: úkol A
+	// TODO
 }
 
 // Wait počká na všechny úlohy a vrátí chybu té, která selhala jako první.
 // Pokud skupina vznikla přes WithContext, Wait odvozený kontext zruší.
 func (g *Group) Wait() error {
-	// TODO: úkol A
+	// TODO
 	return nil
 }
+
+// --- Stupeň: střední ---
 
 // Task je jedna pojmenovaná úloha pro RunAll.
 type Task struct {
@@ -59,20 +62,19 @@ type Task struct {
 	Run func(context.Context) error
 }
 
-// RunAll spustí všechny úlohy souběžně a počká na jejich doběhnutí.
-//
-// Běžné úlohy dostanou kontext odvozený od ctx, který se zruší při první chybě
-// nebo při zrušení rodiče. Úlohy s Detached == true dostanou kontext bez
-// zrušení (context.WithoutCancel), takže doběhnou i po zrušení rodiče.
-// Chyba úlohy se obalí jménem úlohy; vrací se první z nich.
+// --- Stupeň: obtížný ---
+// RunAll spustí všechny úlohy souběžně a počká i na odpojené (Detached).
+// Běžné dostanou kontext skupiny, odpojené context.WithoutCancel(ctx).
+// Chybu úlohy obal: fmt.Errorf("task %q: %w", …). Run == nil → ErrNilTask;
+// prázdný seznam vrací nil.
 func RunAll(ctx context.Context, tasks []Task) error {
-	// TODO: úkol C
+	// TODO
 	return nil
 }
 
 // Cause rozbalí řetězec chyb až na tu nejhlubší a vrátí ji.
 // Pro nil vrací nil, pro chybu bez Unwrap vrací ji samotnou.
 func Cause(err error) error {
-	// TODO: úkol C
+	// TODO
 	return nil
 }

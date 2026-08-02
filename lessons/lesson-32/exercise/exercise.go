@@ -35,33 +35,40 @@ var (
 	ErrOverflow      = pricing.ErrOverflow
 )
 
-// Validate ověří jeden produkt doménovými pravidly.
+// --- Stupeň: jednoduchý ---
+// Validate ověří jeden produkt doménovými pravidly katalogu (průchozí volání do catalog.Validate).
+// Kontroluje SKU, jméno a cenu; chyby propaguje beze změny sentinelu.
 func Validate(p Product) error {
-	// TODO: úkol A
+	// TODO
 	return nil
 }
 
-// BuildCatalog sestaví katalog ze zadaných produktů.
+// --- Stupeň: střední ---
+// BuildCatalog sestaví katalog ze zadaných produktů (průchozí volání do catalog.New).
+// Každý produkt projde Validate; duplicitní SKU je ErrDuplicateSKU. Prázdný vstup → prázdný katalog.
 func BuildCatalog(products ...Product) (*Catalog, error) {
-	// TODO: úkol A
+	// TODO
 	return nil, nil
 }
 
-// PriceOf vrátí cenu qty kusů produktu se zadaným SKU.
-// Neznámé SKU propaguje ErrNotFound, nekladné množství ErrInvalidQty.
+// PriceOf vrátí cenu qty kusů produktu se zadaným SKU v katalogu.
+// Neznámé SKU propaguje ErrNotFound; nekladné množství ErrInvalidQty z pricing.
 func PriceOf(c *Catalog, sku string, qty int) (int64, error) {
-	// TODO: úkol B
+	// TODO
 	return 0, nil
 }
 
-// TotalOf spočítá cenu celého košíku.
+// --- Stupeň: obtížný ---
+// TotalOf spočítá cenu celého košíku přes pricing.Total.
+// Prázdný košík → 0, nil. Chyby validace a přetečení propaguje beze změny.
 func TotalOf(items []Item) (int64, error) {
-	// TODO: úkol B
+	// TODO
 	return 0, nil
 }
 
-// NewIDGen vytvoří generátor identifikátorů s daným prefixem.
+// NewIDGen vytvoří generátor identifikátorů s daným prefixem (průchozí volání do idgen.New).
+// Prázdný prefix se nahradí "id". NewID vrací "<prefix>-000001", … bezpečně pro souběžné volání.
 func NewIDGen(prefix string) *IDGen {
-	// TODO: úkol C
+	// TODO
 	return nil
 }

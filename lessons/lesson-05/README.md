@@ -11,46 +11,6 @@
   pointer receiver.
 - Použít embedding pro kompozici a popsat, čím se liší od dědičnosti.
 
-## PHP → Go most
-
-V PHP je třída zároveň datová struktura, jmenný prostor pro metody i uzel v hierarchii.
-
-```php
-class Base
-{
-    public function __construct(protected string $id) {}
-    public function describe(): string { return "base:{$this->id}"; }
-}
-
-class User extends Base
-{
-    public function __construct(string $id, private string $name) { parent::__construct($id); }
-    public function describe(): string { return "user:{$this->name} (" . parent::describe() . ")"; }
-}
-```
-
-V Go se data (`struct`) a chování (metody) definují zvlášť a místo dědičnosti se vkládá:
-
-```go
-type Base struct{ ID string }
-
-func (b Base) Describe() string { return "base:" + b.ID }
-
-type User struct {
-	Base        // embedding, ne extends
-	Name string
-}
-
-func (u User) Describe() string {
-	return "user:" + u.Name + " (" + u.Base.Describe() + ")"
-}
-```
-
-Co se mění v uvažování: `u.Base.Describe()` **není** `parent::describe()`. Není tu žádný
-rodič — `User` prostě obsahuje hodnotu typu `Base` jako pole a ty na ni voláš metodu.
-Rozdíl je vidět, jakmile do hry vstoupí interfaces: v PHP `Base` zavolá přepsanou metodu
-potomka (pozdní vazba), v Go `Base.Describe()` o existenci `User` nikdy nezjistí nic.
-
 ## Teorie
 
 ### Struct literály
@@ -236,6 +196,46 @@ Druhý vzor je v Go idiomatický dekorátor: vložený interface zajistí, že t
 kontrakt, a ty přepíšeš jen metody, které chceš. Pozor na to, že nepřepsané metody spadnou
 na `nil` panic, pokud vložený interface nenaplníš.
 
+## Rozdíly proti PHP
+
+V PHP je třída zároveň datová struktura, jmenný prostor pro metody i uzel v hierarchii.
+
+```php
+class Base
+{
+    public function __construct(protected string $id) {}
+    public function describe(): string { return "base:{$this->id}"; }
+}
+
+class User extends Base
+{
+    public function __construct(string $id, private string $name) { parent::__construct($id); }
+    public function describe(): string { return "user:{$this->name} (" . parent::describe() . ")"; }
+}
+```
+
+V Go se data (`struct`) a chování (metody) definují zvlášť a místo dědičnosti se vkládá:
+
+```go
+type Base struct{ ID string }
+
+func (b Base) Describe() string { return "base:" + b.ID }
+
+type User struct {
+	Base        // embedding, ne extends
+	Name string
+}
+
+func (u User) Describe() string {
+	return "user:" + u.Name + " (" + u.Base.Describe() + ")"
+}
+```
+
+Co se mění v uvažování: `u.Base.Describe()` **není** `parent::describe()`. Není tu žádný
+rodič — `User` prostě obsahuje hodnotu typu `Base` jako pole a ty na ni voláš metodu.
+Rozdíl je vidět, jakmile do hry vstoupí interfaces: v PHP `Base` zavolá přepsanou metodu
+potomka (pozdní vazba), v Go `Base.Describe()` o existenci `User` nikdy nezjistí nic.
+
 ## Časté chyby
 
 | Chyba | Proč vzniká | Jak to udělat správně |
@@ -247,71 +247,52 @@ na `nil` panic, pokud vložený interface nenaplníš.
 | Poziční literál u velkého structu | méně psaní | pojmenovaná pole, jinak rozbiješ kód přidáním pole |
 | `==` na structu se slicem | struct vypadá porovnatelně | metoda `Equal`, nebo v testu `reflect.DeepEqual` |
 
+## AI kvíz
+
+Po přečtení teorie spusť v Cursoru **`/go-deep-quiz 05`**. AI tě ~5 minut prověří mentální model (ne hotové cvičení). Slabiny si uloží do [`GAPS.md`](../../GAPS.md).
+
 ## Úkol
 
-Pracuj v `exercise/`. Postupuj A → B → C, po každé části spusť test.
-Typy jsou předpřipravené, dopisuješ jen metody.
+Pracuj v `exercise/`. Po doplnění spouštěj testy:
 
-### A — rozcvička (~10 min)
+Stupně jdou od jednodušších ke složitějším — po každém stupni spusť review, než jdeš dál.
 
-Typ `Point struct{ X, Y int }`:
+### Jednoduchý
 
-- `func (p Point) Add(q Point) Point` — vrátí **nový** bod se součtem složek. Přijímače se
-  nesmí dotknout.
-- `func (p Point) String() string` — formát přesně `"(1,2)"`, bez mezer. Pro
-  `Point{-3, 40}` tedy `"(-3,40)"`. Tím implementuješ `fmt.Stringer`, test to ověří přes
-  `fmt.Sprintf("%v", p)`.
-
-Test taky porovnává body přes `==`. Rozmysli si, proč to jde.
-
-např. `Point{1, 2}.Add(Point{3, 4})` → `{4, 6}`
-
-### B — jádro (~35 min)
-
-Typ `Counter struct{ n int }` má **neexportované** pole, takže se dá měnit jen metodami:
-
-- `func (c *Counter) Inc()` — o jedna nahoru.
-- `func (c *Counter) Add(n int)` — přičte `n`, záporné `n` počítadlo snižuje.
-- `func (c Counter) Value() int` — aktuální hodnota, **value receiver**.
-
-Zero value musí být použitelná: `var c Counter; c.Inc()` dá `1`.
-
-Testy ověřují dvě věci navíc, které jsou pointou úkolu. Za prvé, že předání `Counter`
-do funkce hodnotou vytvoří kopii a `Inc()` na ní originál nezmění. Za druhé, přes
-type assertion na `any`, že `Counter` **nemá** `Inc` v method setu, zatímco `*Counter` ano.
-Kdybys `Inc` napsal s value receiverem, obojí selže.
-
-např. `var c Counter; c.Inc()` → `Value() == 1`
-
-### C — rozšíření (~25 min)
-
-Embedding ve třech úrovních. Typy jsou hotové: `Base{ID string}`, `User{Base; Name string}`,
-`Admin{User; Level int}`.
-
-- `func (b Base) Describe() string` → `"base:<ID>"`, pro `Base{ID: "b1"}` tedy `"base:b1"`.
-- `func (u User) Describe() string` → `"user:<Name> (<popis base>)"`, tedy pro
-  `User{Base{"u1"}, "Radek"}` přesně `"user:Radek (base:u1)"`. Popis základu **musíš získat
-  voláním** `u.Base.Describe()`, ne slepením řetězce ručně.
-- `func (a Admin) Tag() string` → `"admin:<ID>/<Level>"`, tedy `"admin:a1/9"`. `ID` ber
-  přes promotované pole (`a.ID`), ne přes `a.User.Base.ID`. Pro `Admin{}` vyjde
-  `"admin:/0"`. Na převod čísla použij `strconv.Itoa`.
-
-`Admin` schválně `Describe` nedefinuje — test ověří, že se promotuje z `User` a že `Admin`
-díky tomu splní interface s metodou `Describe()`.
-
-např. `Admin{…}.Tag()` → `"admin:a1/9"`
+Funkce: `Add`, `String`
 
 ```bash
-make lesson L=05
+make lesson L=05 PART=1
 ```
 
-Až budeš hotový, porovnej se `solutions/` (spoiler).
+Pak **`/go-deep-review 05 easy`**.
 
-## Ověření
+### Střední
 
-Po dokončení úkolů spusť v Cursoru **`/go-deep-review`** a zadej třeba jen `05`. AI tě postupně projde body níže, doptá se a ověří pochopení — nestačí jen zelené testy.
+Funkce: `Inc`, `Add`, `Value`
 
-- [ ] `make lesson L=05` prochází
+```bash
+make lesson L=05 PART=2
+```
+
+Pak **`/go-deep-review 05 medium`**.
+
+### Obtížný
+
+Funkce: `Describe`, `Describe`, `Tag`
+
+```bash
+make lesson L=05 PART=3
+```
+
+Pak **`/go-deep-review 05 hard`**.
+
+Až budou stupně hotové, porovnej se `solutions/` (spoiler).
+
+## Závěrečné otázky
+
+Spusť **`/go-deep-review 05 final`**. AI projde body níže, doptá se a ověří pochopení. Celé cvičení ověří `make lesson L=05` (+ `make race L=05`, pokud to lekce vyžaduje).
+
 - [ ] Umíš vyjmenovat čtyři kritéria pro volbu pointer receiveru
 - [ ] Umíš vysvětlit, proč `var i Incrementer = Counter{}` neprojde kompilací
 - [ ] Umíš vysvětlit, proč embedding není dědičnost, na příkladu shadowingu
@@ -322,6 +303,7 @@ Po dokončení úkolů spusť v Cursoru **`/go-deep-review`** a zadej třeba jen
 
 `ZAKÁZÁNO` — viz [docs/ai-playbook.md](../../docs/ai-playbook.md).
 
+Mentor, kvíz i review (dialog) jsou vždy OK; v tomto režimu AI nesmí psát kód cvičení.
 ## Další čtení
 
 1. [Effective Go — Embedding](https://go.dev/doc/effective_go#embedding)

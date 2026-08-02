@@ -31,9 +31,9 @@ func TestParallelSquares(t *testing.T) {
 		want []int
 	}{
 		{"nil", nil, []int{}},
-		{"prázdný", []int{}, []int{}},
-		{"jeden prvek", []int{5}, []int{25}},
-		{"záporná čísla", []int{-3, 0, 4}, []int{9, 0, 16}},
+		{"empty", []int{}, []int{}},
+		{"one element", []int{5}, []int{25}},
+		{"negative numbers", []int{-3, 0, 4}, []int{9, 0, 16}},
 		{"duplicity", []int{2, 2, 2}, []int{4, 4, 4}},
 	}
 	for _, tt := range tests {
@@ -122,13 +122,13 @@ func TestFanOutSum(t *testing.T) {
 		want    int
 	}{
 		{"nil", nil, 4, 0},
-		{"prázdný", []int{}, 4, 0},
+		{"empty", []int{}, 4, 0},
 		{"workers = 0", []int{1, 2, 3, 4}, 0, 10},
 		{"workers = -5", []int{1, 2, 3, 4}, -5, 10},
 		{"workers = 1", []int{1, 2, 3, 4}, 1, 10},
 		{"workers = 3", []int{1, 2, 3, 4, 5, 6, 7}, 3, 28},
-		{"víc workerů než prvků", []int{1, 2, 3}, 64, 6},
-		{"záporná čísla", []int{-5, 5, -10, 10}, 2, 0},
+		{"more workers than items", []int{1, 2, 3}, 64, 6},
+		{"negative numbers", []int{-5, 5, -10, 10}, 2, 0},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -199,6 +199,40 @@ func TestFanOutSumSpawnsGoroutines(t *testing.T) {
 	}
 }
 
+// stableGoroutines počká, až se počet goroutin ustálí — lokální helper místo
+// studentova GoroutineDelta.
+func stableGoroutines() int {
+	const (
+		needStable = 3
+		maxRounds  = 300
+		step       = 5 * time.Millisecond
+	)
+	runtime.Gosched()
+	prev := runtime.NumGoroutine()
+	stable := 0
+	for i := 0; i < maxRounds; i++ {
+		time.Sleep(step)
+		cur := runtime.NumGoroutine()
+		if cur == prev {
+			stable++
+			if stable >= needStable {
+				return cur
+			}
+			continue
+		}
+		prev = cur
+		stable = 0
+	}
+	return runtime.NumGoroutine()
+}
+
+func goroutineDelta(f func()) int {
+	before := stableGoroutines()
+	f()
+	after := stableGoroutines()
+	return after - before
+}
+
 func TestGoroutineDeltaCleanCode(t *testing.T) {
 	if got := exercise.GoroutineDelta(func() {}); got != 0 {
 		t.Errorf("GoroutineDelta(prázdná funkce) = %d, chci 0", got)
@@ -234,8 +268,8 @@ func TestGoroutineDeltaCountsLeaks(t *testing.T) {
 }
 
 func TestLeakyGeneratorReallyLeaks(t *testing.T) {
-	if got := exercise.GoroutineDelta(exercise.LeakyGenerator); got < 1 {
-		t.Errorf("GoroutineDelta(LeakyGenerator) = %d, chci alespoň 1 — funkce má leakovat", got)
+	if got := goroutineDelta(exercise.LeakyGenerator); got < 1 {
+		t.Errorf("LeakyGenerator: delta goroutin = %d, chci alespoň 1 — funkce má leakovat", got)
 	}
 }
 
@@ -276,7 +310,7 @@ func TestSafeGeneratorClosesChannel(t *testing.T) {
 }
 
 func TestSafeGeneratorDoesNotLeak(t *testing.T) {
-	got := exercise.GoroutineDelta(func() {
+	got := goroutineDelta(func() {
 		done := make(chan struct{})
 		ch := exercise.SafeGenerator(done)
 		for i := 0; i < 5; i++ {
@@ -285,20 +319,20 @@ func TestSafeGeneratorDoesNotLeak(t *testing.T) {
 		close(done)
 	})
 	if got > 0 {
-		t.Errorf("GoroutineDelta(SafeGenerator) = %d, chci 0 — po zavření done nesmí nic zůstat", got)
+		t.Errorf("SafeGenerator: delta goroutin = %d, chci 0 — po zavření done nesmí nic zůstat", got)
 	}
 }
 
 func TestSafeGeneratorSurvivesAbandonedReader(t *testing.T) {
 	// Nejtvrdší případ: přečteme jednu hodnotu a pak z kanálu přestaneme
 	// číst úplně. Goroutina uvízlá na `out <- i` by tady leakovala.
-	got := exercise.GoroutineDelta(func() {
+	got := goroutineDelta(func() {
 		done := make(chan struct{})
 		ch := exercise.SafeGenerator(done)
 		<-ch
 		close(done)
 	})
 	if got > 0 {
-		t.Errorf("GoroutineDelta = %d, chci 0 — generátor uvízl na zápisu do opuštěného kanálu", got)
+		t.Errorf("SafeGenerator: delta goroutin = %d, chci 0 — generátor uvízl na zápisu do opuštěného kanálu", got)
 	}
 }

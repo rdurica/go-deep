@@ -54,10 +54,11 @@ const (
 // RoomID je ověřené číslo pokoje ve tvaru "A-101".
 type RoomID string
 
-// ParseRoomID normalizuje a ověří číslo pokoje.
-// Tvar je jedno písmeno, pomlčka a tři číslice; "A-000" neexistuje.
+// --- Stupeň: jednoduchý ---
+// ParseRoomID ořízne, převede na velká písmena, ověří tvar písmeno-pomlčka-3 číslice.
+// Prázdný → ErrEmptyRoomID; A-000 a jiný tvar → ErrInvalidRoomID. Při chybě nulová RoomID.
 func ParseRoomID(s string) (RoomID, error) {
-	// TODO: úkol A
+	// TODO
 	return *new(RoomID), nil
 }
 
@@ -67,31 +68,35 @@ type DateRange struct {
 	to   time.Time
 }
 
-// NewDateRange ověří termín a zarovná ho na celé dny v UTC.
+// NewDateRange zarovná oba časy na celý den UTC. Konec musí být po začátku;
+// max MaxNights nocí. ErrInvalidRange / ErrRangeTooLong.
 func NewDateRange(from, to time.Time) (DateRange, error) {
-	// TODO: úkol A
+	// TODO
 	return *new(DateRange), nil
 }
 
 // From vrací první noc pobytu.
+// Součást polootevřeného intervalu <From, To).
 func (d DateRange) From() time.Time { return d.from }
 
 // To vrací den odjezdu; ten se už nepočítá.
 func (d DateRange) To() time.Time { return d.to }
 
-// Nights vrací počet nocí.
+// Nights vrací počet nocí mezi From a To.
+// Počítá celé dny v UTC po zarovnání v NewDateRange.
 func (d DateRange) Nights() int {
-	// TODO: úkol A
+	// TODO
 	return 0
 }
 
-// Overlaps vrací true, pokud se termíny překrývají.
-// Interval je polootevřený, takže odjezd v den příjezdu dalšího hosta je v pořádku.
+// Overlaps vrací true při překryvu polootevřených intervalů.
+// Odjezd v den příjezdu dalšího hosta se nepřekrývá.
 func (d DateRange) Overlaps(other DateRange) bool {
-	// TODO: úkol A
+	// TODO
 	return false
 }
 
+// --- Stupeň: střední ---
 // String vrací termín ve tvaru "2024-05-17..2024-05-20".
 func (d DateRange) String() string {
 	return d.from.Format(DateLayout) + ".." + d.to.Format(DateLayout)
@@ -116,15 +121,17 @@ type FieldError struct {
 // ValidationErrors je seznam zamítnutých položek; implementuje error.
 type ValidationErrors []FieldError
 
-// Error implementuje error.
+// Error implementuje error pro ValidationErrors.
+// Vrací souhrnný text; detailní pole získáš přes Get(field).
 func (v ValidationErrors) Error() string {
-	// TODO: úkol C
+	// TODO
 	return ""
 }
 
-// Get vrátí chybu pro dané pole, pokud tam je.
+// Get vrátí chybu pro dané pole, pokud existuje v seznamu validačních chyb.
+// Neexistující pole → zero value FieldError a false.
 func (v ValidationErrors) Get(field string) (FieldError, bool) {
-	// TODO: úkol C
+	// TODO
 	return *new(FieldError), false
 }
 
@@ -138,10 +145,11 @@ type CreateBookingRequest struct {
 	NightlyRate int64  `json:"nightly_rate"`
 }
 
-// Validate ověří všechna pole najednou a vrátí ValidationErrors,
-// nebo nil, pokud je požadavek v pořádku.
+// Validate sbírá všechny chyby v pořadí ref, room, guest, from, to, nightly_rate.
+// Kódy CodeRequired, CodeFormat, CodeRange. Chyba termínu patří k poli to.
+// Datum ve tvaru DateLayout. Vrať nil, ne typovaný nil slice.
 func (r CreateBookingRequest) Validate() error {
-	// TODO: úkol C
+	// TODO
 	return nil
 }
 
@@ -157,21 +165,25 @@ type MemoryRepo struct {
 	bookings map[string]Booking
 }
 
-// NewMemoryRepo vytvoří prázdné úložiště.
+// NewMemoryRepo vytvoří prázdné úložiště. Bezpečné pro souběžné použití.
+// Duplicitní Ref při Save vrací ErrDuplicateRef.
 func NewMemoryRepo() *MemoryRepo {
-	// TODO: úkol B
+	// TODO
 	return nil
 }
 
-// Save uloží rezervaci. Duplicitní reference vrací ErrDuplicateRef.
+// Save uloží rezervaci do úložiště.
+// Duplicitní Ref → ErrDuplicateRef. Zrušený kontext vrací chybu z ctx.Err().
 func (r *MemoryRepo) Save(ctx context.Context, b Booking) error {
-	// TODO: úkol B
+	// TODO
 	return nil
 }
 
+// --- Stupeň: obtížný ---
 // ByRoom vrátí rezervace pokoje seřazené podle začátku pobytu.
+// Zrušený kontext vrací chybu z ctx.Err().
 func (r *MemoryRepo) ByRoom(ctx context.Context, room RoomID) ([]Booking, error) {
-	// TODO: úkol B
+	// TODO
 	return nil, nil
 }
 
@@ -181,14 +193,15 @@ type Metrics struct {
 	counters map[string]int64
 }
 
-// Inc zvýší čítač o jedna.
+// Inc zvýší čítač name o jedna pod mutexem.
+// Nulová hodnota Metrics je použitelná: var m Metrics a rovnou Inc.
 func (m *Metrics) Inc(name string) {
-	// TODO: úkol B
+	// TODO
 }
 
-// Snapshot vrátí kopii čítačů.
+// Snapshot vrátí kopii čítačů jako novou mapu (ne sdílenou referenci na interní mapu).
 func (m *Metrics) Snapshot() map[string]int64 {
-	// TODO: úkol B
+	// TODO
 	return nil
 }
 
@@ -198,7 +211,7 @@ type Service struct {
 	metrics *Metrics
 }
 
-// NewService složí službu nad portem. Metriky jsou volitelné.
+// NewService složí službu nad portem. Metriky volitelné (nil → prázdné Metrics).
 func NewService(repo Repository, metrics *Metrics) *Service {
 	if metrics == nil {
 		metrics = &Metrics{}
@@ -207,11 +220,14 @@ func NewService(repo Repository, metrics *Metrics) *Service {
 }
 
 // Metrics vrací registr metrik služby.
+// Nikdy nevrací nil — nil v konstruktoru se nahradí prázdným Metrics.
 func (s *Service) Metrics() *Metrics { return s.metrics }
 
-// Book ověří požadavek, zkontroluje obsazenost a rezervaci uloží.
+// Book zvaliduje req, převede na typy, zkontroluje překryv (ErrRoomTaken),
+// spočítá nightly_rate × noci a uloží. Metriky: MetricCreated po úspěchu,
+// MetricRejected při validaci, překryvu i duplicitní Ref.
 func (s *Service) Book(ctx context.Context, req CreateBookingRequest) (Booking, error) {
-	// TODO: úkol B
+	// TODO
 	return *new(Booking), nil
 }
 
@@ -226,8 +242,9 @@ type Problem struct {
 	Errors ValidationErrors `json:"errors,omitempty"`
 }
 
-// Handler je HTTP adaptér nad službou.
+// Handler je HTTP adaptér: POST /bookings (201, Location, JSON s nights a total),
+// GET /metrics. Mapování 400/422/409/500, problem+json.
 func Handler(svc *Service) http.Handler {
-	// TODO: úkol C
+	// TODO
 	return *new(http.Handler)
 }

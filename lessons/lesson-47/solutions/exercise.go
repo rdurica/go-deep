@@ -23,6 +23,7 @@ type Group struct {
 	started atomic.Bool
 }
 
+// --- Stupeň: jednoduchý ---
 // WithContext vrátí skupinu a odvozený kontext, který se zruší, jakmile
 // první úloha vrátí chybu — nebo až Wait skončí, podle toho, co nastane dřív.
 func WithContext(ctx context.Context) (*Group, context.Context) {
@@ -89,6 +90,8 @@ func (g *Group) Wait() error {
 	return g.err
 }
 
+// --- Stupeň: střední ---
+
 // Task je jedna pojmenovaná úloha pro RunAll.
 type Task struct {
 	// Name se objeví v textu chyby.
@@ -99,6 +102,7 @@ type Task struct {
 	Run func(context.Context) error
 }
 
+// --- Stupeň: obtížný ---
 // RunAll spustí všechny úlohy souběžně a počká na jejich doběhnutí.
 //
 // Běžné úlohy dostanou kontext odvozený od ctx, který se zruší při první chybě

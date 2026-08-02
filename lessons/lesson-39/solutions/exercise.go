@@ -59,6 +59,7 @@ const (
 // RoomID je ověřené číslo pokoje ve tvaru "A-101".
 type RoomID string
 
+// --- Stupeň: jednoduchý ---
 // ParseRoomID normalizuje a ověří číslo pokoje.
 // Tvar je jedno písmeno, pomlčka a tři číslice; "A-000" neexistuje.
 func ParseRoomID(s string) (RoomID, error) {
@@ -124,6 +125,7 @@ func (d DateRange) Overlaps(other DateRange) bool {
 	return d.from.Before(other.to) && other.from.Before(d.to)
 }
 
+// --- Stupeň: střední ---
 // String vrací termín ve tvaru "2024-05-17..2024-05-20".
 func (d DateRange) String() string {
 	return d.from.Format(DateLayout) + ".." + d.to.Format(DateLayout)
@@ -269,6 +271,7 @@ func (r *MemoryRepo) Save(ctx context.Context, b Booking) error {
 	return nil
 }
 
+// --- Stupeň: obtížný ---
 // ByRoom vrátí rezervace pokoje seřazené podle začátku pobytu.
 func (r *MemoryRepo) ByRoom(ctx context.Context, room RoomID) ([]Booking, error) {
 	if err := ctx.Err(); err != nil {

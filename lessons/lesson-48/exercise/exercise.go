@@ -19,42 +19,47 @@ type AtomicFlag struct {
 	v atomic.Bool
 }
 
+// --- Stupeň: jednoduchý ---
 // Set nastaví hodnotu příznaku.
+// Zápis je viditelný z Load v jiné goroutině bez další synchronizace.
 func (f *AtomicFlag) Set(v bool) {
-	// TODO: úkol A
+	// TODO
 }
 
 // Get vrátí aktuální hodnotu příznaku.
+// Čtení je atomické a vidí poslední Set z jiné goroutiny.
 func (f *AtomicFlag) Get() bool {
-	// TODO: úkol A
+	// TODO
 	return false
 }
 
-// MutexFlag je Flag chráněný zámkem. Unlock jednoho zápisu se řadí před
-// Lock následujícího čtení, takže i tady je viditelnost zaručená.
+// MutexFlag je Flag chráněný zámkem; zamykej i čtení, ne jen zápis.
 type MutexFlag struct {
 	mu sync.Mutex
 	v  bool
 }
 
 // Set nastaví hodnotu příznaku.
+// Zamykej i čtení — Get musí držet stejný mutex.
 func (f *MutexFlag) Set(v bool) {
-	// TODO: úkol A
+	// TODO
 }
 
 // Get vrátí aktuální hodnotu příznaku.
+// Čtení pod zámkem; nesmí číst v bez mutexu.
 func (f *MutexFlag) Get() bool {
-	// TODO: úkol A
+	// TODO
 	return false
 }
 
+// --- Stupeň: střední ---
 // StressFlag prožene příznak zátěží: writers goroutin ho nastavuje na true,
 // readers goroutin ho čte, každá z nich iterations krát. Funkce počká na
 // všechny a vrátí, kolikrát čtenáři viděli true.
 //
 // Pro nil příznak nebo nekladné počty vrací 0 a nic nespouští.
 func StressFlag(f Flag, writers, readers, iterations int) int {
-	// TODO: úkol A
+	// TODO
 	return 0
 }
 
@@ -67,23 +72,24 @@ type LazyInit struct {
 	value int
 }
 
-// NewLazyInit vrátí líný inicializátor. Pro nil funkci panikuje.
+// NewLazyInit vrátí líný inicializátor s danou funkci.
+// Pro nil funkci panikuje. Nulová hodnota LazyInit není použitelná.
 func NewLazyInit(init func() int) *LazyInit {
-	// TODO: úkol B
+	// TODO
 	return nil
 }
 
 // Value vrátí hodnotu a při prvním volání ji nechá spočítat.
 // Všechna volání musí vidět stejnou hodnotu.
 func (l *LazyInit) Value() int {
-	// TODO: úkol B
+	// TODO
 	return 0
 }
 
-// ConcurrentValues zavolá l.Value() z n goroutin najednou a vrátí, co která
-// viděla. Pořadí odpovídá pořadí goroutin. Pro n <= 0 vrací prázdný výsledek.
+// ConcurrentValues zavolá Value() z n goroutin najednou; pořadí odpovídá pořadí goroutin.
+// Startovní čáru srovnej zavřením sdíleného kanálu. Pro n <= 0 prázdný výsledek.
 func ConcurrentValues(l *LazyInit, n int) []int {
-	// TODO: úkol B
+	// TODO
 	return nil
 }
 
@@ -96,20 +102,24 @@ type Box struct {
 	ready chan struct{}
 }
 
-// NewBox vrátí prázdný box, ze kterého se dá číst až po Publish.
+// --- Stupeň: obtížný ---
+// NewBox vrátí prázdný box pro jednorázovou publikaci dat.
+// Consume blokuje do Publish; nulová hodnota Box není použitelná.
 func NewBox() *Box {
-	// TODO: úkol C
+	// TODO
 	return nil
 }
 
-// Publish uloží data a oznámí to čtenářům. Volá se právě jednou.
+// Publish uloží data a oznámí to čtenářům zavřením synchronizačního kanálu.
+// Volá se právě jednou; opakované volání panikuje.
 func (b *Box) Publish(data []int) {
-	// TODO: úkol C
+	// TODO
 }
 
-// Consume počká na Publish a vrátí publikovaná data.
+// Consume blokuje do Publish a pak vrací publikovaná data okamžitě.
+// Libovolný počet čtenářů po Publish dostane stejná kompletní data.
 func (b *Box) Consume() []int {
-	// TODO: úkol C
+	// TODO
 	return nil
 }
 
@@ -117,7 +127,7 @@ func (b *Box) Consume() []int {
 // goroutin. Vrátí, co který čtenář viděl — všichni musí vidět kompletní data.
 // Pro readers <= 0 vrací prázdný výsledek.
 func PublishAndConsume(data []int, readers int) [][]int {
-	// TODO: úkol C
+	// TODO
 	return nil
 }
 
@@ -125,6 +135,6 @@ func PublishAndConsume(data []int, readers int) [][]int {
 // sdíleného slice. Po Wait jsou všechny zápisy viditelné, takže se dají
 // bez dalšího zamykání sečíst. Vrací ten součet, pro n <= 0 nulu.
 func WaitGroupVisibility(n int) int {
-	// TODO: úkol C
+	// TODO
 	return 0
 }

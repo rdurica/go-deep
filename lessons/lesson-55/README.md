@@ -15,33 +15,6 @@ a `errors.Join`.
 - Postavit readiness endpoint, který se nezasekne na kontrole ignorující `context`.
 - Ukončit službu v definovaném pořadí a v definovaném čase.
 
-## PHP → Go most
-
-PHP aplikace v kontejneru je vždycky nejmíň dva procesy: php-fpm a nginx. Deploy znamená
-image s celým interpretem, rozšířeními a `vendor/`:
-
-```dockerfile
-FROM php:8.3-fpm-alpine
-COPY --from=composer /usr/bin/composer /usr/bin/composer
-COPY . /app
-RUN composer install --no-dev --optimize-autoloader
-# výsledek: ~150 MB, dva procesy, supervisord navrch
-```
-
-Go služba je jeden statický soubor:
-
-```dockerfile
-FROM scratch
-COPY --from=build /out/app /app
-ENTRYPOINT ["/app"]
-# výsledek: ~10 MB, jeden proces, PID 1 je tvůj kód
-```
-
-Co se mění v uvažování: **tvůj proces je PID 1 a nikdo za tebe neuklízí.** V php-fpm
-worker po requestu umře a paměť se uvolní; graceful shutdown řeší master proces. V Go
-běží tvůj proces měsíce, sám dostane `SIGTERM` a sám se musí korektně ukončit. Co
-nedodeleguješ, to se neudělá.
-
 ## Recap
 
 ### Otázky a odpovědi
@@ -101,6 +74,44 @@ ORM, DI. V aplikačním kódu je ruční mapování rychlejší i čitelnější
 | pprof | profil až po benchmarku | optimalizace podle intuice |
 | Reflexe | knihovny ano, aplikace ne | vlastní mapper v service vrstvě |
 | Build tagy | prázdný řádek před `package` | varianta bez testu tiše hnije |
+
+## Rozdíly proti PHP
+
+PHP aplikace v kontejneru je vždycky nejmíň dva procesy: php-fpm a nginx. Deploy znamená
+image s celým interpretem, rozšířeními a `vendor/`:
+
+```dockerfile
+FROM php:8.3-fpm-alpine
+COPY --from=composer /usr/bin/composer /usr/bin/composer
+COPY . /app
+RUN composer install --no-dev --optimize-autoloader
+# výsledek: ~150 MB, dva procesy, supervisord navrch
+```
+
+Go služba je jeden statický soubor:
+
+```dockerfile
+FROM scratch
+COPY --from=build /out/app /app
+ENTRYPOINT ["/app"]
+# výsledek: ~10 MB, jeden proces, PID 1 je tvůj kód
+```
+
+Co se mění v uvažování: **tvůj proces je PID 1 a nikdo za tebe neuklízí.** V php-fpm
+worker po requestu umře a paměť se uvolní; graceful shutdown řeší master proces. V Go
+běží tvůj proces měsíce, sám dostane `SIGTERM` a sám se musí korektně ukončit. Co
+nedodeleguješ, to se neudělá.
+
+## Časté chyby
+
+| Chyba | Proč vzniká | Jak to udělat správně |
+|-------|-------------|------------------------|
+| Kontrola databáze v liveness | „health check je health check" | závislosti do readiness, liveness jen žije/nežije |
+| `ENTRYPOINT /app` bez závorek | zvyk psát shell příkazy | exec forma `["/app"]`, jinak nedostaneš SIGTERM |
+| Zavření serveru dřív, než pod zmizí z endpointů | přeskočená pauza na drain | nejdřív ready=false, pak počkat, pak Shutdown |
+| Konfigurační soubor v image | reflex z `config/packages/prod` | všechno z env, image je jeden pro všechna prostředí |
+| Logy do `/var/log/app.log` | zvyk na Monolog s rotací | stdout, sběr řeší platforma |
+| `GOMAXPROCS` ponechaný na výchozí | v PHP se o CPU nestaráš | odvoď ho z CPU limitu podu |
 
 ## Nová látka: kontejner a sondy
 
@@ -204,128 +215,6 @@ přijde `SIGKILL` uprostřed.
   throttling. Řeš to buď explicitním `runtime.GOMAXPROCS(n)` z limitu, nebo knihovnou
   `automaxprocs`. `GOMEMLIMIT` nastav zhruba na 90 % memory limitu.
 
-## Časté chyby
-
-| Chyba | Proč vzniká | Jak to udělat správně |
-|-------|-------------|------------------------|
-| Kontrola databáze v liveness | „health check je health check" | závislosti do readiness, liveness jen žije/nežije |
-| `ENTRYPOINT /app` bez závorek | zvyk psát shell příkazy | exec forma `["/app"]`, jinak nedostaneš SIGTERM |
-| Zavření serveru dřív, než pod zmizí z endpointů | přeskočená pauza na drain | nejdřív ready=false, pak počkat, pak Shutdown |
-| Konfigurační soubor v image | reflex z `config/packages/prod` | všechno z env, image je jeden pro všechna prostředí |
-| Logy do `/var/log/app.log` | zvyk na Monolog s rotací | stdout, sběr řeší platforma |
-| `GOMAXPROCS` ponechaný na výchozí | v PHP se o CPU nestaráš | odvoď ho z CPU limitu podu |
-
-## Úkol
-
-Jedna kumulativní úloha místo tří nezávislých: balíček, který zvládne provoz Go služby
-v kontejneru. Kombinuje **build metadata, HTTP handlery, souběžnost s timeoutem
-a `errors.Join`**. Typy a signatury jsou v `exercise/` předvyplněné.
-
-### A — build metadata (~15 min)
-
-1. `func (b BuildInfo) String() string` ve tvaru `v1.2.3 (abc1234, 2024-01-15T10:00:00Z)`.
-   Prázdná pole nahraď postupně `dev`, `none` a `unknown`, takže `BuildInfo{}.String()`
-   dá `dev (none, unknown)`.
-2. `Current() BuildInfo` — poskládej ji z package-level proměnných `version`, `commit`
-   a `buildTime`. Bez `-ldflags` platí jejich výchozí hodnoty, což test ověřuje.
-3. `VersionHandler(info BuildInfo) http.Handler` — 200 a JSON tělo podle tagů na
-   `BuildInfo`, hlavička `Content-Type: application/json`.
-
-Vyzkoušej si vložení verze do binárky:
-
-```bash
-go build -ldflags "-X 'github.com/rdurica/go-deep/lessons/lesson-55/exercise.version=v1.0.0'" ./...
-```
-
-např. `BuildInfo{}.String()` → `"dev (none, unknown)"`
-
-### B — sondy (~35 min)
-
-1. `NewHealthChecker(timeout time.Duration) *HealthChecker` — nekladný timeout nahraď
-   jednou vteřinou. `Register(name string, check Check)` musí být bezpečné volat
-   souběžně; `nil` kontrolu ignoruj, opakovaná registrace stejného jména kontrolu přepíše.
-2. `LiveHandler()` — vždy 200, **nespouští žádnou kontrolu**. Test registruje kontrolu,
-   která vždy selže, a liveness i tak musí vrátit 200.
-3. `ReadyHandler()` — spustí všechny kontroly **souběžně** s odvozeným contextem
-   (`context.WithTimeout` nad `r.Context()`) a vrátí `ReadyResponse`:
-   - všechny prošly → 200, `status: "ok"`, každá kontrola `"ok"`,
-   - jakákoli selhala → 503, `status` jiný než `"ok"`, u té kontroly text její chyby,
-   - kontrola, která `context` ignoruje a visí → handler **nesmí čekat na ni**. Po
-     vypršení timeoutu doplní zbylým kontrolám text `ctx.Err()` a vrátí 503.
-
-   Bez registrovaných kontrol je odpověď 200 s prázdnou mapou. Handler nesmí držet zámek
-   po dobu běhu kontrol — udělej si kopii registru.
-
-např. `LiveHandler()` (kontrola vždy selže) → `200`
-
-### C — ukončovací sekvence (~25 min)
-
-`ShutdownSequence(ctx context.Context, timeout time.Duration, steps []ShutdownStep) error`
-provede kroky **v pořadí**, v jakém přišly, pod jedním společným rozpočtem `timeout`.
-
-- Krok, který vrátí chybu, sekvenci **nezastaví** — ostatní se musí uklidit taky. Chyba se
-  obalí jménem kroku a přidá do výsledku.
-- Krok bez funkce je `ErrNoStepFunc`.
-- Krok, který nedoběhne do vypršení rozpočtu, se nečeká a přidá chybu obalující
-  `context.DeadlineExceeded`. Kroky za ním se **už nespustí**, ale i ony přispějí chybou
-  „nespuštěn".
-- Výsledek je `errors.Join` všech chyb, nebo `nil`.
-
-Test ověřuje pořadí, chování po chybě, dodržení limitu i to, že se `errors.Is` dostane
-jak k chybě kroku, tak k `context.DeadlineExceeded`.
-
-např. chyba v kroku `db` → sekvence pokračuje, výsledek `errors.Join`
-
-```bash
-make lesson L=55
-make race L=55
-```
-
-Až budeš hotový, porovnej se `solutions/` (spoiler).
-
-## Ověření
-
-Po dokončení úkolů spusť v Cursoru **`/go-deep-review`** a zadej třeba jen `55`. AI tě postupně projde body níže, doptá se a ověří pochopení — nestačí jen zelené testy.
-
-- [ ] `make lesson L=55` i `make race L=55` prochází
-- [ ] Umíš vysvětlit, proč se databáze nekontroluje v liveness sondě
-- [ ] Umíš vysvětlit, co udělá shell forma `ENTRYPOINT` se signály
-- [ ] Umíš vyjmenovat čtyři kroky graceful shutdownu ve správném pořadí
-- [ ] Umíš říct, proč `CGO_ENABLED=0` a co za to platíš
-- [ ] Umíš vysvětlit, proč `GOMAXPROCS` v kontejneru zlobí
-
-## Sebehodnocení
-
-Za každou položku, kterou zvládneš **bez nahlédnutí do lekce**, si dej 1 bod.
-
-| # | Dovednost | Lekce |
-|---|-----------|-------|
-| 1 | Přečtu `go.mod` včetně `replace`, `exclude` a `retract` | 51 |
-| 2 | Spočítám výsledek minimal version selection pro tři moduly | 51 |
-| 3 | Vysvětlím pseudo-verzi a major sufix v import path | 51 |
-| 4 | Řeknu, čím se `govulncheck` liší od auditu podle verzí | 51 |
-| 5 | Napíšu benchmark, který neměří mrtvý kód | 52 |
-| 6 | Přečtu ns/op, B/op a allocs/op a vím, které z nich věřit | 52 |
-| 7 | Navrhnu fuzz invariant a založím seed korpus v `testdata/` | 52 |
-| 8 | Napíšu golden test s `-update` a vysvětlím jeho riziko | 52 |
-| 9 | Pořídím CPU i heap profil a najdu v `top`/`list` hrdlo | 53 |
-| 10 | Odstraním alokace v horké cestě a doložím to číslem | 53 |
-| 11 | Vystavím pprof bezpečně, mimo `DefaultServeMux` | 53 |
-| 12 | Rozhodnu mezi generikou a rozhraním a zdůvodním to | 54 |
-| 13 | Napíšu kód nad `reflect` včetně tagů a adresovatelnosti | 54 |
-| 14 | Rozdělím implementaci build tagy a otestuju obě varianty | 54 |
-| 15 | Napíšu multi-stage Dockerfile a obhájím každý řádek | 55 |
-| 16 | Rozliším liveness, readiness a startup probe | 55 |
-| 17 | Naimplementuju graceful shutdown ve správném pořadí | 55 |
-
-| Skóre | Co s tím |
-|-------|----------|
-| 16–17 | Fáze 6 sedí, pokračuj na lekci 56. |
-| 13–15 | Zopakuj lekce z řádků, kde jsi bod nedostal, a udělej jejich část C znovu. |
-| 9–12 | Zopakuj lekce 52 a 53 — bez měření se produkční Go dělat nedá. |
-| 5–8 | Projdi znovu celý blok 51–54, tentokrát s vlastními benchmarky a profily. |
-| 0–4 | Vrať se na lekci 51 a jdi fází 6 znovu; fáze 7 předpokládá provozní úsudek. |
-
 ## Production checklist
 
 Odškrtávací seznam před nasazením Go služby. Používej ho jako šablonu PR description.
@@ -369,6 +258,90 @@ Odškrtávací seznam před nasazením Go služby. Používej ho jako šablonu P
 - [ ] Parsery vstupu mají fuzz test a commitnutý korpus
 - [ ] pprof endpointy jen na interním portu, nikdy na `DefaultServeMux`
 - [ ] Metriky nebo strukturované logy pokrývají chybové cesty
+
+## AI kvíz
+
+Po přečtení teorie spusť v Cursoru **`/go-deep-quiz 55`**. AI tě ~5 minut prověří mentální model (ne hotové cvičení). Slabiny si uloží do [`GAPS.md`](../../GAPS.md).
+
+## Úkol
+
+Pracuj v `exercise/`. Po doplnění spouštěj testy:
+
+Stupně jdou od jednodušších ke složitějším — po každém stupni spusť review, než jdeš dál.
+
+### Jednoduchý
+
+Funkce: `String`, `Current`
+
+```bash
+make lesson L=55 PART=1
+```
+
+Pak **`/go-deep-review 55 easy`**.
+
+### Střední
+
+Funkce: `VersionHandler`, `NewHealthChecker`, `Register`
+
+```bash
+make lesson L=55 PART=2
+```
+
+Pak **`/go-deep-review 55 medium`**.
+
+### Obtížný
+
+Funkce: `LiveHandler`, `ReadyHandler`, `ShutdownSequence`
+
+```bash
+make lesson L=55 PART=3
+```
+
+Pak **`/go-deep-review 55 hard`**.
+
+Až budou stupně hotové, porovnej se `solutions/` (spoiler).
+
+## Sebehodnocení
+
+Za každou položku, kterou zvládneš **bez nahlédnutí do lekce**, si dej 1 bod.
+
+| # | Dovednost | Lekce |
+|---|-----------|-------|
+| 1 | Přečtu `go.mod` včetně `replace`, `exclude` a `retract` | 51 |
+| 2 | Spočítám výsledek minimal version selection pro tři moduly | 51 |
+| 3 | Vysvětlím pseudo-verzi a major sufix v import path | 51 |
+| 4 | Řeknu, čím se `govulncheck` liší od auditu podle verzí | 51 |
+| 5 | Napíšu benchmark, který neměří mrtvý kód | 52 |
+| 6 | Přečtu ns/op, B/op a allocs/op a vím, které z nich věřit | 52 |
+| 7 | Navrhnu fuzz invariant a založím seed korpus v `testdata/` | 52 |
+| 8 | Napíšu golden test s `-update` a vysvětlím jeho riziko | 52 |
+| 9 | Pořídím CPU i heap profil a najdu v `top`/`list` hrdlo | 53 |
+| 10 | Odstraním alokace v horké cestě a doložím to číslem | 53 |
+| 11 | Vystavím pprof bezpečně, mimo `DefaultServeMux` | 53 |
+| 12 | Rozhodnu mezi generikou a rozhraním a zdůvodním to | 54 |
+| 13 | Napíšu kód nad `reflect` včetně tagů a adresovatelnosti | 54 |
+| 14 | Rozdělím implementaci build tagy a otestuju obě varianty | 54 |
+| 15 | Napíšu multi-stage Dockerfile a obhájím každý řádek | 55 |
+| 16 | Rozliším liveness, readiness a startup probe | 55 |
+| 17 | Naimplementuju graceful shutdown ve správném pořadí | 55 |
+
+| Skóre | Co s tím |
+|-------|----------|
+| 16–17 | Fáze 6 sedí, pokračuj na lekci 56. |
+| 13–15 | Zopakuj lekce z řádků, kde jsi bod nedostal, a udělej jejich část C znovu. |
+| 9–12 | Zopakuj lekce 52 a 53 — bez měření se produkční Go dělat nedá. |
+| 5–8 | Projdi znovu celý blok 51–54, tentokrát s vlastními benchmarky a profily. |
+| 0–4 | Vrať se na lekci 51 a jdi fází 6 znovu; fáze 7 předpokládá provozní úsudek. |
+
+## Závěrečné otázky
+
+Spusť **`/go-deep-review 55 final`**. AI projde body níže, doptá se a ověří pochopení. Celé cvičení ověří `make lesson L=55` (+ `make race L=55`, pokud to lekce vyžaduje).
+
+- [ ] Umíš vysvětlit, proč se databáze nekontroluje v liveness sondě
+- [ ] Umíš vysvětlit, co udělá shell forma `ENTRYPOINT` se signály
+- [ ] Umíš vyjmenovat čtyři kroky graceful shutdownu ve správném pořadí
+- [ ] Umíš říct, proč `CGO_ENABLED=0` a co za to platíš
+- [ ] Umíš vysvětlit, proč `GOMAXPROCS` v kontejneru zlobí
 
 ## AI režim
 

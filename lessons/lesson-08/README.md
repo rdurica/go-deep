@@ -10,35 +10,6 @@
 - Rozhodnout mezi `map[K]V` a `map[K]*V` podle toho, jestli potřebuješ mutovat prvek.
 - Použít `map[string]struct{}` jako množinu a vědět, proč ne `map[string]bool`.
 
-## PHP → Go most
-
-PHP má jeden kontejner na všechno. Pole je zároveň seznam i slovník, a `foreach` po něm
-jde v pořadí vkládání.
-
-```php
-$counts = [];
-$counts['ahoj']++;          // funguje (s warningem), klíč se vytvoří
-foreach ($counts as $k => $v) { /* pořadí vkládání */ }
-if (isset($counts['x'])) { /* … */ }
-```
-
-Go má mapu jako samostatný typ s pevným typem klíče i hodnoty, s náhodným pořadím iterace
-a bez „automatického vytvoření" celé mapy.
-
-```go
-counts := make(map[string]int)
-counts["ahoj"]++            // funguje: chybějící klíč se čte jako 0
-for k, v := range counts {  // POŘADÍ JE NÁHODNÉ
-	fmt.Println(k, v)
-}
-if _, ok := counts["x"]; ok { /* … */ }
-```
-
-Přenos návyku: přestaň předpokládat pořadí. V PHP se `foreach` chová deterministicky
-a spousta kódu na to nevědomky spoléhá — třeba když se výstup posílá do šablony nebo
-porovnává v testu. V Go musíš pořadí vždy vyrobit sám, přes seřazený seznam klíčů.
-Druhá změna: mapu musíš explicitně vytvořit, jinak dostaneš `nil` a panic při zápisu.
-
 ## Teorie
 
 ### Mapa je reference type
@@ -274,6 +245,35 @@ tvrdý pád. Souběžné čtení bez zápisu je bezpečné.
 Řešení jsou `sync.Mutex` kolem mapy nebo `sync.Map` pro specifické případy; detailně
 v lekci 43. Zatím si zapamatuj jen to, že běžná mapa se mezi goroutinami nesdílí.
 
+## Rozdíly proti PHP
+
+PHP má jeden kontejner na všechno. Pole je zároveň seznam i slovník, a `foreach` po něm
+jde v pořadí vkládání.
+
+```php
+$counts = [];
+$counts['ahoj']++;          // funguje (s warningem), klíč se vytvoří
+foreach ($counts as $k => $v) { /* pořadí vkládání */ }
+if (isset($counts['x'])) { /* … */ }
+```
+
+Go má mapu jako samostatný typ s pevným typem klíče i hodnoty, s náhodným pořadím iterace
+a bez „automatického vytvoření" celé mapy.
+
+```go
+counts := make(map[string]int)
+counts["ahoj"]++            // funguje: chybějící klíč se čte jako 0
+for k, v := range counts {  // POŘADÍ JE NÁHODNÉ
+	fmt.Println(k, v)
+}
+if _, ok := counts["x"]; ok { /* … */ }
+```
+
+Přenos návyku: přestaň předpokládat pořadí. V PHP se `foreach` chová deterministicky
+a spousta kódu na to nevědomky spoléhá — třeba když se výstup posílá do šablony nebo
+porovnává v testu. V Go musíš pořadí vždy vyrobit sám, přes seřazený seznam klíčů.
+Druhá změna: mapu musíš explicitně vytvořit, jinak dostaneš `nil` a panic při zápisu.
+
 ## Časté chyby
 
 | Chyba | Proč vzniká | Jak to udělat správně |
@@ -286,69 +286,52 @@ v lekci 43. Zatím si zapamatuj jen to, že běžná mapa se mezi goroutinami ne
 | `map[string]bool` jako množina | vypadá čitelněji | `map[string]struct{}` — nula bajtů, jeden stav |
 | Sdílení mapy mezi goroutinami | v PHP-FPM žádný souběh není | mutex kolem mapy (lekce 43) |
 
+## AI kvíz
+
+Po přečtení teorie spusť v Cursoru **`/go-deep-quiz 08`**. AI tě ~5 minut prověří mentální model (ne hotové cvičení). Slabiny si uloží do [`GAPS.md`](../../GAPS.md).
+
 ## Úkol
 
-Pracuj v `exercise/`. Postupuj A → B → C, po každé části spusť test.
+Pracuj v `exercise/`. Po doplnění spouštěj testy:
 
-### A — rozcvička (~10 min)
+Stupně jdou od jednodušších ke složitějším — po každém stupni spusť review, než jdeš dál.
 
-`WordCount(words []string) map[string]int` — spočítá výskyty každého slova. Vždy vrací
-ne-nil mapu, i pro prázdný nebo `nil` vstup. Využij toho, že chybějící klíč se čte jako
-nula — comma-ok tady nepotřebuješ.
+### Jednoduchý
 
-např. `WordCount(["go", "php", "go", "go", "php"])` → `map[go:3 php:2]`
-
-### B — jádro (~35 min)
-
-Doplň typ `Set` jako `map[string]struct{}` a jeho API:
-
-1. `NewSet(items ...string) Set` — vytvoří množinu z předaných prvků; duplicity se
-   započítají jednou. Bez argumentů vrací prázdnou, ale **ne-nil** množinu.
-2. `func (s Set) Add(item string)` — vloží prvek; opakované vložení nic nemění.
-3. `func (s Set) Has(item string) bool` — je prvek uvnitř? Musí fungovat i na `nil`
-   množině (vrátí `false`).
-4. `func (s Set) Remove(item string)` — odebere prvek; odebrání neexistujícího je no-op
-   a nesmí panikovat ani na `nil` množině.
-5. `func (s Set) Len() int` — počet prvků.
-6. `func (s Set) Sorted() []string` — prvky vzestupně seřazené. Prázdná množina vrací
-   výsledek nulové délky. Tohle je jediný způsob, jak z množiny dostat deterministický
-   výstup.
-7. `func (s Set) Union(other Set) Set` — nová množina se všemi prvky obou. Nesmí měnit
-   ani `s`, ani `other`.
-8. `func (s Set) Intersect(other Set) Set` — nová množina s prvky, které jsou v obou.
-   Také nic nemění.
-
-např. `NewSet("cesta", "a", "b").Sorted()` → `["a", "b", "cesta"]`
-
-### C — rozšíření (~25 min)
-
-1. `type Inventory map[string]*Item`, kde `Item` má pole `SKU string` a `Qty int`.
-   Napiš `AddStock(inv Inventory, sku string, n int)`, která přičte `n` kusů:
-   - když klíč chybí, založí `&Item{SKU: sku, Qty: n}`,
-   - když existuje, zvýší `Qty` **přes pointer** (žádné přepisování celé hodnoty),
-   - `nil` inventář je no-op (nesmí panikovat),
-   - `n <= 0` je taky no-op, chybějící položku tedy nezakládá.
-
-   Rozmysli si, proč by tahle funkce nešla napsat stejně pro `map[string]Item`.
-
-2. `GroupBy(words []string, key func(string) string) map[string][]string` — seskupí
-   slova podle klíče, který vrátí funkce `key`. Uvnitř skupiny zachovej pořadí, v jakém
-   slova přišla. Vždy vrací ne-nil mapu. Test výstup porovnává přes seřazené klíče,
-   protože jinak by byl nedeterministický.
-
-např. `GroupBy(["gopher", "php", "go"], firstLetter)` → `g:[gopher go], p:[php]`
+Funkce: `WordCount`, `NewSet`, `Add`
 
 ```bash
-make lesson L=08
+make lesson L=08 PART=1
 ```
 
-Až budeš hotový, porovnej se `solutions/` (spoiler).
+Pak **`/go-deep-review 08 easy`**.
 
-## Ověření
+### Střední
 
-Po dokončení úkolů spusť v Cursoru **`/go-deep-review`** a zadej třeba jen `08`. AI tě postupně projde body níže, doptá se a ověří pochopení — nestačí jen zelené testy.
+Funkce: `Has`, `Remove`, `Len`, `Sorted`
 
-- [ ] `make lesson L=08` prochází
+```bash
+make lesson L=08 PART=2
+```
+
+Pak **`/go-deep-review 08 medium`**.
+
+### Obtížný
+
+Funkce: `Union`, `Intersect`, `AddStock`, `GroupBy`
+
+```bash
+make lesson L=08 PART=3
+```
+
+Pak **`/go-deep-review 08 hard`**.
+
+Až budou stupně hotové, porovnej se `solutions/` (spoiler).
+
+## Závěrečné otázky
+
+Spusť **`/go-deep-review 08 final`**. AI projde body níže, doptá se a ověří pochopení. Celé cvičení ověří `make lesson L=08` (+ `make race L=08`, pokud to lekce vyžaduje).
+
 - [ ] Umíš vysvětlit, proč je čtení z `nil` mapy OK a zápis ne
 - [ ] Umíš z hlavy napsat deterministický výpis mapy
 - [ ] Umíš vysvětlit, proč `&m[k]` nejde a jaké jsou dvě obcházky
@@ -359,6 +342,7 @@ Po dokončení úkolů spusť v Cursoru **`/go-deep-review`** a zadej třeba jen
 
 `ZAKÁZÁNO` — viz [docs/ai-playbook.md](../../docs/ai-playbook.md).
 
+Mentor, kvíz i review (dialog) jsou vždy OK; v tomto režimu AI nesmí psát kód cvičení.
 ## Další čtení
 
 1. [Go blog — Go maps in action](https://go.dev/blog/maps)

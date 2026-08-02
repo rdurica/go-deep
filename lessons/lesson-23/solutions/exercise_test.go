@@ -39,7 +39,7 @@ func TestDescribe(t *testing.T) {
 	}
 }
 
-func TestDescribeChyby(t *testing.T) {
+func TestDescribeErrors(t *testing.T) {
 	t.Run("nil loader", func(t *testing.T) {
 		got, err := exercise.Describe(nil, "A1")
 		if !errors.Is(err, exercise.ErrMissingLoader) {
@@ -50,7 +50,7 @@ func TestDescribeChyby(t *testing.T) {
 		}
 	})
 
-	t.Run("prázdné SKU", func(t *testing.T) {
+	t.Run("empty SKU", func(t *testing.T) {
 		loader := &stubLoader{}
 		if _, err := exercise.Describe(loader, ""); !errors.Is(err, exercise.ErrEmptySKU) {
 			t.Fatalf("chyba = %v, chci ErrEmptySKU", err)
@@ -60,7 +60,7 @@ func TestDescribeChyby(t *testing.T) {
 		}
 	})
 
-	t.Run("chyba loaderu je obalená kontextem", func(t *testing.T) {
+	t.Run("loader error wrapped with context", func(t *testing.T) {
 		boom := errors.New("database down")
 		_, err := exercise.Describe(&stubLoader{err: boom}, "A1")
 		if !errors.Is(err, boom) {
@@ -101,7 +101,7 @@ func TestLoadRecords(t *testing.T) {
 	}
 }
 
-func TestLoadRecordsPrazdnyVstup(t *testing.T) {
+func TestLoadRecordsEmptyInput(t *testing.T) {
 	got, err := exercise.LoadRecords(strings.NewReader("# jen komentář\n\n"))
 	if err != nil {
 		t.Fatalf("LoadRecords vrátil chybu %v, chci nil", err)
@@ -111,7 +111,7 @@ func TestLoadRecordsPrazdnyVstup(t *testing.T) {
 	}
 }
 
-func TestLoadRecordsChyby(t *testing.T) {
+func TestLoadRecordsErrors(t *testing.T) {
 	tests := []struct {
 		name    string
 		in      string
@@ -119,37 +119,37 @@ func TestLoadRecordsChyby(t *testing.T) {
 		wantMsg string
 	}{
 		{
-			name:    "málo sloupců",
+			name:    "too few columns",
 			in:      "A1;Šroub;1\nB2;Matice\n",
 			wantErr: exercise.ErrMalformedLine,
 			wantMsg: `line 2: malformed line: "B2;Matice"`,
 		},
 		{
-			name:    "moc sloupců",
+			name:    "too many columns",
 			in:      "A1;Šroub;1;navíc\n",
 			wantErr: exercise.ErrMalformedLine,
 			wantMsg: `line 1: malformed line: "A1;Šroub;1;navíc"`,
 		},
 		{
-			name:    "prázdné SKU",
+			name:    "empty SKU",
 			in:      "A1;Šroub;1\n ;Matice;2\n",
 			wantErr: exercise.ErrEmptySKU,
 			wantMsg: "line 2: empty sku",
 		},
 		{
-			name:    "množství není číslo",
+			name:    "quantity is not a number",
 			in:      "A1;Šroub;mnoho\n",
 			wantErr: exercise.ErrInvalidQty,
 			wantMsg: `line 1: invalid quantity: "mnoho"`,
 		},
 		{
-			name:    "záporné množství",
+			name:    "negative quantity",
 			in:      "A1;Šroub;1\nB2;Matice;-3\n",
 			wantErr: exercise.ErrInvalidQty,
 			wantMsg: `line 2: invalid quantity: "-3"`,
 		},
 		{
-			name:    "duplicitní SKU",
+			name:    "duplicate SKU",
 			in:      "A1;Šroub;1\n# komentář\nA1;Šroub znovu;2\n",
 			wantErr: exercise.ErrDuplicateSKU,
 			wantMsg: `line 3: duplicate sku: "A1"`,
@@ -181,7 +181,7 @@ func (f failingReader) Read([]byte) (int, error) {
 	return 0, f.err
 }
 
-func TestLoadRecordsChybaCteni(t *testing.T) {
+func TestLoadRecordsReadError(t *testing.T) {
 	boom := errors.New("io timeout")
 
 	_, err := exercise.LoadRecords(failingReader{err: boom})
@@ -217,7 +217,7 @@ func TestStoreZeroValue(t *testing.T) {
 	}
 }
 
-func TestStoreCyklusZivota(t *testing.T) {
+func TestStoreLifecycle(t *testing.T) {
 	var s exercise.Store
 
 	records := []exercise.Record{
@@ -274,7 +274,7 @@ func TestStoreCyklusZivota(t *testing.T) {
 	}
 }
 
-func TestStoreValidace(t *testing.T) {
+func TestStoreValidation(t *testing.T) {
 	var s exercise.Store
 
 	if err := s.Put(exercise.Record{SKU: "", Name: "Nic", Qty: 1}); !errors.Is(err, exercise.ErrEmptySKU) {
@@ -288,7 +288,7 @@ func TestStoreValidace(t *testing.T) {
 	}
 }
 
-func TestStorePutAllSpojiChyby(t *testing.T) {
+func TestStorePutAllJoinsErrors(t *testing.T) {
 	var s exercise.Store
 
 	err := s.PutAll([]exercise.Record{
@@ -316,7 +316,7 @@ func TestStorePutAllSpojiChyby(t *testing.T) {
 	}
 }
 
-func TestStoreSplnujeLoader(t *testing.T) {
+func TestStoreSatisfiesLoader(t *testing.T) {
 	// Sklad je jen jedna z možných implementací portu Loader.
 	var loader exercise.Loader = &exercise.Store{}
 
@@ -341,7 +341,7 @@ func TestStoreSplnujeLoader(t *testing.T) {
 	}
 }
 
-func TestIntegraceNacteniASklad(t *testing.T) {
+func TestIntegrationLoadAndStore(t *testing.T) {
 	in := "A1;Šroub;12\nB2;Matice;3\nC3;Podložka;7\n"
 
 	records, err := exercise.LoadRecords(strings.NewReader(in))

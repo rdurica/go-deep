@@ -88,11 +88,11 @@ func TestEncode(t *testing.T) {
 		want string
 	}{
 		{"nil", nil, ""},
-		{"prázdný slice", []exercise.Record{}, ""},
+		{"empty slice", []exercise.Record{}, ""},
 		{"jeden", []exercise.Record{{ID: "a", Name: "b", Score: 1}}, "a|b|1"},
 		{"zero value", []exercise.Record{{}}, "||0"},
 		{
-			"escapování",
+			"escaping",
 			[]exercise.Record{{ID: "x|y", Name: `a\b`, Score: 0}, {ID: "n\nl", Name: "r\rl", Score: -1}},
 			`x\|y|a\\b|0` + "\n" + `n\nl|r\rl|-1`,
 		},
@@ -135,7 +135,7 @@ func TestDecode(t *testing.T) {
 	}
 }
 
-func TestDecodeChyby(t *testing.T) {
+func TestDecodeErrors(t *testing.T) {
 	bad := []string{
 		"abc",       // jedno pole
 		"a|b",       // dvě pole
@@ -249,7 +249,7 @@ func TestRenderTableGolden(t *testing.T) {
 	}
 }
 
-func TestRenderTablePrazdny(t *testing.T) {
+func TestRenderTableEmpty(t *testing.T) {
 	if got := exercise.RenderTable(nil); got != "" {
 		t.Errorf("RenderTable(nil) = %q, chci prázdný řetězec", got)
 	}
@@ -258,7 +258,7 @@ func TestRenderTablePrazdny(t *testing.T) {
 	}
 }
 
-func TestRenderTableFastShoda(t *testing.T) {
+func TestRenderTableFastMatch(t *testing.T) {
 	// Náhodná data, aby výstup nešlo zadrátovat.
 	rnd := rand.New(rand.NewSource(20240115))
 	for run := 0; run < 20; run++ {
@@ -278,7 +278,7 @@ func TestRenderTableFastShoda(t *testing.T) {
 	}
 }
 
-func TestRenderTableZarovnani(t *testing.T) {
+func TestRenderTableAlignment(t *testing.T) {
 	out := exercise.RenderTable(goldenRecords)
 	lines := strings.Split(strings.TrimRight(out, "\n"), "\n")
 	if len(lines) != len(goldenRecords)+2 {

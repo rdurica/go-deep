@@ -20,6 +20,7 @@ type Handler interface {
 // HandlerFunc adaptuje obyčejnou funkci na Handler — stejný trik jako http.HandlerFunc.
 type HandlerFunc func(path string) string
 
+// --- Stupeň: jednoduchý ---
 // Handle volá f(path), a tím HandlerFunc splňuje interface Handler.
 func (f HandlerFunc) Handle(path string) string {
 	return f(path)
@@ -31,6 +32,7 @@ type Mux struct {
 	notFound Handler
 }
 
+// --- Stupeň: střední ---
 // Register zaregistruje handler pro vzor.
 func (m *Mux) Register(pattern string, h Handler) {
 	if pattern == "" {
@@ -90,6 +92,7 @@ func matches(pattern, path string) bool {
 	return path == pattern
 }
 
+// --- Stupeň: obtížný ---
 // Marshal zakóduje podporované hodnoty do JSON textu bez použití reflexe.
 func Marshal(v any) (string, error) {
 	switch val := v.(type) {
