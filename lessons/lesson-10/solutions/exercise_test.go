@@ -1,6 +1,7 @@
 package solutions_test
 
 import (
+	"bytes"
 	"errors"
 	"reflect"
 	"testing"
@@ -104,63 +105,87 @@ func TestSafeDivideDoesNotLeakPanic(t *testing.T) {
 	}
 }
 
-func TestCloseAll(t *testing.T) {
-	t.Run("nil input", func(t *testing.T) {
-		if err := exercise.CloseAll(nil); err != nil {
-			t.Errorf("CloseAll(nil) = %v, chci nil", err)
+// fakeWriteCloser simuluje io.WriteCloser pro TestWriteAndClose.
+type fakeWriteCloser struct {
+	buf      bytes.Buffer
+	writeErr error
+	closeErr error
+	closed   int
+}
+
+func (f *fakeWriteCloser) Write(p []byte) (int, error) {
+	if f.writeErr != nil {
+		return 0, f.writeErr
+	}
+	return f.buf.Write(p)
+}
+
+func (f *fakeWriteCloser) Close() error {
+	f.closed++
+	return f.closeErr
+}
+
+func TestWriteAndClose(t *testing.T) {
+	errWrite := errors.New("write failed")
+	errClose := errors.New("close failed")
+
+	t.Run("success", func(t *testing.T) {
+		f := &fakeWriteCloser{}
+		data := []byte("ahoj")
+		if err := exercise.WriteAndClose(f, data); err != nil {
+			t.Fatalf("WriteAndClose = %v, chci nil", err)
+		}
+		if f.buf.String() != "ahoj" {
+			t.Errorf("zapsáno %q, chci %q", f.buf.String(), "ahoj")
+		}
+		if f.closed != 1 {
+			t.Errorf("Close volán %dx, chci 1x", f.closed)
 		}
 	})
 
-	t.Run("empty input", func(t *testing.T) {
-		if err := exercise.CloseAll([]func() error{}); err != nil {
-			t.Errorf("CloseAll([]) = %v, chci nil", err)
+	t.Run("write fails still closes", func(t *testing.T) {
+		f := &fakeWriteCloser{writeErr: errWrite}
+		err := exercise.WriteAndClose(f, []byte("x"))
+		if !errors.Is(err, errWrite) {
+			t.Errorf("WriteAndClose = %v, chci %v", err, errWrite)
+		}
+		if f.closed != 1 {
+			t.Errorf("Close volán %dx, chci 1x — Close se musí zavolat i po chybě Write", f.closed)
 		}
 	})
 
-	t.Run("all succeed", func(t *testing.T) {
-		calls := 0
-		ok := func() error { calls++; return nil }
-		if err := exercise.CloseAll([]func() error{ok, ok, ok}); err != nil {
-			t.Errorf("CloseAll = %v, chci nil", err)
+	t.Run("close fails after successful write", func(t *testing.T) {
+		f := &fakeWriteCloser{closeErr: errClose}
+		err := exercise.WriteAndClose(f, []byte("ok"))
+		if !errors.Is(err, errClose) {
+			t.Errorf("WriteAndClose = %v, chci %v — chyba Close se nesmí ztratit", err, errClose)
 		}
-		if calls != 3 {
-			t.Errorf("zavoláno %d zavíračů, chci 3", calls)
+		if f.buf.String() != "ok" {
+			t.Errorf("zapsáno %q, chci %q", f.buf.String(), "ok")
 		}
-	})
-
-	t.Run("returns first error and closes all", func(t *testing.T) {
-		errFirst := errors.New("první chyba")
-		errSecond := errors.New("druhá chyba")
-		calls := 0
-
-		closers := []func() error{
-			func() error { calls++; return nil },
-			func() error { calls++; return errFirst },
-			func() error { calls++; return errSecond },
-			func() error { calls++; return nil },
-		}
-
-		err := exercise.CloseAll(closers)
-		if !errors.Is(err, errFirst) {
-			t.Errorf("CloseAll vrátil %v, chci %v", err, errFirst)
-		}
-		if calls != 4 {
-			t.Errorf("zavoláno %d zavíračů, chci 4 — zavírat se musí i po chybě", calls)
+		if f.closed != 1 {
+			t.Errorf("Close volán %dx, chci 1x", f.closed)
 		}
 	})
 
-	t.Run("skips nil items", func(t *testing.T) {
-		calls := 0
-		closers := []func() error{
-			nil,
-			func() error { calls++; return nil },
-			nil,
+	t.Run("write fails close fails keeps write error", func(t *testing.T) {
+		f := &fakeWriteCloser{writeErr: errWrite, closeErr: errClose}
+		err := exercise.WriteAndClose(f, []byte("x"))
+		if !errors.Is(err, errWrite) {
+			t.Errorf("WriteAndClose = %v, chci %v — při selhání Write má zůstat chyba Write", err, errWrite)
 		}
-		if err := exercise.CloseAll(closers); err != nil {
-			t.Errorf("CloseAll = %v, chci nil", err)
+		if errors.Is(err, errClose) {
+			t.Error("WriteAndClose nesmí přepsat chybu Write chybou Close")
 		}
-		if calls != 1 {
-			t.Errorf("zavoláno %d zavíračů, chci 1", calls)
+		if f.closed != 1 {
+			t.Errorf("Close volán %dx, chci 1x", f.closed)
+		}
+	})
+
+	t.Run("nil writer", func(t *testing.T) {
+		err := exercise.WriteAndClose(nil, []byte("x"))
+		if err == nil {
+			t.Fatal("WriteAndClose(nil) = nil, chci chybu")
 		}
 	})
 }
@@ -188,13 +213,6 @@ func TestStackPushPop(t *testing.T) {
 	s.Pop()
 }
 
-func TestStackLenOnNilPointer(t *testing.T) {
-	var s *exercise.Stack
-	if got := s.Len(); got != 0 {
-		t.Errorf("Len() na nil pointeru = %d, chci 0", got)
-	}
-}
-
 func TestStackPopOnEmptyPanics(t *testing.T) {
 	defer func() {
 		r := recover()
@@ -208,6 +226,13 @@ func TestStackPopOnEmptyPanics(t *testing.T) {
 
 	var s exercise.Stack
 	s.Pop()
+}
+
+func TestStackLenOnNilPointer(t *testing.T) {
+	var s *exercise.Stack
+	if got := s.Len(); got != 0 {
+		t.Errorf("Len() na nil pointeru = %d, chci 0", got)
+	}
 }
 
 func TestTryPop(t *testing.T) {

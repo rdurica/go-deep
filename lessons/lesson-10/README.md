@@ -319,7 +319,7 @@ Stupně jdou od jednodušších ke složitějším — po každém stupni spusť
 
 ### Jednoduchý
 
-Funkce: `DeferOrder`, `SumWithLog`
+Funkce: `DeferOrder`, `SumWithLog` — LIFO defer a pojmenovaný návrat, který defer ještě doplní.
 
 ```bash
 make lesson L=10 PART=1
@@ -329,7 +329,7 @@ Pak **`/go-deep-review 10 easy`**.
 
 ### Střední
 
-Funkce: `SafeDivide`, `CloseAll`, `Push`, `Pop`
+Funkce: `SafeDivide`, `WriteAndClose`, `Push`, `Pop` — recover→error, Close chyba do named `err`, panic jako chyba programátora.
 
 ```bash
 make lesson L=10 PART=2
@@ -339,7 +339,7 @@ Pak **`/go-deep-review 10 medium`**.
 
 ### Obtížný
 
-Funkce: `Len`, `TryPop`
+Funkce: `Len`, `TryPop` — nil-safe metoda a recover kolem cizí paniky.
 
 ```bash
 make lesson L=10 PART=3
