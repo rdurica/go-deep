@@ -1,6 +1,6 @@
 # Lekce 24 — net/http od nuly: handler, ServeMux, httptest
 
-> **Čas:** ~70 min · **Fáze:** 3 — net/http a tooling · **AI režim:** `BOILERPLATE OK`
+> **Čas:** ~35 min · **Fáze:** 3 — net/http a tooling · **AI režim:** `BOILERPLATE OK`
 
 ## Co budeš umět
 

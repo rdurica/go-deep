@@ -13,9 +13,9 @@ zažité, a kde ho jeho reflexy zradí.
 
 | | |
 |---|---|
-| Čas na lekci | 60–90 minut včetně cvičení |
+| Čas na lekci | 30–45 minut včetně cvičení |
 | Teorie | 1200–2000 slov |
-| Cvičení | 3 stupně; cílově ~45–60 min práce studenta |
+| Cvičení | 3 stupně; cílově ~15–20 min práce studenta |
 | Jednotek k úpravě | typicky **2–4** (funkce/metody, které student píše nebo opravuje) |
 
 Cvičení trénuje **úsudek**, ne katalog API. Když zadání vypadá jako mini-projekt

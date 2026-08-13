@@ -1,6 +1,6 @@
 # Mapa lekcí
 
-Kurz má **60 lekcí**, z nichž každá je plnohodnotná **60–90 minut**: teorie, rozdíly
+Kurz má **60 lekcí**, z nichž každá je **30–45 minut**: teorie, rozdíly
 proti PHP, AI kvíz, tři stupně úkolu s AI review mezi nimi a závěrečné otázky.
 
 Sedm lekcí jsou **checkpointy**: nemají novou látku, ale kumulativní cvičení přes celou
@@ -83,10 +83,11 @@ fázi a sebehodnotící rubriku.
 | | |
 |---|---|
 | Lekcí | 60 |
-| Délka lekce | 60–90 min (medián ~80) |
-| Celkem | ~80 hodin |
+| Délka lekce | 30–45 min (medián ~35) |
+| Celkem | ~40 hodin |
 | Tempo 3 lekce/týden | ~20 týdnů |
-| Tempo 5 lekcí/týden | ~12 týdnů |
+| Tempo 4–5 lekcí/týden | ~12–15 týdnů |
+| Tempo 5–7 h/týden | ~6–8 týdnů |
 
 ## Struktura lekce
 

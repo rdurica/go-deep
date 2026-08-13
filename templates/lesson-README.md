@@ -1,6 +1,6 @@
 # Lekce NN — Název
 
-> **Čas:** ~90 min · **Fáze:** N — Název fáze · **AI režim:** `ZAKÁZÁNO`
+> **Čas:** ~35 min · **Fáze:** N — Název fáze · **AI režim:** `ZAKÁZÁNO`
 
 ## Co budeš umět
 

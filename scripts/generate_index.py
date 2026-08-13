@@ -6,7 +6,7 @@ nadpis první úrovně a meta řádek pod ním:
 
     # Lekce 03 — Typy, zero values a konstanty
 
-    > **Čas:** ~90 min · **Fáze:** 1 — Jazyk a paměťový model · **AI režim:** `ZAKÁZÁNO`
+    > **Čas:** ~35 min · **Fáze:** 1 — Jazyk a paměťový model · **AI režim:** `ZAKÁZÁNO`
 """
 
 from __future__ import annotations
@@ -96,7 +96,7 @@ def render_book(lessons: list[Lesson]) -> str:
     out = [
         "# Go do hloubky — obsah",
         "",
-        f"{len(lessons)} lekcí po 60–90 minutách. Každá lekce má teorii, most z PHP,",
+        f"{len(lessons)} lekcí po 30–45 minutách. Každá lekce má teorii, most z PHP,",
         "tři stupňované úkoly a testy: [`lessons/lesson-NN/README.md`](lessons/lesson-01/README.md),",
         "cvičení v `exercise/`, referenční řešení v `solutions/`.",
         "",

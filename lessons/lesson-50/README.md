@@ -1,6 +1,6 @@
 # Lekce 50 — Checkpoint fáze 5 + projekt P04
 
-> **Čas:** ~70–75 min · **Fáze:** 5 — Concurrency do hloubky · **AI režim:** `JUNIOR POD REVIEW`
+> **Čas:** ~35–40 min · **Fáze:** 5 — Concurrency do hloubky · **AI režim:** `JUNIOR POD REVIEW`
 
 Checkpoint nemá novou látku. Projdeš si fázi 5 (lekce 40–49) formou otázek a tabulek,
 naučíš se rozeznat tři nejčastější patologie souběžného kódu podle příznaků, postavíš

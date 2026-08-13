@@ -1,6 +1,6 @@
 # Lekce 52 — Testování do hloubky: benchmarky, fuzz, golden files
 
-> **Čas:** ~75 min · **Fáze:** 6 — Production Go · **AI režim:** `JUNIOR POD REVIEW`
+> **Čas:** ~40 min · **Fáze:** 6 — Production Go · **AI režim:** `JUNIOR POD REVIEW`
 
 ## Co budeš umět
 

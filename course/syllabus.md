@@ -19,8 +19,8 @@ základy provozu. Předchozí zkušenost s Go se nevyžaduje.
 ## Forma
 
 - Self-paced repozitář: [BOOK.md](../BOOK.md) + `lessons/`
-- **60 lekcí × 60–90 min ≈ 80 hodin** plus čas na projekty
-- Cohort varianta: 12–16 týdnů při 6–8 h/týden
+- **60 lekcí × 30–45 min ≈ 40 hodin** plus čas na projekty
+- Cohort varianta: 8–12 týdnů při 5–7 h/týden
 - Sedm checkpointů se sebehodnotící rubrikou
 
 ## Moduly

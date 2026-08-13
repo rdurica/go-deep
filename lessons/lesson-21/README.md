@@ -1,6 +1,6 @@
 # Lekce 21 — Error handling v review
 
-> **Čas:** ~70 min · **Fáze:** 2 — Idiomatický Go · **AI režim:** `JEN VYSVĚTLENÍ`
+> **Čas:** ~35 min · **Fáze:** 2 — Idiomatický Go · **AI režim:** `JEN VYSVĚTLENÍ`
 
 ## Co budeš umět
 

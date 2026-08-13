@@ -1,6 +1,6 @@
 # Lekce 29 — slog: strukturované logování
 
-> **Čas:** ~75 min · **Fáze:** 3 — net/http a tooling · **AI režim:** `BOILERPLATE OK`
+> **Čas:** ~40 min · **Fáze:** 3 — net/http a tooling · **AI režim:** `BOILERPLATE OK`
 
 ## Co budeš umět
 

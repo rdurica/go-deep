@@ -1,6 +1,6 @@
 # Lekce 30 — HTTP klient, timeouty a graceful shutdown
 
-> **Čas:** ~65 min · **Fáze:** 3 — net/http a tooling · **AI režim:** `BOILERPLATE OK`
+> **Čas:** ~30 min · **Fáze:** 3 — net/http a tooling · **AI režim:** `BOILERPLATE OK`
 
 ## Co budeš umět
 

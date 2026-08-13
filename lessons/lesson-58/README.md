@@ -1,6 +1,6 @@
 # Lekce 58 — Osobní checklist, pairing protokol a manual rewrite
 
-> **Čas:** ~70 min · **Fáze:** 7 — Inženýrství v době AI · **AI režim:** `TECH LEAD`
+> **Čas:** ~35 min · **Fáze:** 7 — Inženýrství v době AI · **AI režim:** `TECH LEAD`
 
 ## Co budeš umět
 

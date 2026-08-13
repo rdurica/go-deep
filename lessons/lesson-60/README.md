@@ -1,6 +1,6 @@
 # Lekce 60 — Checkpoint závěrečný: hardening, retrospektiva a export kurzu
 
-> **Čas:** ~75 min · **Fáze:** 8 — Capstone · **AI režim:** `TECH LEAD`
+> **Čas:** ~40 min · **Fáze:** 8 — Capstone · **AI režim:** `TECH LEAD`
 
 ## Co budeš umět
 
@@ -213,7 +213,7 @@ Za každou položku 0–2 body (0 = neumím, 1 = s dokumentací, 2 = z hlavy a u
 | 26–30 | Umíš Go na úrovni, se kterou můžeš vést cizí Go kód. Jdi do OSS a do lekce „Co dál". |
 | 20–25 | Solidní základ s dírami. Zopakuj lekce u položek s 0–1 bodem a znovu odevzdej P05. |
 | 13–19 | Chybí ti jedna nebo dvě fáze celé. Podívej se na `Coverage` ze svého cvičení — nejslabší fáze projdi znovu, včetně cvičení. |
-| 0–12 | Vracíš se na fázi 1. Není to prohra: kurz je 80 hodin práce a přeskakovat se nedá. Projdi znovu lekce 03–18 a udělej P01. |
+| 0–12 | Vracíš se na fázi 1. Není to prohra: kurz je ~40 hodin lekcí a přeskakovat se nedá. Projdi znovu lekce 03–18 a udělej P01. |
 
 ## Závěrečné otázky
 

@@ -1,6 +1,6 @@
 # Lekce 39 — Checkpoint fáze 4
 
-> **Čas:** ~75 min · **Fáze:** 4 — Architektura v Go · **AI režim:** `BOILERPLATE OK`
+> **Čas:** ~40 min · **Fáze:** 4 — Architektura v Go · **AI režim:** `BOILERPLATE OK`
 
 Tahle lekce nepřináší nic nového. Prochází fázi 4 (lekce 32–38) formou otázek
 a odpovědí, jedním kumulativním cvičením a bodovanou rubrikou, ze které se pozná,

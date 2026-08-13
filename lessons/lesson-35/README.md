@@ -1,6 +1,6 @@
 # Lekce 35 — Persistence: repozitář, in-memory fake, SQL mindset
 
-> **Čas:** ~75 min · **Fáze:** 4 — Architektura v Go · **AI režim:** `BOILERPLATE OK`
+> **Čas:** ~40 min · **Fáze:** 4 — Architektura v Go · **AI režim:** `BOILERPLATE OK`
 
 ## Co budeš umět
 

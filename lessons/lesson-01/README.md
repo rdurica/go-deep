@@ -1,6 +1,6 @@
 # Lekce 01 — Toolchain, moduly a workspace
 
-> **Čas:** ~65 min · **Fáze:** 0 — Setup a mentální reset · **AI režim:** `ZAKÁZÁNO`
+> **Čas:** ~30 min · **Fáze:** 0 — Setup a mentální reset · **AI režim:** `ZAKÁZÁNO`
 
 ## Co budeš umět
 

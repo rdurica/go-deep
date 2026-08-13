@@ -7,7 +7,7 @@ Mapování na fáze knížky ([BOOK.md](../BOOK.md)). Rozpad lekcí:
 
 **Výstupy:** toolchain a moduly bez googlení, tři body mentálního resetu PHP → Go.  
 **AI:** zakázán codegen.  
-**Rozsah:** ~2,5 h.
+**Rozsah:** ~1,5 h.
 
 ## M1 — Jazyk a paměťový model (lekce 03–18)
 
@@ -16,7 +16,7 @@ defer, hranice balíčků, interfaces, error wrapping, generika, JSON, table-dri
 **Projekt:** P01 (CSV CLI).  
 **Checkpoint:** lekce 18.  
 **AI:** zakázán codegen.  
-**Rozsah:** ~22 h.
+**Rozsah:** ~11 h.
 
 ## M2 — Idiomatický Go (lekce 19–23)
 
@@ -24,7 +24,7 @@ defer, hranice balíčků, interfaces, error wrapping, generika, JSON, table-dri
 čtení stdlib, rozpoznání PHP zápachů a AI garbage.  
 **Checkpoint:** lekce 23.  
 **AI:** jen vysvětlení.  
-**Rozsah:** ~7 h.
+**Rozsah:** ~3,5 h.
 
 ## M3 — HTTP bez frameworku (lekce 24–31)
 
@@ -33,7 +33,7 @@ z prostředí, `log/slog`, HTTP klient s timeouty, graceful shutdown.
 **Projekt:** P02 (REST API).  
 **Checkpoint:** lekce 31.  
 **AI:** boilerplate OK.  
-**Rozsah:** ~11 h.
+**Rozsah:** ~5,5 h.
 
 ## M4 — Architektura (lekce 32–39)
 
@@ -42,7 +42,7 @@ value objekty, repozitáře a SQL mindset, validace na hranici, auth a observabi
 **Projekt:** P03 (hexagonální služba).  
 **Checkpoint:** lekce 39.  
 **AI:** boilerplate OK.  
-**Rozsah:** ~11 h.
+**Rozsah:** ~5,5 h.
 
 ## M5 — Concurrency (lekce 40–50)
 
@@ -51,7 +51,7 @@ race detektor, pipelines, worker pool, errgroup, paměťový model, scheduler G-
 **Projekt:** P04 (worker pool s backpressure).  
 **Checkpoint:** lekce 50.  
 **AI:** junior pod review.  
-**Rozsah:** ~15 h.
+**Rozsah:** ~7,5 h.
 
 ## M6 — Production (lekce 51–55)
 
@@ -59,21 +59,21 @@ race detektor, pipelines, worker pool, errgroup, paměťový model, scheduler G-
 generika v API a reflexe a build tagy, kontejnery a health probes.  
 **Checkpoint:** lekce 55.  
 **AI:** junior pod review.  
-**Rozsah:** ~7 h.
+**Rozsah:** ~3,5 h.
 
 ## M7 — Inženýrství v době AI (lekce 56–58)
 
 **Výstupy:** spec-first a ADR, prompting pro Go, strukturované review AI diffu, osobní
 checklist a pairing protokol.  
 **AI:** tech lead.  
-**Rozsah:** ~4,5 h.
+**Rozsah:** ~2 h.
 
 ## M8 — Capstone (lekce 59–60)
 
 **Výstupy:** P05 postavený hybridně (spec člověk → implementace agent → review člověk),
 hardening, retrospektiva, export vlastního kurzu.  
 **Checkpoint:** lekce 60.  
-**Rozsah:** ~3 h + samotný projekt.
+**Rozsah:** ~1,5 h + samotný projekt.
 
 ## Bonus — P06 produkční backend (po lekci 60)
 

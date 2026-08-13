@@ -1,6 +1,6 @@
 # Lekce 18 — Checkpoint fáze 1
 
-> **Čas:** ~75 min · **Fáze:** 1 — Jazyk a paměťový model · **AI režim:** `ZAKÁZÁNO`
+> **Čas:** ~40 min · **Fáze:** 1 — Jazyk a paměťový model · **AI režim:** `ZAKÁZÁNO`
 
 Checkpoint nepřináší novou látku. Projdeš si celou fázi 1 (lekce 03–17), postavíš jeden
 malý balíček, který kombinuje šest jejích témat, a bodovou rubrikou zjistíš, kam se máš

@@ -15,8 +15,8 @@ AI pomáhá s pochopením; v režimu `ZAKÁZÁNO` nepíše cvičení za tebe (di
 Repozitář a Go modul: `[github.com/rdurica/go-deep](https://github.com/rdurica/go-deep)`
 (anglický slug, český obsah).
 
-**60 lekcí × 60–90 minut ≈ 80 hodin.** Každá lekce má teorii s funkčními příklady,
-most z PHP, cvičení v `exercise/` a testy, které je ověří.
+**60 lekcí × 30–45 minut ≈ 40 hodin.** Každá lekce má teorii s funkčními příklady,
+most z PHP a krátké cvičení na úsudek (ne objem kódu) v `exercise/` plus testy.
 Adresář `solutions/` je referenční řešení — spoiler, ne začínej u něj.
 
 Obsah: [BOOK.md](BOOK.md) · Postup: [PROGRESS.md](PROGRESS.md) · Osnova lekcí:
@@ -161,9 +161,10 @@ make help
 
 ## Tempo
 
-Realisticky **5–7 h týdně** ≈ 14 týdnů, při 3 lekcích týdně ≈ 20 týdnů. Nesnaž se to
-proklikat. Cvičení trénují úsudek, ne objem kódu: rané lekce píšeš ty krátké kusy
-sám (AI vysvětluje), později AI navrhuje a ty držíš review. Cíl je mentální model,
+Realisticky **5–7 h týdně** ≈ 6–8 týdnů; při 4–5 lekcích týdně ≈ 12–15 týdnů
+(3 lekce týdně pořád ~20 týdnů, ale to je volné tempo). Nesnaž se to proklikat.
+Cvičení trénují úsudek, ne objem kódu: rané lekce píšeš ty krátké kusy sám
+(AI vysvětluje), později AI navrhuje a ty držíš review. Cíl je mentální model,
 ať AI neřídí tebe.
 
 ## Licence a přispívání

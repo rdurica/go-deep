@@ -1,6 +1,6 @@
 # Lekce 23 — Checkpoint fáze 2: PHP zápachy a AI garbage
 
-> **Čas:** ~75 min · **Fáze:** 2 — Idiomatický Go · **AI režim:** `JEN VYSVĚTLENÍ`
+> **Čas:** ~40 min · **Fáze:** 2 — Idiomatický Go · **AI režim:** `JEN VYSVĚTLENÍ`
 
 ## Co budeš umět
 

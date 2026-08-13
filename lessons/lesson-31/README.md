@@ -1,6 +1,6 @@
 # Lekce 31 — Checkpoint fáze 3 + projekt P02
 
-> **Čas:** ~70 min · **Fáze:** 3 — net/http a tooling · **AI režim:** `BOILERPLATE OK`
+> **Čas:** ~35 min · **Fáze:** 3 — net/http a tooling · **AI režim:** `BOILERPLATE OK`
 
 Checkpoint nemá novou látku. Místo teorie je **recap** lekcí 24–30, cvičení je
 kumulativní a na konci je bodovaná rubrika. Lekce zároveň zadává projekt

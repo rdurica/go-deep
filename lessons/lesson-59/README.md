@@ -1,6 +1,6 @@
 # Lekce 59 — Capstone P05: spec a implementace
 
-> **Čas:** ~75 min · **Fáze:** 8 — Capstone · **AI režim:** `TECH LEAD`
+> **Čas:** ~40 min · **Fáze:** 8 — Capstone · **AI režim:** `TECH LEAD`
 
 ## Co budeš umět
 

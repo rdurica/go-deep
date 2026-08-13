@@ -1,6 +1,6 @@
 # Lekce 51 — Moduly, verzování a zranitelnosti
 
-> **Čas:** ~70 min · **Fáze:** 6 — Production Go · **AI režim:** `JUNIOR POD REVIEW`
+> **Čas:** ~35 min · **Fáze:** 6 — Production Go · **AI režim:** `JUNIOR POD REVIEW`
 
 ## Co budeš umět
 

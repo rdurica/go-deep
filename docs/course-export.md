@@ -23,7 +23,7 @@ Po dokončení lekcí 01–60 je materiál v `course/` připravený k vedení ne
    odškrtává [`PROGRESS.md`](../PROGRESS.md) u sebe a commituje progress.
    Fork je varianta pro častý sync s upstreamem. Holý clone bez vlastní remote
    kopie progress neuchová.
-2. **Cohort (12–16 týdnů)** — 4–5 lekcí týdně plus jedno live review; checkpointy
+2. **Cohort (8–12 týdnů)** — 4–5 lekcí týdně plus jedno live review; checkpointy
    jako společná sezení.
 3. **Workshop track (3 dny)** — jen projekty P01–P05 a AI review lab (lekce 56–58);
    předpokládá, že účastníci Go už trochu umí.
@@ -42,10 +42,10 @@ Po dokončení lekcí 01–60 je materiál v `course/` připravený k vedení ne
 
 | | |
 |---|---|
-| 60 lekcí × 60–90 min | ~80 hodin |
+| 60 lekcí × 30–45 min | ~40 hodin |
 | Projekty nad rámec lekcí | ~20 hodin |
-| Při 6–8 h/týden | 12–16 týdnů |
-| Při 4 h/týden | ~25 týdnů |
+| Při 5–7 h/týden | 8–12 týdnů |
+| Při 4 h/týden | ~15 týdnů |
 
 ## Než to zveřejníš
 

@@ -1,6 +1,6 @@
 # Lekce 55 — Checkpoint fáze 6: kontejnery, health a production checklist
 
-> **Čas:** ~65 min · **Fáze:** 6 — Production Go · **AI režim:** `JUNIOR POD REVIEW`
+> **Čas:** ~30 min · **Fáze:** 6 — Production Go · **AI režim:** `JUNIOR POD REVIEW`
 
 Checkpoint neopakuje teorii fáze 6 (lekce 51–54), jen ji shrne. Přidává poslední chybějící
 kus provozu — kontejner, sondy a ukončování — a nechá tě z toho postavit jeden balíček,

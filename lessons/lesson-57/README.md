@@ -1,6 +1,6 @@
 # Lekce 57 — Strukturované review AI kódu a diff lab
 
-> **Čas:** ~70 min · **Fáze:** 7 — Inženýrství v době AI · **AI režim:** `TECH LEAD`
+> **Čas:** ~35 min · **Fáze:** 7 — Inženýrství v době AI · **AI režim:** `TECH LEAD`
 
 ## Co budeš umět
 

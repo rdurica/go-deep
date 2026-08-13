@@ -1,6 +1,6 @@
 # Lekce 19 — Jména, balíčky a struktura kódu
 
-> **Čas:** ~65 min · **Fáze:** 2 — Idiomatický Go · **AI režim:** `JEN VYSVĚTLENÍ`
+> **Čas:** ~30 min · **Fáze:** 2 — Idiomatický Go · **AI režim:** `JEN VYSVĚTLENÍ`
 
 ## Co budeš umět
 
