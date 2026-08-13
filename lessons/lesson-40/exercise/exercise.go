@@ -1,16 +1,35 @@
 // Package exercise obsahuje cvičení lekce 40.
 package exercise
 
+import (
+	"runtime"
+	"sync"
+	"time"
+)
+
 // --- Stupeň: jednoduchý ---
+
 // ParallelSquares vrátí druhé mocniny všech čísel ve stejném pořadí jako vstup.
 // Každý prvek ve vlastní goroutině, výsledek na index do předalokovaného slice,
 // WaitGroup. nil/prázdný vstup → prázdný výsledek bez paniky.
+//
+// POZOR: kód níže je ZÁMĚRNĚ VADNÝ. Najdi chybu a oprav ji — testy před opravou padají.
 func ParallelSquares(nums []int) []int {
-	// TODO
-	return nil
+	out := make([]int, len(nums))
+	var wg sync.WaitGroup
+	for i, n := range nums {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			out[i] = n * n
+		}()
+	}
+	// Chybí wg.Wait() — funkce se vrátí dřív, než goroutiny dopíšou výsledky.
+	return out
 }
 
 // --- Stupeň: střední ---
+
 // FanOutSum sečte čísla nejvýše ve workers goroutinách přes kanál výsledků.
 // workers < 1 jako 1; workers > len(nums) nespouští víc goroutin než prvků.
 // Prázdný vstup → 0. Pozor na zavření kanálu výsledků.
@@ -22,15 +41,47 @@ func FanOutSum(nums []int, workers int) int {
 // GoroutineDelta vrátí přírůstek goroutin po f se stabilizací NumGoroutine
 // (ne jeden Sleep). Čistá f → 0; leak tří goroutin → alespoň 3.
 func GoroutineDelta(f func()) int {
-	// TODO
-	return 0
+	before := stableGoroutines()
+	f()
+	after := stableGoroutines()
+	return after - before
+}
+
+// stableGoroutines počká, až se počet goroutin ustálí, a vrátí ho.
+func stableGoroutines() int {
+	const (
+		needStable = 3
+		maxRounds  = 300
+		step       = 5 * time.Millisecond
+	)
+	runtime.Gosched()
+	prev := runtime.NumGoroutine()
+	stable := 0
+	for i := 0; i < maxRounds; i++ {
+		time.Sleep(step)
+		cur := runtime.NumGoroutine()
+		if cur == prev {
+			stable++
+			if stable >= needStable {
+				return cur
+			}
+			continue
+		}
+		prev = cur
+		stable = 0
+	}
+	return runtime.NumGoroutine()
 }
 
 // --- Stupeň: obtížný ---
+
 // LeakyGenerator záměrně leakuje: goroutina zablokovaná na zápis do
 // nebufferovaného kanálu bez čtenáře. Reference pro GoroutineDelta test.
 func LeakyGenerator() {
-	// TODO
+	ch := make(chan int)
+	go func() {
+		ch <- 42
+	}()
 }
 
 // SafeGenerator posílá 0,1,2,… dokud volající nezavře done.

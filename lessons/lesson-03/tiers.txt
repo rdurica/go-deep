@@ -1,3 +1,3 @@
-1:TestClassify|TestZeroValueOf
-2:TestCentsToPrice|TestToInt8
+1:TestCentsToPrice
+2:TestClassify|TestZeroValueOf|TestToInt8
 3:TestLevelString|TestLevelIsStringer|TestParseLevel|TestLevelEnabled

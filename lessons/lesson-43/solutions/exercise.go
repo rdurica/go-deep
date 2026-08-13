@@ -20,12 +20,11 @@ var (
 
 // Counter je čítač bezpečný pro souběžné použití.
 type Counter struct {
-	// atomic.Int64 má užitečnou zero value, takže Counter nepotřebuje
-	// konstruktor. Pro prostý čítač je atomika levnější než mutex.
 	n atomic.Int64
 }
 
 // --- Stupeň: jednoduchý ---
+
 // Inc zvýší čítač o jedna.
 func (c *Counter) Inc() { c.n.Add(1) }
 
@@ -37,26 +36,17 @@ func (c *Counter) Value() int64 { return c.n.Load() }
 
 // Cache je mapa chráněná zámkem, bezpečná pro souběžné použití.
 type Cache struct {
-	mu    sync.RWMutex // zámek stojí hned nad daty, která chrání
+	mu    sync.RWMutex
 	items map[string]string
-	// calls drží rozdělaný výpočet pro klíč, aby se f nevolalo dvakrát.
-	calls map[string]*computation
-}
-
-type computation struct {
-	once sync.Once
-	val  string
 }
 
 // NewCache vytvoří prázdnou cache.
 func NewCache() *Cache {
-	return &Cache{
-		items: make(map[string]string),
-		calls: make(map[string]*computation),
-	}
+	return &Cache{items: make(map[string]string)}
 }
 
 // --- Stupeň: střední ---
+
 // Get vrací hodnotu a true, pokud klíč existuje.
 func (c *Cache) Get(key string) (string, bool) {
 	c.mu.RLock()
@@ -66,8 +56,6 @@ func (c *Cache) Get(key string) (string, bool) {
 }
 
 // Set uloží hodnotu pod klíč.
-// Přepis existujícího klíče je povolený.
-// Pod mutexem cache (jako Len); bezpečné pod -race.
 func (c *Cache) Set(key, value string) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
@@ -75,7 +63,6 @@ func (c *Cache) Set(key, value string) {
 }
 
 // Delete smaže klíč. Neexistující klíč je no-op.
-// Pod mutexem cache (jako Len); bezpečné pod -race.
 func (c *Cache) Delete(key string) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
@@ -90,41 +77,7 @@ func (c *Cache) Len() int {
 }
 
 // --- Stupeň: obtížný ---
-// GetOrCompute vrátí uloženou hodnotu, nebo ji spočítá pomocí f a uloží.
-func (c *Cache) GetOrCompute(key string, f func() string) string {
-	c.mu.RLock()
-	v, ok := c.items[key]
-	c.mu.RUnlock()
-	if ok {
-		return v
-	}
 
-	c.mu.Lock()
-	if v, ok := c.items[key]; ok { // mezitím to mohl spočítat někdo jiný
-		c.mu.Unlock()
-		return v
-	}
-	comp, ok := c.calls[key]
-	if !ok {
-		comp = &computation{}
-		c.calls[key] = comp
-	}
-	// Zámek pouštíme PŘED voláním f. Kdybychom ho drželi, zablokovali
-	// bychom celou cache na dobu cizího výpočtu.
-	c.mu.Unlock()
-
-	comp.once.Do(func() {
-		comp.val = f()
-		c.mu.Lock()
-		c.items[key] = comp.val
-		delete(c.calls, key)
-		c.mu.Unlock()
-	})
-	return comp.val
-}
-
-// account je jeden účet s vlastním zámkem, aby se převody mezi různými
-// dvojicemi účtů navzájem neblokovaly.
 type account struct {
 	mu      sync.Mutex
 	balance int64
@@ -132,7 +85,7 @@ type account struct {
 
 // Bank drží zůstatky účtů a umí mezi nimi bezpečně převádět.
 type Bank struct {
-	accounts map[string]*account // po vytvoření se mapa už nemění
+	accounts map[string]*account
 }
 
 // NewBank vytvoří banku s počátečními zůstatky.
@@ -155,24 +108,6 @@ func (b *Bank) Balance(name string) (int64, bool) {
 	return acc.balance, true
 }
 
-// Total vrací součet všech zůstatků v konzistentním okamžiku.
-func (b *Bank) Total() int64 {
-	names := b.sortedNames()
-	// Zamykáme v abecedním pořadí — stejně jako Transfer, takže se ty dvě
-	// operace nemohou zaklesnout.
-	for _, name := range names {
-		b.accounts[name].mu.Lock()
-	}
-	total := int64(0)
-	for _, name := range names {
-		total += b.accounts[name].balance
-	}
-	for i := len(names) - 1; i >= 0; i-- {
-		b.accounts[names[i]].mu.Unlock()
-	}
-	return total
-}
-
 // Transfer převede částku mezi účty.
 func (b *Bank) Transfer(from, to string, amount int64) error {
 	if amount <= 0 {
@@ -187,11 +122,9 @@ func (b *Bank) Transfer(from, to string, amount int64) error {
 		return ErrUnknownAccount
 	}
 	if from == to {
-		return nil // převod na sebe je no-op; jinak bychom zamykali dvakrát
+		return nil
 	}
 
-	// Klíč k odolnosti proti deadlocku: pevné pořadí zámků. Bez něj by se
-	// souběžné převody A→B a B→A zaklesly do sebe.
 	first, second := src, dst
 	if from > to {
 		first, second = dst, src
@@ -216,4 +149,20 @@ func (b *Bank) sortedNames() []string {
 	}
 	sort.Strings(names)
 	return names
+}
+
+// Total vrací součet všech zůstatků v konzistentním okamžiku (pomocný test).
+func (b *Bank) Total() int64 {
+	names := b.sortedNames()
+	for _, name := range names {
+		b.accounts[name].mu.Lock()
+	}
+	total := int64(0)
+	for _, name := range names {
+		total += b.accounts[name].balance
+	}
+	for i := len(names) - 1; i >= 0; i-- {
+		b.accounts[names[i]].mu.Unlock()
+	}
+	return total
 }

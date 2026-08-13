@@ -3,7 +3,6 @@ package exercise_test
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -159,82 +158,6 @@ func TestAuthenticateAllowsAndInjectsUser(t *testing.T) {
 	}
 }
 
-func TestFetchWithTimeoutSuccess(t *testing.T) {
-	got, err := exercise.FetchWithTimeout(context.Background(), func(ctx context.Context) (string, error) {
-		return "hotovo", nil
-	}, time.Second)
-
-	if err != nil {
-		t.Fatalf("FetchWithTimeout vrátil chybu %v, chci nil", err)
-	}
-	if got != "hotovo" {
-		t.Errorf("FetchWithTimeout = %q, chci %q", got, "hotovo")
-	}
-}
-
-func TestFetchWithTimeoutForwardsError(t *testing.T) {
-	wantErr := errors.New("selhalo to")
-
-	got, err := exercise.FetchWithTimeout(context.Background(), func(ctx context.Context) (string, error) {
-		return "", wantErr
-	}, time.Second)
-
-	if !errors.Is(err, wantErr) {
-		t.Errorf("FetchWithTimeout err = %v, chci %v", err, wantErr)
-	}
-	if got != "" {
-		t.Errorf("FetchWithTimeout = %q, chci prázdný řetězec", got)
-	}
-}
-
-func TestFetchWithTimeoutDeadline(t *testing.T) {
-	started := make(chan struct{})
-	finished := make(chan error, 1)
-
-	got, err := exercise.FetchWithTimeout(context.Background(), func(ctx context.Context) (string, error) {
-		close(started)
-		<-ctx.Done() // funkce spolupracuje: čeká na zrušení, ne na pevný sleep
-		finished <- ctx.Err()
-		return "", ctx.Err()
-	}, 30*time.Millisecond)
-
-	if !errors.Is(err, context.DeadlineExceeded) {
-		t.Fatalf("FetchWithTimeout err = %v, chci context.DeadlineExceeded", err)
-	}
-	if got != "" {
-		t.Errorf("FetchWithTimeout = %q, chci prázdný řetězec", got)
-	}
-
-	select {
-	case <-started:
-	case <-time.After(2 * time.Second):
-		t.Fatal("fn se vůbec nespustila")
-	}
-
-	select {
-	case innerErr := <-finished:
-		if !errors.Is(innerErr, context.DeadlineExceeded) {
-			t.Errorf("fn viděla chybu %v, chci context.DeadlineExceeded (kontext musí propadnout dovnitř)", innerErr)
-		}
-	case <-time.After(2 * time.Second):
-		t.Error("fn nedostala signál o zrušení")
-	}
-}
-
-func TestFetchWithTimeoutCanceledParent(t *testing.T) {
-	ctx, cancel := context.WithCancel(context.Background())
-	cancel()
-
-	_, err := exercise.FetchWithTimeout(ctx, func(ctx context.Context) (string, error) {
-		<-ctx.Done()
-		return "", ctx.Err()
-	}, time.Hour)
-
-	if !errors.Is(err, context.Canceled) {
-		t.Errorf("FetchWithTimeout err = %v, chci context.Canceled", err)
-	}
-}
-
 func TestSlowHandlerCompletesWork(t *testing.T) {
 	rec := httptest.NewRecorder()
 
@@ -255,52 +178,22 @@ func TestSlowHandlerCompletesWork(t *testing.T) {
 }
 
 func TestSlowHandlerStopsOnClientDisconnect(t *testing.T) {
-	exited := make(chan error, 1)
+	ctx, cancel := context.WithCancel(context.Background())
+	req := httptest.NewRequest(http.MethodGet, "/slow", nil).WithContext(ctx)
 
-	handler := exercise.SlowHandlerWithHook(10*time.Second, func(err error) {
-		exited <- err
-	})
+	go func() {
+		time.Sleep(50 * time.Millisecond)
+		cancel()
+	}()
 
-	srv := httptest.NewServer(handler)
-	defer srv.Close()
-
-	client := &http.Client{Timeout: 100 * time.Millisecond}
-	res, err := client.Get(srv.URL + "/slow")
-	if err == nil {
-		res.Body.Close()
-		t.Fatal("klient dostal odpověď, ale měl vypršet timeout")
-	}
-
-	// Handler musí skončit krátce po odpojení klienta, ne až po 10 vteřinách práce.
-	select {
-	case exitErr := <-exited:
-		if exitErr == nil {
-			t.Error("handler skončil s nil chybou, chci důvod zrušení z kontextu")
-		}
-	case <-time.After(3 * time.Second):
-		t.Fatal("handler po odpojení klienta neskončil — nekontroluje ctx.Done()")
-	}
-}
-
-func TestSlowHandlerHookOnSuccess(t *testing.T) {
-	exited := make(chan error, 1)
-
-	handler := exercise.SlowHandlerWithHook(20*time.Millisecond, func(err error) {
-		exited <- err
-	})
-
+	start := time.Now()
 	rec := httptest.NewRecorder()
-	handler.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/slow", nil))
+	exercise.SlowHandler(10*time.Second).ServeHTTP(rec, req)
 
-	select {
-	case exitErr := <-exited:
-		if exitErr != nil {
-			t.Errorf("hook dostal %v, chci nil při dokončení práce", exitErr)
-		}
-	case <-time.After(2 * time.Second):
-		t.Fatal("hook se nezavolal")
+	if elapsed := time.Since(start); elapsed > 2*time.Second {
+		t.Fatalf("handler běžel %v po zrušení kontextu, chci skončit do ~2 s", elapsed)
 	}
-	if rec.Code != http.StatusOK {
-		t.Errorf("status = %d, chci %d", rec.Code, http.StatusOK)
+	if rec.Body.Len() > 0 {
+		t.Error("po zrušení kontextu handler nesmí psát do odpovědi")
 	}
 }

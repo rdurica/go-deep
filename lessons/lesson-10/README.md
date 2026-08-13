@@ -313,13 +313,12 @@ Po přečtení teorie spusť v Cursoru **`/go-deep-quiz 10`**. AI tě ~5 minut p
 
 ## Úkol
 
-Pracuj v `exercise/`. Po doplnění spouštěj testy:
-
-Stupně jdou od jednodušších ke složitějším — po každém stupni spusť review, než jdeš dál.
+Pracuj v `exercise/`. Kontrakt je v komentáři nad funkcí. Stupně jdou od jednodušších
+ke složitějším — po každém stupni spusť review, než jdeš dál.
 
 ### Jednoduchý
 
-Funkce: `DeferOrder`, `SumWithLog` — LIFO defer a pojmenovaný návrat, který defer ještě doplní.
+Oprav: `SumWithLog` (záměrně vadný defer u pojmenovaného návratu `steps`)
 
 ```bash
 make lesson L=10 PART=1
@@ -329,7 +328,7 @@ Pak **`/go-deep-review 10 easy`**.
 
 ### Střední
 
-Funkce: `SafeDivide`, `WriteAndClose`, `Push`, `Pop` — recover→error, Close chyba do named `err`, panic jako chyba programátora.
+Implementuj: `DeferOrder`, `SafeDivide`
 
 ```bash
 make lesson L=10 PART=2
@@ -339,7 +338,7 @@ Pak **`/go-deep-review 10 medium`**.
 
 ### Obtížný
 
-Funkce: `Len`, `TryPop` — nil-safe metoda a recover kolem cizí paniky.
+Doplň: `WriteAndClose` (defer Close, chyba Close do named `err`)
 
 ```bash
 make lesson L=10 PART=3

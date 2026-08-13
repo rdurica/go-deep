@@ -1,6 +1,6 @@
 # Lekce 50 — Checkpoint fáze 5 + projekt P04
 
-> **Čas:** ~90 min · **Fáze:** 5 — Concurrency do hloubky · **AI režim:** `JUNIOR POD REVIEW`
+> **Čas:** ~70–75 min · **Fáze:** 5 — Concurrency do hloubky · **AI režim:** `JUNIOR POD REVIEW`
 
 Checkpoint nemá novou látku. Projdeš si fázi 5 (lekce 40–49) formou otázek a tabulek,
 naučíš se rozeznat tři nejčastější patologie souběžného kódu podle příznaků, postavíš
@@ -160,13 +160,12 @@ Po přečtení teorie spusť v Cursoru **`/go-deep-quiz 50`**. AI tě ~5 minut p
 
 ## Úkol
 
-Pracuj v `exercise/`. Po doplnění spouštěj testy:
-
-Stupně jdou od jednodušších ke složitějším — po každém stupni spusť review, než jdeš dál.
+Pracuj v `exercise/`. Kontrakt je v komentáři nad funkcí. Stupně jdou od jednodušších
+ke složitějším — po každém stupni spusť review, než jdeš dál.
 
 ### Jednoduchý
 
-Funkce: `Total`, `Throughput`
+Oprav: `Total` (kód je záměrně vadný — počítá jen Processed, chybí Failed)
 
 ```bash
 make lesson L=50 PART=1
@@ -176,7 +175,7 @@ Pak **`/go-deep-review 50 easy`**.
 
 ### Střední
 
-Funkce: `Enter`, `Leave`
+Implementuj: `Enter`, `Leave`
 
 ```bash
 make lesson L=50 PART=2
@@ -186,7 +185,7 @@ Pak **`/go-deep-review 50 medium`**.
 
 ### Obtížný
 
-Funkce: `Snapshot`, `Process`, `ProcessStream`
+Doplň: `Process` (worker pool, backpressure, FailFast)
 
 ```bash
 make lesson L=50 PART=3

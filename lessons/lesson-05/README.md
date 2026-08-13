@@ -1,6 +1,6 @@
 # Lekce 05 — Structs, metody a embedding
 
-> **Čas:** ~90 min · **Fáze:** 1 — Jazyk a paměťový model · **AI režim:** `ZAKÁZÁNO`
+> **Čas:** ~70 min · **Fáze:** 1 — Jazyk a paměťový model · **AI režim:** `ZAKÁZÁNO`
 
 ## Co budeš umět
 
@@ -253,13 +253,12 @@ Po přečtení teorie spusť v Cursoru **`/go-deep-quiz 05`**. AI tě ~5 minut p
 
 ## Úkol
 
-Pracuj v `exercise/`. Po doplnění spouštěj testy:
-
-Stupně jdou od jednodušších ke složitějším — po každém stupni spusť review, než jdeš dál.
+Pracuj v `exercise/`. Kontrakt je v komentáři nad funkcí. Stupně jdou od jednodušších
+ke složitějším — po každém stupni spusť review, než jdeš dál.
 
 ### Jednoduchý
 
-Funkce: `Add`, `String`
+Oprav: `Inc` (kód je záměrně vadný — value receiver místo pointer)
 
 ```bash
 make lesson L=05 PART=1
@@ -269,7 +268,7 @@ Pak **`/go-deep-review 05 easy`**.
 
 ### Střední
 
-Funkce: `Inc`, `Add`, `Value`
+Implementuj: `Add`, `String` (`Point`)
 
 ```bash
 make lesson L=05 PART=2
@@ -279,7 +278,7 @@ Pak **`/go-deep-review 05 medium`**.
 
 ### Obtížný
 
-Funkce: `Describe`, `Describe`, `Tag`
+Doplň: `Describe` (`User`), `Tag` (`Admin` — embedding, promotovaná pole)
 
 ```bash
 make lesson L=05 PART=3

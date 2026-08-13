@@ -1,6 +1,6 @@
 # Lekce 45 — Pipelines
 
-> **Čas:** ~90 min · **Fáze:** 5 — Concurrency do hloubky · **AI režim:** `JUNIOR POD REVIEW`
+> **Čas:** ~70 min · **Fáze:** 5 — Concurrency do hloubky · **AI režim:** `JUNIOR POD REVIEW`
 
 ## Co budeš umět
 
@@ -247,13 +247,12 @@ Po přečtení teorie spusť v Cursoru **`/go-deep-quiz 45`**. AI tě ~5 minut p
 
 ## Úkol
 
-Pracuj v `exercise/`. Po doplnění spouštěj testy:
-
-Stupně jdou od jednodušších ke složitějším — po každém stupni spusť review, než jdeš dál.
+Pracuj v `exercise/`. Kontrakt je v komentáři nad funkcí. Stupně jdou od jednodušších
+ke složitějším — po každém stupni spusť review, než jdeš dál.
 
 ### Jednoduchý
 
-Funkce: `Gen`
+Oprav: `Gen`
 
 ```bash
 make lesson L=45 PART=1
@@ -263,7 +262,7 @@ Pak **`/go-deep-review 45 easy`**.
 
 ### Střední
 
-Funkce: `Square`
+Implementuj: `Square`
 
 ```bash
 make lesson L=45 PART=2
@@ -273,7 +272,7 @@ Pak **`/go-deep-review 45 medium`**.
 
 ### Obtížný
 
-Funkce: `Pipeline`
+Doplň: `Pipeline`
 
 ```bash
 make lesson L=45 PART=3

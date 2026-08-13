@@ -1,6 +1,6 @@
 # Lekce 36 — Validace na hranici
 
-> **Čas:** ~90 min · **Fáze:** 4 — Architektura v Go · **AI režim:** `BOILERPLATE OK`
+> **Čas:** ~70 min · **Fáze:** 4 — Architektura v Go · **AI režim:** `BOILERPLATE OK`
 
 ## Co budeš umět
 
@@ -308,13 +308,11 @@ Po přečtení teorie spusť v Cursoru **`/go-deep-quiz 36`**. AI tě ~5 minut p
 
 ## Úkol
 
-Pracuj v `exercise/`. Po doplnění spouštěj testy:
-
-Stupně jdou od jednodušších ke složitějším — po každém stupni spusť review, než jdeš dál.
+Pracuj v `exercise/`. Kontrakt je v komentáři nad funkcí.
 
 ### Jednoduchý
 
-Funkce: `ParseEmail`, `String`, `IsZero`
+Oprav: `ValidationErrors.Error` (chybí řazení klíčů mapy)
 
 ```bash
 make lesson L=36 PART=1
@@ -324,7 +322,7 @@ Pak **`/go-deep-review 36 easy`**.
 
 ### Střední
 
-Funkce: `ParseUsername`, `String`, `Error`
+Implementuj: `ParseEmail`, `CreateUserRequest.Validate`
 
 ```bash
 make lesson L=36 PART=2
@@ -334,7 +332,7 @@ Pak **`/go-deep-review 36 medium`**.
 
 ### Obtížný
 
-Funkce: `Validate`, `WriteProblem`, `ErrorHandler`, `WriteError`
+Doplň: `WriteProblem`, `ErrorHandler`, `WriteError`
 
 ```bash
 make lesson L=36 PART=3

@@ -4,7 +4,11 @@
 // tenhle balíček se nezmění ani o řádek.
 package order
 
-import "errors"
+import (
+	"errors"
+	"fmt"
+	"strings"
+)
 
 // Doménové chyby objednávky.
 var (
@@ -32,11 +36,21 @@ const (
 	StatusCancelled
 )
 
-// String implementuje fmt.Stringer pro všech pět stavů objednávky.
-// new, paid, shipped, cancelled mají odpovídající řetězce; neznámá hodnota → "unknown".
+// --- Stupeň: jednoduchý ---
+// String implementuje fmt.Stringer.
 func (s Status) String() string {
-	// TODO
-	return ""
+	switch s {
+	case StatusNew:
+		return "new"
+	case StatusPaid:
+		return "paid"
+	case StatusShipped:
+		return "shipped"
+	case StatusCancelled:
+		return "cancelled"
+	default:
+		return "unknown"
+	}
 }
 
 // Line je jedna položka objednávky.
@@ -46,11 +60,23 @@ type Line struct {
 	UnitPriceCents int64
 }
 
-// TotalCents vrací cenu položky: UnitPriceCents * Quantity.
-// Např. Line{Quantity:3, UnitPriceCents:1999} → 5997.
+// --- Stupeň: střední ---
+// TotalCents vrací cenu položky v celých centech.
 func (l Line) TotalCents() int64 {
-	// TODO
-	return 0
+	return int64(l.Quantity) * l.UnitPriceCents
+}
+
+// validate ověří invarianty jedné položky.
+func (l Line) validate() error {
+	switch {
+	case strings.TrimSpace(l.SKU) == "":
+		return fmt.Errorf("%w: prázdné SKU", ErrInvalidLine)
+	case l.Quantity <= 0:
+		return fmt.Errorf("%w: množství %d není kladné", ErrInvalidLine, l.Quantity)
+	case l.UnitPriceCents <= 0:
+		return fmt.Errorf("%w: cena %d není kladná", ErrInvalidLine, l.UnitPriceCents)
+	}
+	return nil
 }
 
 // Order je objednávka. Metody přechodů vracejí novou hodnotu,
@@ -61,38 +87,61 @@ type Order struct {
 	Status Status
 }
 
-// New vytvoří objednávku ve stavu new. Ořízne ID; prázdné ID → ErrMissingID;
-// prázdné lines → ErrEmptyOrder; vadná položka → ErrInvalidLine.
-// Vrátí kopii slice položek. Při chybě nulová Order.
+// New vytvoří novou objednávku ve stavu StatusNew a ověří invarianty.
 func New(id string, lines []Line) (Order, error) {
-	// TODO
-	return *new(Order), nil
+	id = strings.TrimSpace(id)
+	if id == "" {
+		return Order{}, ErrMissingID
+	}
+	if len(lines) == 0 {
+		return Order{}, ErrEmptyOrder
+	}
+	for i, line := range lines {
+		if err := line.validate(); err != nil {
+			return Order{}, fmt.Errorf("položka %d: %w", i, err)
+		}
+	}
+	// Kopie: kdyby si volající slice ponechal a změnil ho, prolezla by
+	// změna dovnitř objednávky a obešla by validaci.
+	owned := make([]Line, len(lines))
+	copy(owned, lines)
+
+	return Order{ID: id, Lines: owned, Status: StatusNew}, nil
 }
 
-// TotalCents vrací součet cen všech položek objednávky v centech.
-// Sčítá TotalCents() každé položky.
+// TotalCents vrací celkovou cenu objednávky v celých centech.
 func (o Order) TotalCents() int64 {
-	// TODO
-	return 0
+	var total int64
+	for _, line := range o.Lines {
+		total += line.TotalCents()
+	}
+	return total
 }
 
-// Pay převede stav new → paid. Hodnotový receiver — vrací novou Order, původní zůstane.
-// Jiný stav → chyba obalující ErrInvalidTransition.
+// --- Stupeň: obtížný ---
+// Pay převede novou objednávku do stavu StatusPaid.
 func (o Order) Pay() (Order, error) {
-	// TODO
-	return *new(Order), nil
+	return o.transition(StatusPaid, StatusNew)
 }
 
-// Ship převede stav paid → shipped. Hodnotový receiver vrací novou hodnotu.
-// Jiný stav (včetně new, shipped, cancelled) → ErrInvalidTransition.
+// Ship převede zaplacenou objednávku do stavu StatusShipped.
 func (o Order) Ship() (Order, error) {
-	// TODO
-	return *new(Order), nil
+	return o.transition(StatusShipped, StatusPaid)
 }
 
-// Cancel zruší objednávku ve stavu new nebo paid.
-// Odeslaná nebo už zrušená → ErrInvalidTransition. Vrací novou hodnotu.
+// Cancel zruší objednávku, která ještě není odeslaná ani zrušená.
 func (o Order) Cancel() (Order, error) {
-	// TODO
-	return *new(Order), nil
+	return o.transition(StatusCancelled, StatusNew, StatusPaid)
+}
+
+// transition je jediné místo, kde se stav objednávky mění. Celý stavový
+// automat je tak vidět na pěti řádcích výš, ne rozeseto po aplikaci.
+func (o Order) transition(to Status, from ...Status) (Order, error) {
+	for _, allowed := range from {
+		if o.Status == allowed {
+			o.Status = to // o je kopie, originál voláním netrpí
+			return o, nil
+		}
+	}
+	return o, fmt.Errorf("%w: ze stavu %s nelze do %s", ErrInvalidTransition, o.Status, to)
 }

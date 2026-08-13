@@ -1,6 +1,6 @@
 # Lekce 38 — Projekt P03: hexagonální služba
 
-> **Čas:** ~90 min · **Fáze:** 4 — Architektura v Go · **AI režim:** `BOILERPLATE OK`
+> **Čas:** ~70 min · **Fáze:** 4 — Architektura v Go · **AI režim:** `BOILERPLATE OK`
 
 ## Co budeš umět
 
@@ -244,13 +244,12 @@ Po přečtení teorie spusť v Cursoru **`/go-deep-quiz 38`**. AI tě ~5 minut p
 
 ## Úkol
 
-Pracuj v `exercise/`. Po doplnění spouštěj testy:
-
-Stupně jdou od jednodušších ke složitějším — po každém stupni spusť review, než jdeš dál.
+Pracuj v `exercise/httpapi/`. Balíčky `order/`, `app/` a `memstore/` jsou hotové —
+ukazují hexagon bez opakování projektu P03. Ty píšeš **jen HTTP adaptér**.
 
 ### Jednoduchý
 
-Funkce: `NewOrder`
+Oprav: `writeJSON` (tělo před `WriteHeader`)
 
 ```bash
 make lesson L=38 PART=1
@@ -260,7 +259,7 @@ Pak **`/go-deep-review 38 easy`**.
 
 ### Střední
 
-Funkce: `NewMemoryRepository`
+Doplň: `writeError` (mapování chyb na statusy na jednom místě)
 
 ```bash
 make lesson L=38 PART=2
@@ -270,7 +269,7 @@ Pak **`/go-deep-review 38 medium`**.
 
 ### Obtížný
 
-Funkce: `NewService`, `NewHandler`
+Implementuj: `NewHandler` (router + handlery use-casů)
 
 ```bash
 make lesson L=38 PART=3

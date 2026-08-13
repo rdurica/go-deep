@@ -4,6 +4,7 @@ package exercise
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"log/slog"
 	"net/http"
@@ -17,16 +18,22 @@ var ErrEmptyID = errors.New("empty id")
 const Redacted = "[REDACTED]"
 
 // --- Stupeň: jednoduchý ---
+
+// LogRequest zaloguje jeden HTTP požadavek na úrovni Info.
+// Zpráva "http_request"; atributy method, path, status (int), duration (slog.Duration) přes LogAttrs.
+//
+// POZOR: kód níže je ZÁMĚRNĚ VADNÝ. Proměnné hodnoty jsou ve zprávě místo v atributech.
+// Najdi chybu a oprav — testy před opravou padají.
+func LogRequest(logger *slog.Logger, method, path string, status int, dur time.Duration) {
+	logger.Info(fmt.Sprintf("http_request %s %s status=%d", method, path, status))
+}
+
+// --- Stupeň: střední ---
+
 // NewLogger vrátí logger s JSON handlerem, který píše do w a filtruje podle level.
 func NewLogger(w io.Writer, level slog.Level) *slog.Logger {
 	// TODO
 	return nil
-}
-
-// LogRequest zaloguje jeden HTTP požadavek na úrovni Info.
-// Zpráva "http_request"; atributy method, path, status (int), duration (slog.Duration) přes LogAttrs.
-func LogRequest(logger *slog.Logger, method, path string, status int, dur time.Duration) {
-	// TODO
 }
 
 // Service je ukázková služba, která dostává logger konstruktorem.
@@ -41,7 +48,6 @@ func NewService(logger *slog.Logger) *Service {
 	return nil
 }
 
-// --- Stupeň: střední ---
 // Process zpracuje záznam s daným id. Prázdné id je chyba.
 // Prázdné id → Error "process failed" + atribut error, vrátí ErrEmptyID.
 // Neprázdné → Info "processed" + atribut id, vrátí nil.
@@ -70,6 +76,7 @@ func (h *RedactingHandler) Enabled(ctx context.Context, level slog.Level) bool {
 }
 
 // --- Stupeň: obtížný ---
+
 // Handle implementuje slog.Handler.
 // Maskuj klíče password, token, api_key (case-insensitive) včetně skupin rekurzivně.
 func (h *RedactingHandler) Handle(ctx context.Context, r slog.Record) error {

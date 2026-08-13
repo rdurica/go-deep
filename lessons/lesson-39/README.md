@@ -1,6 +1,6 @@
 # Lekce 39 — Checkpoint fáze 4
 
-> **Čas:** ~90 min · **Fáze:** 4 — Architektura v Go · **AI režim:** `BOILERPLATE OK`
+> **Čas:** ~75 min · **Fáze:** 4 — Architektura v Go · **AI režim:** `BOILERPLATE OK`
 
 Tahle lekce nepřináší nic nového. Prochází fázi 4 (lekce 32–38) formou otázek
 a odpovědí, jedním kumulativním cvičením a bodovanou rubrikou, ze které se pozná,
@@ -165,13 +165,12 @@ Po přečtení teorie spusť v Cursoru **`/go-deep-quiz 39`**. AI tě ~5 minut p
 
 ## Úkol
 
-Pracuj v `exercise/`. Po doplnění spouštěj testy:
-
-Stupně jdou od jednodušších ke složitějším — po každém stupni spusť review, než jdeš dál.
+Pracuj v `exercise/`. Checkpoint je zkrácený — HTTP handler je hotový, píšeš
+doménové typy, validaci DTO a use-case `Book`. Kontrakt je v komentáři nad funkcí.
 
 ### Jednoduchý
 
-Funkce: `ParseRoomID`, `NewDateRange`, `From`, `To`, `Nights`, `Overlaps`
+Implementuj: `ParseRoomID`, `Overlaps`
 
 ```bash
 make lesson L=39 PART=1
@@ -181,7 +180,7 @@ Pak **`/go-deep-review 39 easy`**.
 
 ### Střední
 
-Funkce: `String`, `Error`, `Get`, `Validate`, `NewMemoryRepo`, `Save`
+Doplň: `CreateBookingRequest.Validate` (sběr všech chyb najednou)
 
 ```bash
 make lesson L=39 PART=2
@@ -191,7 +190,7 @@ Pak **`/go-deep-review 39 medium`**.
 
 ### Obtížný
 
-Funkce: `ByRoom`, `Inc`, `Snapshot`, `NewService`, `Metrics`, `Book`, `Handler`
+Doplň: `Service.Book` (překryv termínů, metriky, port persistence)
 
 ```bash
 make lesson L=39 PART=3

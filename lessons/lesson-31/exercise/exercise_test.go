@@ -10,7 +10,6 @@ import (
 	"net"
 	"net/http"
 	"net/http/httptest"
-	"strconv"
 	"strings"
 	"sync"
 	"testing"
@@ -45,7 +44,6 @@ func fakeEnv(m map[string]string) func(string) string {
 	return func(key string) string { return m[key] }
 }
 
-// decodeJSON rozparsuje tělo odpovědi do mapy.
 func decodeJSON(t *testing.T, r io.Reader) map[string]any {
 	t.Helper()
 
@@ -56,7 +54,6 @@ func decodeJSON(t *testing.T, r io.Reader) map[string]any {
 	return m
 }
 
-// wantErrorShape ověří konzistentní tvar chybové odpovědi.
 func wantErrorShape(t *testing.T, body map[string]any, wantCode string) {
 	t.Helper()
 
@@ -152,7 +149,7 @@ func TestChainOrder(t *testing.T) {
 	h.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/", nil))
 
 	if got, want := rec.Body.String(), "a>b>c>handler"; got != want {
-		t.Errorf("pořadí middleware = %q, chci %q (první uvedená je nejvíc vně)", got, want)
+		t.Errorf("pořadí middleware = %q, chci %q", got, want)
 	}
 }
 
@@ -229,259 +226,18 @@ func TestRequestIDFromContextEmpty(t *testing.T) {
 	}
 }
 
-// newTestServer spustí kompletní API na náhodném portu localhostu.
-func newTestServer(t *testing.T) *httptest.Server {
-	t.Helper()
-
-	srv := httptest.NewServer(exercise.NewServer(discardLogger()))
-	t.Cleanup(srv.Close)
-	return srv
-}
-
-// postNote vytvoří poznámku a vrátí její ID.
-func postNote(t *testing.T, srv *httptest.Server, text string) string {
-	t.Helper()
-
-	body := strings.NewReader(`{"text":` + strconv.Quote(text) + `}`)
-	req, err := http.NewRequest(http.MethodPost, srv.URL+"/notes", body)
-	if err != nil {
-		t.Fatalf("sestavení požadavku selhalo: %v", err)
-	}
-	req.Header.Set("Content-Type", "application/json")
-
-	resp, err := srv.Client().Do(req)
-	if err != nil {
-		t.Fatalf("POST /notes selhal: %v", err)
-	}
-	defer func() { _ = resp.Body.Close() }()
-
-	if resp.StatusCode != http.StatusCreated {
-		t.Fatalf("POST /notes status = %d, chci %d", resp.StatusCode, http.StatusCreated)
-	}
-	created := decodeJSON(t, resp.Body)
-	id, _ := created["id"].(string)
-	if id == "" {
-		t.Fatalf("vytvořená poznámka nemá id; tělo: %v", created)
-	}
-	if got, _ := created["text"].(string); got != text {
-		t.Errorf("text = %q, chci %q", got, text)
-	}
-	if loc := resp.Header.Get("Location"); loc != "/notes/"+id {
-		t.Errorf("Location = %q, chci %q", loc, "/notes/"+id)
-	}
-	return id
-}
-
-func TestHealthz(t *testing.T) {
+func TestChainedHealthSetsRequestID(t *testing.T) {
 	t.Parallel()
 
-	srv := newTestServer(t)
-	resp, err := srv.Client().Get(srv.URL + "/healthz")
-	if err != nil {
-		t.Fatalf("GET /healthz selhal: %v", err)
+	h := exercise.Chain(exercise.HealthHandler(), exercise.RequestIDMiddleware)
+	rec := httptest.NewRecorder()
+	h.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/healthz", nil))
+
+	if rec.Code != http.StatusOK {
+		t.Errorf("status = %d, chci %d", rec.Code, http.StatusOK)
 	}
-	defer func() { _ = resp.Body.Close() }()
-
-	if resp.StatusCode != http.StatusOK {
-		t.Errorf("status = %d, chci %d", resp.StatusCode, http.StatusOK)
-	}
-	if ct := resp.Header.Get("Content-Type"); !strings.HasPrefix(ct, "application/json") {
-		t.Errorf("Content-Type = %q, chci application/json", ct)
-	}
-	if body := decodeJSON(t, resp.Body); body["status"] != "ok" {
-		t.Errorf("tělo = %v, chci status=ok", body)
-	}
-}
-
-func TestNotesCRUD(t *testing.T) {
-	t.Parallel()
-
-	srv := newTestServer(t)
-	id := postNote(t, srv, "koupit mléko")
-
-	// GET jedné poznámky
-	resp, err := srv.Client().Get(srv.URL + "/notes/" + id)
-	if err != nil {
-		t.Fatalf("GET /notes/%s selhal: %v", id, err)
-	}
-	if resp.StatusCode != http.StatusOK {
-		t.Errorf("GET /notes/%s status = %d, chci %d", id, resp.StatusCode, http.StatusOK)
-	}
-	got := decodeJSON(t, resp.Body)
-	_ = resp.Body.Close()
-	if got["text"] != "koupit mléko" {
-		t.Errorf("text = %v, chci %q", got["text"], "koupit mléko")
-	}
-
-	// Výpis obsahuje vytvořenou poznámku
-	postNote(t, srv, "zavolat mámě")
-	listResp, err := srv.Client().Get(srv.URL + "/notes")
-	if err != nil {
-		t.Fatalf("GET /notes selhal: %v", err)
-	}
-	list := decodeJSON(t, listResp.Body)
-	_ = listResp.Body.Close()
-	notes, ok := list["notes"].([]any)
-	if !ok {
-		t.Fatalf("odpověď nemá pole notes; tělo: %v", list)
-	}
-	if len(notes) != 2 {
-		t.Errorf("počet poznámek = %d, chci 2", len(notes))
-	}
-
-	// DELETE
-	req, _ := http.NewRequest(http.MethodDelete, srv.URL+"/notes/"+id, nil)
-	delResp, err := srv.Client().Do(req)
-	if err != nil {
-		t.Fatalf("DELETE selhal: %v", err)
-	}
-	_ = delResp.Body.Close()
-	if delResp.StatusCode != http.StatusNoContent {
-		t.Errorf("DELETE status = %d, chci %d", delResp.StatusCode, http.StatusNoContent)
-	}
-
-	// Druhé smazání už je 404
-	req2, _ := http.NewRequest(http.MethodDelete, srv.URL+"/notes/"+id, nil)
-	delResp2, err := srv.Client().Do(req2)
-	if err != nil {
-		t.Fatalf("druhý DELETE selhal: %v", err)
-	}
-	defer func() { _ = delResp2.Body.Close() }()
-	if delResp2.StatusCode != http.StatusNotFound {
-		t.Errorf("druhý DELETE status = %d, chci %d", delResp2.StatusCode, http.StatusNotFound)
-	}
-	wantErrorShape(t, decodeJSON(t, delResp2.Body), "not_found")
-}
-
-func TestNotesEmptyList(t *testing.T) {
-	t.Parallel()
-
-	srv := newTestServer(t)
-	resp, err := srv.Client().Get(srv.URL + "/notes")
-	if err != nil {
-		t.Fatalf("GET /notes selhal: %v", err)
-	}
-	defer func() { _ = resp.Body.Close() }()
-
-	body := decodeJSON(t, resp.Body)
-	notes, ok := body["notes"].([]any)
-	if !ok {
-		t.Fatalf("notes není pole (pozor na nil slice v JSONu); tělo: %v", body)
-	}
-	if len(notes) != 0 {
-		t.Errorf("prázdné úložiště vrátilo %d poznámek", len(notes))
-	}
-}
-
-func TestErrorResponses(t *testing.T) {
-	t.Parallel()
-
-	srv := newTestServer(t)
-
-	tests := []struct {
-		name        string
-		method      string
-		path        string
-		contentType string
-		body        string
-		wantStatus  int
-		wantCode    string
-	}{
-		{"unknown path", http.MethodGet, "/nope", "", "", http.StatusNotFound, "not_found"},
-		{"missing note", http.MethodGet, "/notes/9999", "", "", http.StatusNotFound, "not_found"},
-		{"wrong method on collection", http.MethodPatch, "/notes", "application/json", `{}`, http.StatusMethodNotAllowed, "method_not_allowed"},
-		{"wrong method on item", http.MethodPost, "/notes/1", "application/json", `{}`, http.StatusMethodNotAllowed, "method_not_allowed"},
-		{"missing Content-Type", http.MethodPost, "/notes", "", `{"text":"x"}`, http.StatusUnsupportedMediaType, "unsupported_media_type"},
-		{"wrong Content-Type", http.MethodPost, "/notes", "text/plain", `{"text":"x"}`, http.StatusUnsupportedMediaType, "unsupported_media_type"},
-		{"broken JSON", http.MethodPost, "/notes", "application/json", `{"text":`, http.StatusBadRequest, "bad_request"},
-		{"empty text", http.MethodPost, "/notes", "application/json", `{"text":"   "}`, http.StatusBadRequest, "validation_failed"},
-		{"missing text", http.MethodPost, "/notes", "application/json", `{}`, http.StatusBadRequest, "validation_failed"},
-		{"text too long", http.MethodPost, "/notes", "application/json", `{"text":"` + strings.Repeat("a", 501) + `"}`, http.StatusBadRequest, "validation_failed"},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			req, err := http.NewRequest(tt.method, srv.URL+tt.path, strings.NewReader(tt.body))
-			if err != nil {
-				t.Fatalf("sestavení požadavku selhalo: %v", err)
-			}
-			if tt.contentType != "" {
-				req.Header.Set("Content-Type", tt.contentType)
-			}
-
-			resp, err := srv.Client().Do(req)
-			if err != nil {
-				t.Fatalf("požadavek selhal: %v", err)
-			}
-			defer func() { _ = resp.Body.Close() }()
-
-			if resp.StatusCode != tt.wantStatus {
-				t.Errorf("status = %d, chci %d", resp.StatusCode, tt.wantStatus)
-			}
-			if ct := resp.Header.Get("Content-Type"); !strings.HasPrefix(ct, "application/json") {
-				t.Errorf("Content-Type = %q, chci application/json i u chyby", ct)
-			}
-			if tt.wantStatus == http.StatusMethodNotAllowed && resp.Header.Get("Allow") == "" {
-				t.Error("odpověď 405 nemá hlavičku Allow")
-			}
-			wantErrorShape(t, decodeJSON(t, resp.Body), tt.wantCode)
-		})
-	}
-}
-
-func TestServerSetsRequestID(t *testing.T) {
-	t.Parallel()
-
-	srv := newTestServer(t)
-	resp, err := srv.Client().Get(srv.URL + "/healthz")
-	if err != nil {
-		t.Fatalf("GET /healthz selhal: %v", err)
-	}
-	defer func() { _ = resp.Body.Close() }()
-
-	if resp.Header.Get(exercise.RequestIDHeader) == "" {
-		t.Errorf("odpověď nemá hlavičku %s — je middleware v chainu?", exercise.RequestIDHeader)
-	}
-}
-
-func TestServerConcurrentWrites(t *testing.T) {
-	t.Parallel()
-
-	srv := newTestServer(t)
-
-	const n = 30
-	var wg sync.WaitGroup
-	wg.Add(n)
-	for i := 0; i < n; i++ {
-		go func() {
-			defer wg.Done()
-
-			req, err := http.NewRequest(http.MethodPost, srv.URL+"/notes", strings.NewReader(`{"text":"souběžně"}`))
-			if err != nil {
-				t.Errorf("sestavení požadavku selhalo: %v", err)
-				return
-			}
-			req.Header.Set("Content-Type", "application/json")
-
-			resp, err := srv.Client().Do(req)
-			if err != nil {
-				t.Errorf("POST selhal: %v", err)
-				return
-			}
-			_, _ = io.Copy(io.Discard, resp.Body)
-			_ = resp.Body.Close()
-		}()
-	}
-	wg.Wait()
-
-	resp, err := srv.Client().Get(srv.URL + "/notes")
-	if err != nil {
-		t.Fatalf("GET /notes selhal: %v", err)
-	}
-	defer func() { _ = resp.Body.Close() }()
-
-	notes, _ := decodeJSON(t, resp.Body)["notes"].([]any)
-	if len(notes) != n {
-		t.Errorf("po %d souběžných zápisech je v úložišti %d poznámek", n, len(notes))
+	if rec.Header().Get(exercise.RequestIDHeader) == "" {
+		t.Error("odpověď nemá hlavičku X-Request-ID — je middleware v chainu?")
 	}
 }
 
@@ -538,9 +294,15 @@ func TestRun(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
+	handler := exercise.Chain(
+		exercise.HealthHandler(),
+		exercise.RequestIDMiddleware,
+		exercise.RecoveryMiddleware(discardLogger()),
+	)
+
 	done := make(chan error, 1)
 	go func() {
-		done <- exercise.Run(ctx, cfg, exercise.NewServer(discardLogger()), ln)
+		done <- exercise.Run(ctx, cfg, handler, ln)
 	}()
 
 	baseURL := "http://" + ln.Addr().String()

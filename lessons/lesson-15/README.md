@@ -1,6 +1,6 @@
 # Lekce 15 — Generics
 
-> **Čas:** ~85 min · **Fáze:** 1 — Jazyk a paměťový model · **AI režim:** `ZAKÁZÁNO`
+> **Čas:** ~70 min · **Fáze:** 1 — Jazyk a paměťový model · **AI režim:** `ZAKÁZÁNO`
 
 ## Co budeš umět
 
@@ -179,7 +179,7 @@ cmp.Compare(a, b)             // -1, 0, 1
 cmp.Or(a, b, c)               // první nenulová hodnota
 ```
 
-Všimni si, že `slices.Max` na prázdném slice **panikuje**. Tvoje `Max` v úkolu B vrací
+Všimni si, že `slices.Max` na prázdném slice **panikuje**. Tvoje `Max` vrací
 `(T, bool)` — to je bezpečnější varianta, kterou v produkčním kódu často chceš.
 
 ### Kdy generika nepoužívat
@@ -260,13 +260,12 @@ Po přečtení teorie spusť v Cursoru **`/go-deep-quiz 15`**. AI tě ~5 minut p
 
 ## Úkol
 
-Pracuj v `exercise/`. Po doplnění spouštěj testy:
-
-Stupně jdou od jednodušších ke složitějším — po každém stupni spusť review, než jdeš dál.
+Pracuj v `exercise/`. Kontrakt je v komentáři nad funkcí. Stupně jdou od jednodušších
+ke složitějším — po každém stupni spusť review, než jdeš dál.
 
 ### Jednoduchý
 
-Funkce: `Push`, `Pop`
+Oprav: `Max` (kód je záměrně vadný — panika na prázdném vstupu)
 
 ```bash
 make lesson L=15 PART=1
@@ -276,7 +275,7 @@ Pak **`/go-deep-review 15 easy`**.
 
 ### Střední
 
-Funkce: `Peek`, `Len`
+Implementuj: `Filter`, `Sum`
 
 ```bash
 make lesson L=15 PART=2
@@ -286,7 +285,7 @@ Pak **`/go-deep-review 15 medium`**.
 
 ### Obtížný
 
-Funkce: `Get`, `Set`, `Len`
+Doplň: `Push`, `Pop` (generický typ — zero value při odebrání)
 
 ```bash
 make lesson L=15 PART=3

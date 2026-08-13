@@ -6,8 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"math"
-	"strconv"
 	"strings"
 	"time"
 )
@@ -41,19 +39,7 @@ type UserDeleted struct {
 	Reason string `json:"reason,omitempty"`
 }
 
-// Cents je peněžní částka v celých centech.
-// V JSON se objevuje jako desetinné číslo (1999 -> 19.99).
-type Cents int64
-
 // --- Stupeň: jednoduchý ---
-// ToJSON serializuje uživatele do JSON.
-func ToJSON(u User) ([]byte, error) {
-	data, err := json.Marshal(u)
-	if err != nil {
-		return nil, fmt.Errorf("marshal user: %w", err)
-	}
-	return data, nil
-}
 
 // FromJSON deserializuje uživatele z JSON a ověří povinná pole.
 func FromJSON(data []byte) (User, error) {
@@ -71,6 +57,7 @@ func FromJSON(data []byte) (User, error) {
 }
 
 // --- Stupeň: střední ---
+
 // DecodeEvent podle pole Kind dekóduje payload do odpovídajícího typu.
 func DecodeEvent(data []byte) (any, error) {
 	var ev Event
@@ -98,38 +85,7 @@ func DecodeEvent(data []byte) (any, error) {
 	}
 }
 
-// MarshalJSON zapíše částku jako desetinné číslo.
-func (c Cents) MarshalJSON() ([]byte, error) {
-	v := int64(c)
-	sign := ""
-	if v < 0 {
-		sign = "-"
-		v = -v
-	}
-	return []byte(fmt.Sprintf("%s%d.%02d", sign, v/100, v%100)), nil
-}
-
 // --- Stupeň: obtížný ---
-// UnmarshalJSON načte částku z desetinného čísla nebo z řetězce.
-func (c *Cents) UnmarshalJSON(data []byte) error {
-	s := strings.TrimSpace(string(data))
-	if s == "null" {
-		return nil
-	}
-	if len(s) >= 2 && s[0] == '"' && s[len(s)-1] == '"' {
-		unquoted, err := strconv.Unquote(s)
-		if err != nil {
-			return fmt.Errorf("cents: %w", err)
-		}
-		s = strings.TrimSpace(unquoted)
-	}
-	f, err := strconv.ParseFloat(s, 64)
-	if err != nil {
-		return fmt.Errorf("cents: %q není částka: %w", s, err)
-	}
-	*c = Cents(math.Round(f * 100))
-	return nil
-}
 
 // StrictDecode dekóduje data do v a odmítne neznámá pole i data navíc.
 func StrictDecode(data []byte, v any) error {

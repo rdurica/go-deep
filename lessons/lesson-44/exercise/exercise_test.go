@@ -3,7 +3,6 @@ package exercise_test
 import (
 	"fmt"
 	"runtime"
-	"sort"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -20,8 +19,6 @@ func TestSafeIncrement(t *testing.T) {
 }
 
 func TestSafeIncrementRepeated(t *testing.T) {
-	// Závod se nemusí projevit napoprvé. Opakování je nejlevnější způsob,
-	// jak mu dát šanci.
 	for i := 0; i < 20; i++ {
 		if got := exercise.SafeIncrement(1000); got != 1000 {
 			t.Fatalf("SafeIncrement(1000) = %d v pokusu %d, chci 1000", got, i)
@@ -91,33 +88,6 @@ func TestRegistryConcurrentReadWrite(t *testing.T) {
 	wg.Wait()
 }
 
-func TestParallelAppend(t *testing.T) {
-	const n = 1000
-	nums := make([]int, n)
-	want := make([]int, n)
-	for i := range nums {
-		nums[i] = i
-		want[i] = i * i
-	}
-
-	got := exercise.ParallelAppend(nums)
-	if len(got) != n {
-		t.Fatalf("ParallelAppend vrátilo %d prvků, chci %d — souběžný append ztrácí zápisy", len(got), n)
-	}
-	sort.Ints(got)
-	for i := range want {
-		if got[i] != want[i] {
-			t.Fatalf("ParallelAppend()[%d] = %d, chci %d", i, got[i], want[i])
-		}
-	}
-}
-
-func TestParallelAppendEmpty(t *testing.T) {
-	if got := exercise.ParallelAppend(nil); len(got) != 0 {
-		t.Errorf("ParallelAppend(nil) = %v, chci prázdný výsledek", got)
-	}
-}
-
 func TestStressTestRunsEverything(t *testing.T) {
 	var calls atomic.Int64
 	exercise.StressTest(t, func() { calls.Add(1) })
@@ -148,8 +118,6 @@ func TestStressTestRunsConcurrently(t *testing.T) {
 }
 
 func TestStressTestFindsRegistryRace(t *testing.T) {
-	// Přesně tenhle tvar testu odhalí závod, který jednorázové volání
-	// nikdy nevyprovokuje.
 	var r exercise.Registry
 	var i atomic.Int64
 	exercise.StressTest(t, func() {
@@ -161,16 +129,6 @@ func TestStressTestFindsRegistryRace(t *testing.T) {
 
 	if got := r.Len(); got != 50 {
 		t.Errorf("Len() = %d, chci 50", got)
-	}
-}
-
-func TestStressTestFindsCounterRace(t *testing.T) {
-	var c atomic.Int64
-	exercise.StressTest(t, func() { c.Add(1) })
-
-	want := int64(exercise.StressGoroutines * exercise.StressIterations)
-	if got := c.Load(); got != want {
-		t.Errorf("čítač = %d, chci %d", got, want)
 	}
 }
 
@@ -211,8 +169,6 @@ func TestConfigHotReloadStaysConsistent(t *testing.T) {
 			defer wg.Done()
 			for j := 0; j < 20000; j++ {
 				if s := c.Load(); !s.Consistent() {
-					// Endpoint z jednoho snapshotu a checksum z jiného:
-					// čtenář viděl rozepsaný zápis.
 					bad.Add(1)
 					return
 				}

@@ -25,10 +25,6 @@ var secretKeys = map[string]bool{
 }
 
 // --- Stupeň: jednoduchý ---
-// NewLogger vrátí logger s JSON handlerem, který píše do w a filtruje podle level.
-func NewLogger(w io.Writer, level slog.Level) *slog.Logger {
-	return slog.New(slog.NewJSONHandler(w, &slog.HandlerOptions{Level: level}))
-}
 
 // LogRequest zaloguje jeden HTTP požadavek na úrovni Info.
 func LogRequest(logger *slog.Logger, method, path string, status int, dur time.Duration) {
@@ -38,6 +34,13 @@ func LogRequest(logger *slog.Logger, method, path string, status int, dur time.D
 		slog.Int("status", status),
 		slog.Duration("duration", dur),
 	)
+}
+
+// --- Stupeň: střední ---
+
+// NewLogger vrátí logger s JSON handlerem, který píše do w a filtruje podle level.
+func NewLogger(w io.Writer, level slog.Level) *slog.Logger {
+	return slog.New(slog.NewJSONHandler(w, &slog.HandlerOptions{Level: level}))
 }
 
 // Service je ukázková služba, která dostává logger konstruktorem.
@@ -51,6 +54,7 @@ func NewService(logger *slog.Logger) *Service {
 }
 
 // --- Stupeň: střední ---
+
 // Process zpracuje záznam s daným id. Prázdné id je chyba.
 func (s *Service) Process(id string) error {
 	if id == "" {
@@ -79,6 +83,7 @@ func (h *RedactingHandler) Enabled(ctx context.Context, level slog.Level) bool {
 }
 
 // --- Stupeň: obtížný ---
+
 // Handle implementuje slog.Handler.
 func (h *RedactingHandler) Handle(ctx context.Context, r slog.Record) error {
 	out := slog.NewRecord(r.Time, r.Level, r.Message, r.PC)

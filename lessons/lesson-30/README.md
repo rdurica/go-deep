@@ -1,6 +1,6 @@
 # Lekce 30 — HTTP klient, timeouty a graceful shutdown
 
-> **Čas:** ~90 min · **Fáze:** 3 — net/http a tooling · **AI režim:** `BOILERPLATE OK`
+> **Čas:** ~65 min · **Fáze:** 3 — net/http a tooling · **AI režim:** `BOILERPLATE OK`
 
 ## Co budeš umět
 
@@ -244,13 +244,12 @@ Po přečtení teorie spusť v Cursoru **`/go-deep-quiz 30`**. AI tě ~5 minut p
 
 ## Úkol
 
-Pracuj v `exercise/`. Po doplnění spouštěj testy:
-
-Stupně jdou od jednodušších ke složitějším — po každém stupni spusť review, než jdeš dál.
+Pracuj v `exercise/`. Kontrakt je v komentáři nad funkcí. Stupně jdou od jednodušších
+ke složitějším — po každém stupni spusť review, než jdeš dál.
 
 ### Jednoduchý
 
-Funkce: `Error`, `Error`
+Oprav: `Unwrap` na `PermanentError` (kód je záměrně vadný — vrací nil)
 
 ```bash
 make lesson L=30 PART=1
@@ -260,7 +259,7 @@ Pak **`/go-deep-review 30 easy`**.
 
 ### Střední
 
-Funkce: `Unwrap`, `Permanent`
+Implementuj: `NewHTTPClient`
 
 ```bash
 make lesson L=30 PART=2
@@ -270,7 +269,7 @@ Pak **`/go-deep-review 30 medium`**.
 
 ### Obtížný
 
-Funkce: `NewHTTPClient`, `Retry`, `RunServer`
+Doplň: `RunServer` (graceful shutdown + `ErrServerClosed`)
 
 ```bash
 make lesson L=30 PART=3

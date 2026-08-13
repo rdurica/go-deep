@@ -27,30 +27,17 @@ type Notifier interface {
 	Notify(msg string) error
 }
 
-// Recorder je testovací implementace Notifieru, která si zprávy jen pamatuje.
-// Když je Err nenulová, Notify ji vrátí a zprávu nezaznamená.
+// Recorder je testovací implementace Notifieru.
 type Recorder struct {
 	Err      error
 	messages []string
 }
 
-// MyErr je typ, jehož metoda Area má pointer receiver.
-// Slouží k ukázce pasti "nil pointer v non-nil interfacu".
+// MyErr je typ s pointer receiverem pro Area.
 type MyErr struct{}
 
-// --- Stupeň: obtížný ---
-// Area vrací obsah obdélníku.
-func (r Rect) Area() float64 {
-	return r.W * r.H
-}
-
-// Area vrací obsah kruhu π·R².
-// Použij math.Pi (ne vlastní přibližnou konstantu).
-func (c Circle) Area() float64 {
-	return math.Pi * c.R * c.R
-}
-
 // --- Stupeň: jednoduchý ---
+
 // TotalArea sečte obsahy všech tvarů. Prvky rovné nil přeskočí.
 func TotalArea(shapes []Shape) float64 {
 	var total float64
@@ -64,6 +51,7 @@ func TotalArea(shapes []Shape) float64 {
 }
 
 // --- Stupeň: střední ---
+
 // Describe vrací popis dynamického typu hodnoty.
 func Describe(v any) string {
 	switch x := v.(type) {
@@ -96,33 +84,30 @@ func (r *Recorder) Messages() []string {
 	return slices.Clone(r.messages)
 }
 
-// NotifyAll pošle zprávu všem příjemcům a vrátí první chybu.
-func NotifyAll(ns []Notifier, msg string) error {
-	for _, n := range ns {
-		if n == nil {
-			continue
-		}
-		if err := n.Notify(msg); err != nil {
-			return err
-		}
-	}
-	return nil
-}
+// --- Stupeň: obtížný ---
 
-// Area splňuje Shape s pointer receiverem, takže Shape implementuje *MyErr.
+// Area splňuje Shape s pointer receiverem.
 func (e *MyErr) Area() float64 {
 	return 0
 }
 
-// ReturnsNilPointer vrací Shape, uvnitř kterého je nil pointer typu *MyErr.
-// Výsledek NENÍ roven nil, i když ukazatel uvnitř nil je.
+// ReturnsNilPointer vrací non-nil interface s nil pointerem uvnitř.
 func ReturnsNilPointer() Shape {
-	var p *MyErr // nil pointer
-	return p     // zabalený do interfacu: (typ=*MyErr, hodnota=nil) != nil
+	var p *MyErr
+	return p
 }
 
-// IsNilInterface vrací true jen když je celá interface hodnota nil (s == nil).
-// Typed-nil (non-nil interface s nil pointerem uvnitř) vrací false.
+// IsNilInterface vrací true jen pro celý nil interface.
 func IsNilInterface(s Shape) bool {
 	return s == nil
+}
+
+// Area vrací obsah obdélníku.
+func (r Rect) Area() float64 {
+	return r.W * r.H
+}
+
+// Area vrací obsah kruhu.
+func (c Circle) Area() float64 {
+	return math.Pi * c.R * c.R
 }

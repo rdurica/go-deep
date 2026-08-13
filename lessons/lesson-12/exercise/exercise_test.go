@@ -11,26 +11,6 @@ import (
 
 const eps = 1e-9
 
-func TestRectAndCircleArea(t *testing.T) {
-	if got := (exercise.Rect{W: 3, H: 4}).Area(); math.Abs(got-12) > eps {
-		t.Errorf("Rect{3,4}.Area() = %v, chci 12", got)
-	}
-	if got := (exercise.Rect{}).Area(); math.Abs(got) > eps {
-		t.Errorf("Rect{}.Area() = %v, chci 0", got)
-	}
-	want := math.Pi * 4
-	if got := (exercise.Circle{R: 2}).Area(); math.Abs(got-want) > eps {
-		t.Errorf("Circle{2}.Area() = %v, chci %v", got, want)
-	}
-}
-
-// TestShapeIsImplicitlyImplemented ověřuje jen přiřazení do Shape —
-// Area je v pozdějším stupni, takže se tu nevolá.
-func TestShapeIsImplicitlyImplemented(t *testing.T) {
-	var _ exercise.Shape = exercise.Rect{}
-	var _ exercise.Shape = exercise.Circle{}
-}
-
 // stubShape je lokální Shape, aby TotalArea nevolal studentské Area z pozdějšího PART.
 type stubShape float64
 
@@ -65,6 +45,11 @@ func TestTotalArea(t *testing.T) {
 	}
 }
 
+func TestShapeIsImplicitlyImplemented(t *testing.T) {
+	var _ exercise.Shape = exercise.Rect{}
+	var _ exercise.Shape = exercise.Circle{}
+}
+
 type customStruct struct{ X int }
 
 func TestDescribe(t *testing.T) {
@@ -95,7 +80,7 @@ func TestDescribe(t *testing.T) {
 }
 
 func TestRecorder(t *testing.T) {
-	var r exercise.Recorder // zero value musí být použitelná
+	var r exercise.Recorder
 
 	if got := r.Messages(); len(got) != 0 {
 		t.Errorf("Messages() na prázdném Recorderu = %v, chci prázdné", got)
@@ -119,7 +104,6 @@ func TestRecorder(t *testing.T) {
 		}
 	}
 
-	// Messages musí vracet kopii, ne vnitřní slice.
 	got[0] = "podvrh"
 	if again := r.Messages(); again[0] != "first" {
 		t.Errorf("Messages() vrací vnitřní slice, změna zvenku se projevila: %v", again)
@@ -138,8 +122,6 @@ func TestRecorderWithError(t *testing.T) {
 	}
 }
 
-// TestRecorderSatisfiesNotifier ověřuje, že Notifier splňuje *Recorder,
-// nikoli Recorder — metoda má pointer receiver.
 func TestRecorderSatisfiesNotifier(t *testing.T) {
 	var n exercise.Notifier = &exercise.Recorder{}
 	if err := n.Notify("přes interface"); err != nil {
@@ -154,31 +136,6 @@ func TestRecorderSatisfiesNotifier(t *testing.T) {
 	}
 }
 
-func TestNotifyAll(t *testing.T) {
-	a, b := &exercise.Recorder{}, &exercise.Recorder{}
-	if err := exercise.NotifyAll([]exercise.Notifier{a, b}, "deploy"); err != nil {
-		t.Fatalf("NotifyAll() = %v, chci nil", err)
-	}
-	for i, r := range []*exercise.Recorder{a, b} {
-		if got := r.Messages(); len(got) != 1 || got[0] != "deploy" {
-			t.Errorf("recorder %d má %v, chci [deploy]", i, got)
-		}
-	}
-
-	if err := exercise.NotifyAll(nil, "nic"); err != nil {
-		t.Errorf("NotifyAll(nil, ...) = %v, chci nil", err)
-	}
-
-	boom := errors.New("boom")
-	failing := &exercise.Recorder{Err: boom}
-	err := exercise.NotifyAll([]exercise.Notifier{failing, a}, "zpráva")
-	if !errors.Is(err, boom) {
-		t.Errorf("NotifyAll() = %v, chci %v", err, boom)
-	}
-}
-
-// TestNilPointerInInterface je jádro lekce: interface hodnota je dvojice
-// (typ, hodnota). Když je typ vyplněný a hodnota nil, výsledek se nil NEROVNÁ.
 func TestNilPointerInInterface(t *testing.T) {
 	s := exercise.ReturnsNilPointer()
 
@@ -197,8 +154,6 @@ func TestNilPointerInInterface(t *testing.T) {
 		t.Errorf("pointer uvnitř interfacu = %v, chci nil", p)
 	}
 
-	// Metoda s pointer receiverem jde na nil pointeru zavolat, dokud
-	// nesahá na pole.
 	if got := s.Area(); got != 0 {
 		t.Errorf("s.Area() = %v, chci 0", got)
 	}
@@ -213,5 +168,18 @@ func TestIsNilInterface(t *testing.T) {
 	}
 	if exercise.IsNilInterface(&exercise.MyErr{}) {
 		t.Error("IsNilInterface(&MyErr{}) = true, chci false")
+	}
+}
+
+func TestRectAndCircleArea(t *testing.T) {
+	if got := (exercise.Rect{W: 3, H: 4}).Area(); math.Abs(got-12) > eps {
+		t.Errorf("Rect{3,4}.Area() = %v, chci 12", got)
+	}
+	if got := (exercise.Rect{}).Area(); math.Abs(got) > eps {
+		t.Errorf("Rect{}.Area() = %v, chci 0", got)
+	}
+	want := math.Pi * 4
+	if got := (exercise.Circle{R: 2}).Area(); math.Abs(got-want) > eps {
+		t.Errorf("Circle{2}.Area() = %v, chci %v", got, want)
 	}
 }

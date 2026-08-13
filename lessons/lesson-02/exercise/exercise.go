@@ -16,12 +16,24 @@ type Catalog struct {
 }
 
 // --- Stupeň: jednoduchý ---
+
 // ApplyDiscount vrátí cenu po slevě percent procent, zaokrouhlenou na celé centy
 // (půlka nahoru: 5 centů se slevou 50 % je 3). Percent mimo 0–100 se ořízne.
 // priceCents <= 0 vrací 0.
+//
+// POZOR: kód níže je ZÁMĚRNĚ VADNÝ. Celočíselné dělení ořezává dolů místo
+// zaokrouhlení půlky nahoru — u lichých zbytků po slevě vyjde o cent méně.
 func ApplyDiscount(priceCents int, percent int) int {
-	// TODO
-	return 0
+	if priceCents <= 0 {
+		return 0
+	}
+	if percent < 0 {
+		percent = 0
+	}
+	if percent > 100 {
+		percent = 100
+	}
+	return priceCents * (100 - percent) / 100
 }
 
 // TotalCents sečte PriceCents * Qty přes všechny položky.
@@ -32,12 +44,6 @@ func TotalCents(items []Item) int {
 }
 
 // --- Stupeň: střední ---
-// Cheapest vrátí položku s nejnižší jednotkovou cenou (PriceCents) a true.
-// Při shodě ceny vyhrává první výskyt. Prázdný nebo nil vstup: Item{}, false.
-func Cheapest(items []Item) (Item, bool) {
-	// TODO
-	return *new(Item), false
-}
 
 // NewCatalog vytvoří ceník z položek. Vstupní slice okopíruje,
 // aby pozdější změna u volajícího ceník neovlivnila.
@@ -47,6 +53,7 @@ func NewCatalog(items []Item) *Catalog {
 }
 
 // --- Stupeň: obtížný ---
+
 // Price vrátí jednotkovou cenu položky podle jména a true, pokud existuje.
 // Nenalezeno vrací 0, false.
 func (c *Catalog) Price(name string) (int, bool) {

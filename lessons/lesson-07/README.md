@@ -1,6 +1,6 @@
 # Lekce 07 — Slices: pole, append, internals, aliasing
 
-> **Čas:** ~90 min · **Fáze:** 1 — Jazyk a paměťový model · **AI režim:** `ZAKÁZÁNO`
+> **Čas:** ~70 min · **Fáze:** 1 — Jazyk a paměťový model · **AI režim:** `ZAKÁZÁNO`
 
 ## Co budeš umět
 
@@ -289,13 +289,12 @@ Po přečtení teorie spusť v Cursoru **`/go-deep-quiz 07`**. AI tě ~5 minut p
 
 ## Úkol
 
-Pracuj v `exercise/`. Po doplnění spouštěj testy:
-
-Stupně jdou od jednodušších ke složitějším — po každém stupni spusť review, než jdeš dál.
+Pracuj v `exercise/`. Kontrakt je v komentáři nad funkcí. Stupně jdou od jednodušších
+ke složitějším — po každém stupni spusť review, než jdeš dál.
 
 ### Jednoduchý
 
-Funkce: `Sum`, `Reverse`
+Oprav: `Grow` (kód je záměrně vadný — ztráta obsahu při realokaci)
 
 ```bash
 make lesson L=07 PART=1
@@ -305,7 +304,7 @@ Pak **`/go-deep-review 07 easy`**.
 
 ### Střední
 
-Funkce: `Grow`, `RemoveAt`, `RemoveFast`
+Implementuj: `Sum`, `RemoveAt`
 
 ```bash
 make lesson L=07 PART=2
@@ -315,7 +314,7 @@ Pak **`/go-deep-review 07 medium`**.
 
 ### Obtížný
 
-Funkce: `Clone`, `Chunk`, `Filter`
+Doplň: `Clone` (nezávislá kopie, nil vs prázdný slice)
 
 ```bash
 make lesson L=07 PART=3

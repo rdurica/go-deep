@@ -195,7 +195,7 @@ ale strom**:
 
 `errors.Is` i `errors.As` obě varianty prohledávají samy. Ale pozor: `errors.As` vrátí
 jen **první** nález. Chceš-li posbírat všechny (třeba všechna vadná pole), musíš strom
-projít ručně přes type assertion na `interface{ Unwrap() []error }`. Přesně to je úkol B.
+projít ručně přes type assertion na `interface{ Unwrap() []error }`. Přesně to dělá `ValidateUser`.
 
 ## Rozdíly proti PHP
 
@@ -254,13 +254,12 @@ Po přečtení teorie spusť v Cursoru **`/go-deep-quiz 14`**. AI tě ~5 minut p
 
 ## Úkol
 
-Pracuj v `exercise/`. Po doplnění spouštěj testy:
-
-Stupně jdou od jednodušších ke složitějším — po každém stupni spusť review, než jdeš dál.
+Pracuj v `exercise/`. Kontrakt je v komentáři nad funkcí. Stupně jdou od jednodušších
+ke složitějším — po každém stupni spusť review, než jdeš dál.
 
 ### Jednoduchý
 
-Funkce: `Divide`, `Error`
+Oprav: `Divide` (záměrně vadný — vrací holý sentinel bez `%w`)
 
 ```bash
 make lesson L=14 PART=1
@@ -270,7 +269,7 @@ Pak **`/go-deep-review 14 easy`**.
 
 ### Střední
 
-Funkce: `ValidateUser`, `FieldsWithErrors`
+Implementuj: `Error` na `ValidationError`, `ValidateUser`
 
 ```bash
 make lesson L=14 PART=2
@@ -280,7 +279,7 @@ Pak **`/go-deep-review 14 medium`**.
 
 ### Obtížný
 
-Funkce: `Error`, `LoadUser`, `IsNotFound`
+Doplň: `LoadUser`, `IsNotFound` (obalení chyby a `errors.As`)
 
 ```bash
 make lesson L=14 PART=3

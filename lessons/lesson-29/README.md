@@ -1,6 +1,6 @@
 # Lekce 29 — slog: strukturované logování
 
-> **Čas:** ~90 min · **Fáze:** 3 — net/http a tooling · **AI režim:** `BOILERPLATE OK`
+> **Čas:** ~75 min · **Fáze:** 3 — net/http a tooling · **AI režim:** `BOILERPLATE OK`
 
 ## Co budeš umět
 
@@ -219,13 +219,12 @@ Po přečtení teorie spusť v Cursoru **`/go-deep-quiz 29`**. AI tě ~5 minut p
 
 ## Úkol
 
-Pracuj v `exercise/`. Po doplnění spouštěj testy:
-
-Stupně jdou od jednodušších ke složitějším — po každém stupni spusť review, než jdeš dál.
+Pracuj v `exercise/`. Kontrakt je v komentáři nad funkcí. Stupně jdou od jednodušších
+ke složitějším — po každém stupni spusť review, než jdeš dál.
 
 ### Jednoduchý
 
-Funkce: `NewLogger`, `LogRequest`, `NewService`
+Oprav: `LogRequest` (kód je záměrně vadný — proměnné v msg místo v atributech)
 
 ```bash
 make lesson L=29 PART=1
@@ -235,7 +234,7 @@ Pak **`/go-deep-review 29 easy`**.
 
 ### Střední
 
-Funkce: `Process`, `NewRedactingHandler`, `Enabled`
+Implementuj: `NewLogger`, `NewService`, `Process`
 
 ```bash
 make lesson L=29 PART=2
@@ -245,7 +244,7 @@ Pak **`/go-deep-review 29 medium`**.
 
 ### Obtížný
 
-Funkce: `Handle`, `WithAttrs`, `WithGroup`, `LoggingMiddleware`
+Doplň: `RedactingHandler` (`Enabled`, `Handle`, `WithAttrs`, `WithGroup`) a `LoggingMiddleware`
 
 ```bash
 make lesson L=29 PART=3

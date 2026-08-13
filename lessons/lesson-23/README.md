@@ -1,6 +1,6 @@
 # Lekce 23 — Checkpoint fáze 2: PHP zápachy a AI garbage
 
-> **Čas:** ~90 min · **Fáze:** 2 — Idiomatický Go · **AI režim:** `JEN VYSVĚTLENÍ`
+> **Čas:** ~75 min · **Fáze:** 2 — Idiomatický Go · **AI režim:** `JEN VYSVĚTLENÍ`
 
 ## Co budeš umět
 
@@ -176,13 +176,12 @@ Po přečtení teorie spusť v Cursoru **`/go-deep-quiz 23`**. AI tě ~5 minut p
 
 ## Úkol
 
-Pracuj v `exercise/`. Po doplnění spouštěj testy:
-
-Stupně jdou od jednodušších ke složitějším — po každém stupni spusť review, než jdeš dál.
+Pracuj v `exercise/`. Kontrakt je v komentáři nad funkcí. Stupně jdou od jednodušších
+ke složitějším — po každém stupni spusť review, než jdeš dál.
 
 ### Jednoduchý
 
-Funkce: `Describe`, `LoadRecords`
+Oprav: `Describe`, `LoadRecords` (review-lab — AI/Symfony zápachy)
 
 ```bash
 make lesson L=23 PART=1
@@ -192,7 +191,7 @@ Pak **`/go-deep-review 23 easy`**.
 
 ### Střední
 
-Funkce: `Put`, `PutAll`, `Load`
+Implementuj: `Put`, `Load` na `Store` (zero value, port u konzumenta)
 
 ```bash
 make lesson L=23 PART=2
@@ -202,7 +201,7 @@ Pak **`/go-deep-review 23 medium`**.
 
 ### Obtížný
 
-Funkce: `Remove`, `List`, `TotalQty`
+Doplň: `PutAll` (`errors.Join` — platné záznamy se uloží i při chybách ostatních)
 
 ```bash
 make lesson L=23 PART=3
@@ -235,7 +234,7 @@ Vyhodnocení:
 | Skóre | Co s tím |
 |---|---|
 | 18–20 | Jdi na fázi 3. Idiomatický Go máš v ruce. |
-| 14–17 | Přepiš úkol C těch lekcí, kde jsi měl 0–1, znovu z prázdné složky. |
+| 14–17 | Přepiš obtížný stupeň těch lekcí, kde jsi měl 0–1, znovu z prázdné složky. |
 | 10–13 | Zopakuj celé lekce podle nejslabších položek: 1–2 → 19, 3–5 → 20, 6–8 → 21, 9–10 → 22. |
 | pod 10 | Vrať se na lekci 19 a projdi fázi znovu. Bez idiomů budeš ve fázi 3 psát Symfony v Go. |
 
@@ -259,7 +258,7 @@ Spusť **`/go-deep-review 23 final`**. AI projde body níže, doptá se a ověř
 
 Tenhle checkpoint uzavírá režim `JEN VYSVĚTLENÍ`. Od lekce 24 platí `BOILERPLATE OK`,
 což znamená, že AI smí psát repetitivní kód — ale jen proto, že už umíš poznat, kdy ho
-napsala špatně. Vyzkoušej si to hned: nech si vygenerovat řešení úkolu C, projdi ho
+napsala špatně. Vyzkoušej si to hned: nech si vygenerovat řešení `PutAll`, projdi ho
 podle katalogu zápachů výše a vypiš, co bys v review komentoval.
 
 ## Další čtení

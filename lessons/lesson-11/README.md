@@ -237,13 +237,12 @@ Po přečtení teorie spusť v Cursoru **`/go-deep-quiz 11`**. AI tě ~5 minut p
 
 ## Úkol
 
-Pracuj v `exercise/`. Po doplnění spouštěj testy:
-
+Pracuj v `exercise/money/` (balíček `money`). Kontrakt je v komentáři nad metodou.
 Stupně jdou od jednodušších ke složitějším — po každém stupni spusť review, než jdeš dál.
 
 ### Jednoduchý
 
-Funkce: `NewAmount`
+Oprav: `String` v `money/` (záměrně vadný formát u záporných a desetinných míst)
 
 ```bash
 make lesson L=11 PART=1
@@ -253,7 +252,7 @@ Pak **`/go-deep-review 11 easy`**.
 
 ### Střední
 
-Funkce: `SumCents`, `Split`
+Implementuj: `SumCents` v `money/` (sčítání přes neexportované pole `cents`)
 
 ```bash
 make lesson L=11 PART=2
@@ -263,7 +262,7 @@ Pak **`/go-deep-review 11 medium`**.
 
 ### Obtížný
 
-Funkce: `TotalOf`, `MustParse`
+Doplň: `Split` v `money/` (dělení bez ztráty centů)
 
 ```bash
 make lesson L=11 PART=3

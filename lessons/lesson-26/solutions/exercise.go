@@ -2,18 +2,10 @@
 package solutions
 
 import (
-	"context"
-	"crypto/rand"
-	"encoding/hex"
 	"encoding/json"
 	"log/slog"
 	"net/http"
-	"strings"
-	"time"
 )
-
-// RequestIDHeader je jméno hlavičky, ve které se přenáší ID požadavku.
-const RequestIDHeader = "X-Request-ID"
 
 // ErrorResponse je jednotný tvar chybové odpovědi.
 type ErrorResponse struct {
@@ -24,8 +16,8 @@ type ErrorResponse struct {
 type Middleware func(http.Handler) http.Handler
 
 // --- Stupeň: jednoduchý ---
+
 // WriteJSON zapíše v jako JSON odpověď se status kódem status.
-// Hotové z lekce 24.
 func WriteJSON(w http.ResponseWriter, status int, v any) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
@@ -42,8 +34,22 @@ type statusRecorder struct {
 	wroteHeader bool
 }
 
+// NewStatusRecorder obalí w pro zachycení statusu a velikosti odpovědi.
+func NewStatusRecorder(w http.ResponseWriter) *statusRecorder {
+	return &statusRecorder{ResponseWriter: w, status: http.StatusOK}
+}
+
+// RecordedStatus vrátí zapamatovaný HTTP status.
+func (rec *statusRecorder) RecordedStatus() int {
+	return rec.status
+}
+
+// RecordedBytes vrátí počet bajtů zapsaných přes Write.
+func (rec *statusRecorder) RecordedBytes() int {
+	return rec.bytes
+}
+
 // WriteHeader zapamatuje status a přepošle ho podkladovému writeru — jen jednou.
-// Druhé a další WriteHeader status nepřepisují (první vyhrává).
 func (rec *statusRecorder) WriteHeader(status int) {
 	if rec.wroteHeader {
 		return
@@ -64,6 +70,7 @@ func (rec *statusRecorder) Write(b []byte) (int, error) {
 }
 
 // --- Stupeň: střední ---
+
 // Chain obalí h middlewary tak, že první uvedený je nejvíc vnější.
 func Chain(h http.Handler, mws ...Middleware) http.Handler {
 	for i := len(mws) - 1; i >= 0; i-- {
@@ -77,21 +84,21 @@ func Chain(h http.Handler, mws ...Middleware) http.Handler {
 func Logging(logger *slog.Logger) Middleware {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			rec := &statusRecorder{ResponseWriter: w, status: http.StatusOK}
-			start := time.Now()
+			rec := NewStatusRecorder(w)
 
 			next.ServeHTTP(rec, r)
 
-			logger.InfoContext(r.Context(), "request",
+			logger.Info("request",
 				slog.String("method", r.Method),
 				slog.String("path", r.URL.Path),
-				slog.Int("status", rec.status),
-				slog.Int("bytes", rec.bytes),
-				slog.Duration("duration", time.Since(start)),
+				slog.Int("status", rec.RecordedStatus()),
+				slog.Int("bytes", rec.RecordedBytes()),
 			)
 		})
 	}
 }
+
+// --- Stupeň: obtížný ---
 
 // Recovery vrací middleware, který z paniky v handleru udělá 500 s JSON tělem.
 func Recovery() Middleware {
@@ -102,8 +109,6 @@ func Recovery() Middleware {
 				if recovered == nil {
 					return
 				}
-				// ErrAbortHandler je smluvený způsob, jak handler ukončí spojení.
-				// Nesmíme ho spolknout, patří serveru.
 				if recovered == http.ErrAbortHandler {
 					panic(recovered)
 				}
@@ -112,47 +117,5 @@ func Recovery() Middleware {
 
 			next.ServeHTTP(w, r)
 		})
-	}
-}
-
-// requestIDKey je neexportovaný typ klíče, takže do něj nikdo zvenčí nesáhne.
-type requestIDKey struct{}
-
-// newRequestID vygeneruje náhodné ID požadavku.
-func newRequestID() string {
-	var buf [16]byte
-	if _, err := rand.Read(buf[:]); err != nil {
-		return time.Now().UTC().Format("20060102150405.000000000")
-	}
-	return hex.EncodeToString(buf[:])
-}
-
-// --- Stupeň: obtížný ---
-// RequestID vrací middleware, který doplní ID požadavku do kontextu i do odpovědi.
-func RequestID() Middleware {
-	return func(next http.Handler) http.Handler {
-		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			id := strings.TrimSpace(r.Header.Get(RequestIDHeader))
-			if id == "" {
-				id = newRequestID()
-			}
-			w.Header().Set(RequestIDHeader, id)
-
-			ctx := context.WithValue(r.Context(), requestIDKey{}, id)
-			next.ServeHTTP(w, r.WithContext(ctx))
-		})
-	}
-}
-
-// RequestIDFrom vytáhne ID požadavku z kontextu.
-func RequestIDFrom(ctx context.Context) (string, bool) {
-	id, ok := ctx.Value(requestIDKey{}).(string)
-	return id, ok && id != ""
-}
-
-// Timeout vrací middleware, který požadavku nastaví deadline d.
-func Timeout(d time.Duration) Middleware {
-	return func(next http.Handler) http.Handler {
-		return http.TimeoutHandler(next, d, `{"error":"request timeout"}`)
 	}
 }

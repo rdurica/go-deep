@@ -15,9 +15,13 @@ type Handler interface {
 type HandlerFunc func(path string) string
 
 // --- Stupeň: jednoduchý ---
+
 // Handle volá f(path), a tím HandlerFunc splňuje interface Handler.
+//
+// POZOR: kód níže je ZÁMĚRNĚ VADNÝ. Neimplementuje adaptér z teorie.
+// Najdi chybu a oprav — testy před opravou padají.
 func (f HandlerFunc) Handle(path string) string {
-	// TODO
+	_ = f
 	return ""
 }
 
@@ -28,16 +32,11 @@ type Mux struct {
 }
 
 // --- Stupeň: střední ---
+
 // Register zaregistruje handler pro vzor.
 // Panika "mux: empty pattern", "mux: nil handler" nebo "mux: multiple registrations for …".
 // Mapu inicializuj líně; zero value muxu je použitelná.
 func (m *Mux) Register(pattern string, h Handler) {
-	// TODO
-}
-
-// SetNotFound nastaví handler pro cesty bez shody.
-// nil handler panikuje.
-func (m *Mux) SetNotFound(h Handler) {
 	// TODO
 }
 
@@ -49,6 +48,7 @@ func (m *Mux) Handle(path string) string {
 }
 
 // --- Stupeň: obtížný ---
+
 // Marshal zakóduje podporované hodnoty do JSON textu bez použití reflexe.
 // nil slice/map → null; prázdné → [] nebo {}; klíče mapy vzestupně; escapuj ", \, \n, \t.
 // Nepodporovaný typ → fmt.Errorf("%w: %T", ErrUnsupportedType, v).

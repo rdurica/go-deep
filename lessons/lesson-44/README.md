@@ -1,6 +1,6 @@
 # Lekce 44 — Race lab: detektor závodů
 
-> **Čas:** ~90 min · **Fáze:** 5 — Concurrency do hloubky · **AI režim:** `JUNIOR POD REVIEW`
+> **Čas:** ~70 min · **Fáze:** 5 — Concurrency do hloubky · **AI režim:** `JUNIOR POD REVIEW`
 
 ## Co budeš umět
 
@@ -186,13 +186,12 @@ Po přečtení teorie spusť v Cursoru **`/go-deep-quiz 44`**. AI tě ~5 minut p
 
 ## Úkol
 
-Pracuj v `exercise/`. Po doplnění spouštěj testy:
-
-Stupně jdou od jednodušších ke složitějším — po každém stupni spusť review, než jdeš dál.
+Pracuj v `exercise/`. Kontrakt je v komentáři nad funkcí. Stupně jdou od jednodušších
+ke složitějším — po každém stupni spusť review, než jdeš dál.
 
 ### Jednoduchý
 
-Funkce: `SafeIncrement`, `Set`, `Get`
+Oprav: `SafeIncrement`, `Set`, `Get`, `Len` na `Registry`
 
 ```bash
 make lesson L=44 PART=1
@@ -202,7 +201,7 @@ Pak **`/go-deep-review 44 easy`**.
 
 ### Střední
 
-Funkce: `Len`, `ParallelAppend`, `StressTest`, `NewSnapshot`
+Implementuj: `StressTest`
 
 ```bash
 make lesson L=44 PART=2
@@ -212,7 +211,7 @@ Pak **`/go-deep-review 44 medium`**.
 
 ### Obtížný
 
-Funkce: `Consistent`, `Store`, `Load`, `StartReloader`
+Oprav: `Store`, `Load` na `Config` (atomická výměna snapshotu; `StartReloader` je hotový)
 
 ```bash
 make lesson L=44 PART=3

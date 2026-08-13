@@ -33,16 +33,19 @@ type Stats struct {
 // --- Stupeň: jednoduchý ---
 // Total vrací počet dokončených úloh, tedy Processed + Failed.
 // Nezahrnuje úlohy, které se ještě zpracovávají.
+//
+// POZOR: kód níže je ZÁMĚRNĚ VADNÝ. Počítá jen Processed a zapomíná Failed.
 func (s Stats) Total() int {
-	// TODO
-	return 0
+	return s.Processed
 }
 
 // Throughput vrací průchodnost v úlohách za sekundu.
 // Pro nekladnou dobu běhu vrací 0.
 func (s Stats) Throughput() float64 {
-	// TODO
-	return 0
+	if s.Elapsed <= 0 {
+		return 0
+	}
+	return float64(s.Total()) / s.Elapsed.Seconds()
 }
 
 // Metrics sbírá metriky souběžně z několika workerů.
@@ -67,13 +70,18 @@ func (m *Metrics) Leave(err error) {
 	// TODO
 }
 
-// --- Stupeň: obtížný ---
 // Snapshot vrátí Stats s Processed, Failed a MaxInFlight z atomik a Elapsed z parametru.
 // Nulová Metrics je použitelná.
 func (m *Metrics) Snapshot(elapsed time.Duration) Stats {
-	// TODO
-	return *new(Stats)
+	return Stats{
+		Processed:   int(m.processed.Load()),
+		Failed:      int(m.failed.Load()),
+		MaxInFlight: int(m.maxInFlight.Load()),
+		Elapsed:     elapsed,
+	}
 }
+
+// --- Stupeň: obtížný ---
 
 // Item je jedna úloha v dávce.
 type Item struct {
@@ -111,13 +119,4 @@ type Config struct {
 func Process(ctx context.Context, cfg Config, items []Item) ([]Outcome, Stats, error) {
 	// TODO
 	return nil, *new(Stats), nil
-}
-
-// ProcessStream čte úlohy z in (dokud se nezavře), výsledky posílá do out.
-// Mezi in a workery je fronta QueueSize (tlak až na odesílatele). out vlastníš a na konci
-// zavíráš i při chybě konfigurace. Zápis do out vždy přes select s ctx.Done().
-// FailFast a rušení kontextem jako u Process; neplatná konfigurace → stejné ErrInvalid*.
-func ProcessStream(ctx context.Context, cfg Config, in <-chan Item, out chan<- Outcome) (Stats, error) {
-	// TODO
-	return Stats{}, nil
 }

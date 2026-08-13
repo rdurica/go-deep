@@ -1,6 +1,6 @@
 # Lekce 55 — Checkpoint fáze 6: kontejnery, health a production checklist
 
-> **Čas:** ~90 min · **Fáze:** 6 — Production Go · **AI režim:** `JUNIOR POD REVIEW`
+> **Čas:** ~65 min · **Fáze:** 6 — Production Go · **AI režim:** `JUNIOR POD REVIEW`
 
 Checkpoint neopakuje teorii fáze 6 (lekce 51–54), jen ji shrne. Přidává poslední chybějící
 kus provozu — kontejner, sondy a ukončování — a nechá tě z toho postavit jeden balíček,
@@ -265,13 +265,12 @@ Po přečtení teorie spusť v Cursoru **`/go-deep-quiz 55`**. AI tě ~5 minut p
 
 ## Úkol
 
-Pracuj v `exercise/`. Po doplnění spouštěj testy:
-
-Stupně jdou od jednodušších ke složitějším — po každém stupni spusť review, než jdeš dál.
+Pracuj v `exercise/`. Kontrakt je v komentáři nad funkcí. Stupně jdou od jednodušších
+ke složitějším — po každém stupni spusť review, než jdeš dál.
 
 ### Jednoduchý
 
-Funkce: `String`, `Current`
+Doplň: `String`, `Current` (build metadata z `-ldflags`)
 
 ```bash
 make lesson L=55 PART=1
@@ -281,7 +280,7 @@ Pak **`/go-deep-review 55 easy`**.
 
 ### Střední
 
-Funkce: `VersionHandler`, `NewHealthChecker`, `Register`
+Implementuj: `VersionHandler`, `NewHealthChecker`, `Register`
 
 ```bash
 make lesson L=55 PART=2
@@ -291,7 +290,9 @@ Pak **`/go-deep-review 55 medium`**.
 
 ### Obtížný
 
-Funkce: `LiveHandler`, `ReadyHandler`, `ShutdownSequence`
+Oprav: `LiveHandler` (kód je záměrně vadný — vrací 503 místo 200)
+
+Doplň: `ReadyHandler`, `ShutdownSequence`
 
 ```bash
 make lesson L=55 PART=3

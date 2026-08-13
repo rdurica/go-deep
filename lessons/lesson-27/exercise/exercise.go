@@ -28,12 +28,11 @@ type StatusResponse struct {
 type Middleware func(http.Handler) http.Handler
 
 // userKey je neexportovaný typ klíče do kontextu.
-// Prázdný struct nic nealokuje a nikdo mimo tenhle balíček ho nevyrobí.
 type userKey struct{}
 
 // --- Stupeň: jednoduchý ---
+
 // WriteJSON zapíše v jako JSON odpověď se status kódem status.
-// Hotové z lekce 24.
 func WriteJSON(w http.ResponseWriter, status int, v any) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
@@ -42,22 +41,24 @@ func WriteJSON(w http.ResponseWriter, status int, v any) error {
 
 // WithUser vrátí kopii kontextu s uloženým uživatelem.
 // Ulož pod klíč userKey{}; rodičovský kontext zůstane beze změny.
+//
+// POZOR: kód níže je ZÁMĚRNĚ VADNÝ. Klíč typu string se srazí s cizími balíčky.
+// Najdi chybu a oprav — testy před opravou padají.
 func WithUser(ctx context.Context, u User) context.Context {
-	// TODO
-	return *new(context.Context)
+	return context.WithValue(ctx, "user", u)
 }
 
 // UserFrom vytáhne uživatele z kontextu.
 // Bez uloženého uživatele zero value a false.
 func UserFrom(ctx context.Context) (User, bool) {
-	// TODO
-	return *new(User), false
+	u, ok := ctx.Value(userKey{}).(User)
+	return u, ok
 }
 
 // --- Stupeň: střední ---
+
 // Authenticate vrací middleware, který ověří Bearer token a vloží uživatele do kontextu.
 // Chybějící/špatné schéma/prázdný token/neznámý token → 401 + WWW-Authenticate: Bearer.
-// Schéma Bearer porovnej case-insensitive; token za schématem exact match.
 func Authenticate(users map[string]User) Middleware {
 	// TODO
 	return *new(Middleware)
@@ -71,24 +72,10 @@ func WhoAmI() http.Handler {
 }
 
 // --- Stupeň: obtížný ---
-// FetchWithTimeout zavolá fn s kontextem omezeným na d a respektuje deadline.
-// Kanál na výsledek buffer 1; zrušený rodič → context.Canceled.
-func FetchWithTimeout(ctx context.Context, fn func(context.Context) (string, error), d time.Duration) (string, error) {
-	// TODO
-	return "", nil
-}
 
 // SlowHandler vrací handler, který pracuje work dlouho a reaguje na zrušení kontextu.
 // Kroky po ~5 ms; při dokončení 200 + StatusResponse{Status:"done"}; při zrušení bez zápisu do w.
 func SlowHandler(work time.Duration) http.Handler {
-	// TODO
-	return *new(http.Handler)
-}
-
-// SlowHandlerWithHook je jako SlowHandler, ale při odchodu zavolá onExit
-// s důvodem ukončení (nil při úspěchu). Slouží k otestování zrušení.
-// onExit může být nil.
-func SlowHandlerWithHook(work time.Duration, onExit func(error)) http.Handler {
 	// TODO
 	return *new(http.Handler)
 }

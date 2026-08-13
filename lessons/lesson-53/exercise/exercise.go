@@ -2,6 +2,7 @@
 package exercise
 
 import (
+	"fmt"
 	"io"
 	"net/http"
 	"regexp"
@@ -14,8 +15,7 @@ import (
 var wordRE = regexp.MustCompile(`[\p{L}\p{N}]+`)
 
 // --- Stupeň: jednoduchý ---
-// SumDigitsSlow sečte desítkové číslice v řetězci. Referenční, ale pomalá varianta:
-// každou runu převede na string a nechá ji rozparsovat strconv.
+// SumDigitsSlow sečte desítkové číslice v řetězci. Referenční, ale pomalá varianta.
 func SumDigitsSlow(s string) int {
 	sum := 0
 	for _, r := range s {
@@ -28,8 +28,7 @@ func SumDigitsSlow(s string) int {
 	return sum
 }
 
-// CountWordsSlow spočítá výskyty slov. Referenční, ale pomalá varianta:
-// lowercase celého textu a regulární výraz v horké cestě.
+// CountWordsSlow spočítá výskyty slov. Referenční, ale pomalá varianta.
 func CountWordsSlow(text string) map[string]int {
 	counts := map[string]int{}
 	for _, w := range wordRE.FindAllString(strings.ToLower(text), -1) {
@@ -41,6 +40,22 @@ func CountWordsSlow(text string) map[string]int {
 // IsWordRune vrací true pro znaky, které patří do slova.
 func IsWordRune(r rune) bool {
 	return unicode.IsLetter(r) || unicode.IsNumber(r)
+}
+
+// JoinIDs spojí čísla čárkou bez zbytečných alokací.
+// Prázdný vstup prázdný řetězec; max. 2 alokace pro 64 čísel (strings.Builder + Grow).
+//
+// POZOR: kód níže je ZÁMĚRNĚ VADNÝ. Každé číslo alokuje vlastní řetězec přes fmt.Sprintf.
+// Najdi chybu a oprav — testy před opravou padají.
+func JoinIDs(ids []int) string {
+	if len(ids) == 0 {
+		return ""
+	}
+	parts := make([]string, len(ids))
+	for i, id := range ids {
+		parts[i] = fmt.Sprintf("%d", id)
+	}
+	return strings.Join(parts, ",")
 }
 
 // --- Stupeň: střední ---
@@ -56,13 +71,6 @@ func SumDigits(s string) int {
 func CountWords(text string) map[string]int {
 	// TODO
 	return nil
-}
-
-// JoinIDs spojí čísla čárkou bez zbytečných alokací.
-// Prázdný vstup prázdný řetězec; max. 2 alokace pro 64 čísel (strings.Builder + Grow).
-func JoinIDs(ids []int) string {
-	// TODO
-	return ""
 }
 
 // --- Stupeň: obtížný ---
@@ -84,5 +92,5 @@ func CaptureHeapProfile(w io.Writer) error {
 // /metrics na tomto handleru musí vrátit 404 (test to kontroluje).
 func PprofHandler() http.Handler {
 	// TODO
-	return nil
+	return http.NewServeMux()
 }

@@ -2,7 +2,6 @@ package exercise_test
 
 import (
 	"encoding/json"
-	"math"
 	"strings"
 	"testing"
 	"time"
@@ -22,15 +21,15 @@ func sampleUser() exercise.User {
 	}
 }
 
-func TestToJSONKeys(t *testing.T) {
-	data, err := exercise.ToJSON(sampleUser())
+func TestUserJSONTags(t *testing.T) {
+	data, err := json.Marshal(sampleUser())
 	if err != nil {
-		t.Fatalf("ToJSON(...) = _, %v, chci nil", err)
+		t.Fatalf("json.Marshal(User) = _, %v, chci nil", err)
 	}
 
 	var m map[string]any
 	if err := json.Unmarshal(data, &m); err != nil {
-		t.Fatalf("výstup ToJSON není platný JSON: %v (%s)", err, data)
+		t.Fatalf("výstup není platný JSON: %v (%s)", err, data)
 	}
 
 	want := map[string]any{
@@ -54,31 +53,25 @@ func TestToJSONKeys(t *testing.T) {
 	if _, ok := m["password"]; ok {
 		t.Errorf("klíč password nemá být ve výstupu vůbec (%s)", data)
 	}
-	if _, ok := m["Password"]; ok {
-		t.Errorf("klíč Password nemá být ve výstupu vůbec (%s)", data)
-	}
-	if _, ok := m["tags"]; !ok {
-		t.Errorf("neprázdné tagy mají být ve výstupu (%s)", data)
-	}
 	if strings.Contains(string(data), "tajne-heslo") {
 		t.Errorf("heslo nesmí uniknout do JSON: %s", data)
 	}
 }
 
-func TestToJSONOmitempty(t *testing.T) {
+func TestUserOmitempty(t *testing.T) {
 	u := exercise.User{
 		ID:        1,
 		Name:      "Bob",
 		CreatedAt: time.Date(2020, time.January, 2, 3, 4, 5, 0, time.UTC),
 	}
-	data, err := exercise.ToJSON(u)
+	data, err := json.Marshal(u)
 	if err != nil {
-		t.Fatalf("ToJSON(...) = _, %v, chci nil", err)
+		t.Fatalf("json.Marshal(User) = _, %v, chci nil", err)
 	}
 
 	var m map[string]any
 	if err := json.Unmarshal(data, &m); err != nil {
-		t.Fatalf("výstup ToJSON není platný JSON: %v (%s)", err, data)
+		t.Fatalf("výstup není platný JSON: %v (%s)", err, data)
 	}
 	if _, ok := m["email"]; ok {
 		t.Errorf("prázdný email má být vynechán (%s)", data)
@@ -181,18 +174,6 @@ func TestDecodeEvent(t *testing.T) {
 		}
 	})
 
-	t.Run("payload decoded by kind", func(t *testing.T) {
-		// Payload, který by se do UserCreated nikdy nevešel, ale kind ho neaktivuje.
-		in := `{"kind":"user.deleted","payload":{"id":1,"reason":"spam"},"extra":{"x":[1,2,3]}}`
-		got, err := exercise.DecodeEvent([]byte(in))
-		if err != nil {
-			t.Fatalf("DecodeEvent(%s) = _, %v, chci nil", in, err)
-		}
-		if _, ok := got.(exercise.UserDeleted); !ok {
-			t.Fatalf("DecodeEvent(...) = %T, chci UserDeleted", got)
-		}
-	})
-
 	chybne := map[string]string{
 		"neznámý kind":   `{"kind":"user.renamed","payload":{"id":1}}`,
 		"chybějící kind": `{"payload":{"id":1}}`,
@@ -210,86 +191,8 @@ func TestDecodeEvent(t *testing.T) {
 }
 
 type wallet struct {
-	Owner   string          `json:"owner"`
-	Balance exercise.Cents  `json:"balance"`
-	Fee     *exercise.Cents `json:"fee,omitempty"`
-}
-
-func TestCentsMarshalFormat(t *testing.T) {
-	tests := []struct {
-		in   exercise.Cents
-		want string
-	}{
-		{1999, "19.99"},
-		{0, "0.00"},
-		{5, "0.05"},
-		{100, "1.00"},
-		{-250, "-2.50"},
-		{123456789, "1234567.89"},
-	}
-	for _, tt := range tests {
-		got, err := json.Marshal(tt.in)
-		if err != nil {
-			t.Fatalf("json.Marshal(Cents(%d)) = _, %v, chci nil", int64(tt.in), err)
-		}
-		if string(got) != tt.want {
-			t.Errorf("json.Marshal(Cents(%d)) = %s, chci %s", int64(tt.in), got, tt.want)
-		}
-	}
-}
-
-func TestCentsRoundTrip(t *testing.T) {
-	for v := int64(-500000); v <= 500000; v += 4111 {
-		in := exercise.Cents(v)
-		data, err := json.Marshal(wallet{Owner: "ada", Balance: in})
-		if err != nil {
-			t.Fatalf("json.Marshal(wallet{Balance: %d}) = _, %v, chci nil", v, err)
-		}
-
-		var num struct {
-			Balance float64 `json:"balance"`
-		}
-		if err := json.Unmarshal(data, &num); err != nil {
-			t.Fatalf("balance není JSON číslo: %v (%s)", err, data)
-		}
-		if math.Abs(num.Balance-float64(v)/100) > 1e-9 {
-			t.Errorf("balance = %v, chci %v (%s)", num.Balance, float64(v)/100, data)
-		}
-
-		var back wallet
-		if err := json.Unmarshal(data, &back); err != nil {
-			t.Fatalf("json.Unmarshal(%s) = %v, chci nil", data, err)
-		}
-		if back.Balance != in {
-			t.Errorf("round-trip Cents(%d) = %d, chci %d (%s)", v, int64(back.Balance), v, data)
-		}
-	}
-}
-
-func TestCentsUnmarshalInput(t *testing.T) {
-	tests := map[string]exercise.Cents{
-		`19.99`:   1999,
-		`"19.99"`: 1999,
-		`0`:       0,
-		`1`:       100,
-		`-2.5`:    -250,
-		`0.05`:    5,
-	}
-	for in, want := range tests {
-		var got exercise.Cents
-		if err := json.Unmarshal([]byte(in), &got); err != nil {
-			t.Errorf("json.Unmarshal(%s) = %v, chci nil", in, err)
-			continue
-		}
-		if got != want {
-			t.Errorf("json.Unmarshal(%s) -> Cents(%d), chci Cents(%d)", in, int64(got), int64(want))
-		}
-	}
-
-	var bad exercise.Cents
-	if err := json.Unmarshal([]byte(`"neni-cislo"`), &bad); err == nil {
-		t.Error(`json.Unmarshal("neni-cislo") = nil, chci chybu`)
-	}
+	Owner   string  `json:"owner"`
+	Balance float64 `json:"balance"`
 }
 
 func TestStrictDecode(t *testing.T) {
@@ -298,8 +201,8 @@ func TestStrictDecode(t *testing.T) {
 		if err := exercise.StrictDecode([]byte(`{"owner":"ada","balance":19.99}`), &w); err != nil {
 			t.Fatalf("StrictDecode(...) = %v, chci nil", err)
 		}
-		if w.Owner != "ada" || w.Balance != exercise.Cents(1999) {
-			t.Errorf("StrictDecode(...) -> %+v, chci owner ada a balance 1999", w)
+		if w.Owner != "ada" || w.Balance != 19.99 {
+			t.Errorf("StrictDecode(...) -> %+v, chci owner ada a balance 19.99", w)
 		}
 	})
 

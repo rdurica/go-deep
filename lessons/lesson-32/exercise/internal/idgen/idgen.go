@@ -1,7 +1,7 @@
 // Package idgen generuje identifikátory produktů.
 //
 // Leží pod internal/, takže ho smí importovat jen kód zakořeněný
-// v lessons/lesson-32/exercise/ — tedy exercise, catalog i pricing.
+// v lessons/lesson-32/solutions/ — tedy solutions, catalog i pricing.
 // Cizí modul dostane při pokusu o import chybu kompilace. Tohle pravidlo
 // vynucuje go tool, ne code review.
 package idgen
@@ -19,18 +19,24 @@ type Gen struct {
 	n      int64
 }
 
-// New vytvoří generátor s daným prefixem.
-// Prázdný prefix se nahradí "id". Nulová hodnota Gen není použitelná.
+// --- Stupeň: jednoduchý ---
+// New vytvoří generátor s daným prefixem. Prázdný prefix se nahradí "id".
 func New(prefix string) *Gen {
-	// TODO
-	return nil
+	if prefix == "" {
+		prefix = "id"
+	}
+	return &Gen{prefix: prefix}
 }
 
-// NewID vrací další identifikátor "<prefix>-000001", "<prefix>-000002", …
-// Pořadové číslo na šest míst s nulami. Bezpečné pro souběžné volání.
+// --- Stupeň: střední ---
+// NewID vrací další identifikátor ve tvaru "<prefix>-000001".
+// Je bezpečné volat ho z více goroutin současně.
 func (g *Gen) NewID() string {
-	// TODO
-	return ""
+	g.mu.Lock()
+	g.n++
+	n := g.n
+	g.mu.Unlock()
+	return format(g.prefix, n)
 }
 
 // format sestaví identifikátor z prefixu a pořadového čísla.

@@ -7,6 +7,7 @@ import (
 )
 
 // --- Stupeň: jednoduchý ---
+
 // Greet vrací pozdrav pro dané jméno. Prázdné jméno (i po ořezu bílých znaků)
 // dá "Hello, Go!".
 func Greet(name string) string {

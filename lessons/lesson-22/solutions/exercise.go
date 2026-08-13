@@ -21,6 +21,7 @@ type Handler interface {
 type HandlerFunc func(path string) string
 
 // --- Stupeň: jednoduchý ---
+
 // Handle volá f(path), a tím HandlerFunc splňuje interface Handler.
 func (f HandlerFunc) Handle(path string) string {
 	return f(path)
@@ -33,6 +34,7 @@ type Mux struct {
 }
 
 // --- Stupeň: střední ---
+
 // Register zaregistruje handler pro vzor.
 func (m *Mux) Register(pattern string, h Handler) {
 	if pattern == "" {
@@ -48,14 +50,6 @@ func (m *Mux) Register(pattern string, h Handler) {
 		m.patterns = make(map[string]Handler)
 	}
 	m.patterns[pattern] = h
-}
-
-// SetNotFound nastaví handler pro cesty bez shody.
-func (m *Mux) SetNotFound(h Handler) {
-	if h == nil {
-		panic("mux: nil handler")
-	}
-	m.notFound = h
 }
 
 // Handle najde nejlepší shodu a předá jí cestu.
@@ -93,6 +87,7 @@ func matches(pattern, path string) bool {
 }
 
 // --- Stupeň: obtížný ---
+
 // Marshal zakóduje podporované hodnoty do JSON textu bez použití reflexe.
 func Marshal(v any) (string, error) {
 	switch val := v.(type) {

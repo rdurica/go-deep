@@ -1,6 +1,6 @@
 # Lekce 17 — Testování a projekt P01 (CSV CLI)
 
-> **Čas:** ~90 min · **Fáze:** 1 — Jazyk a paměťový model · **AI režim:** `ZAKÁZÁNO`
+> **Čas:** ~70 min · **Fáze:** 1 — Jazyk a paměťový model · **AI režim:** `ZAKÁZÁNO`
 
 ## Co budeš umět
 
@@ -218,13 +218,12 @@ Po přečtení teorie spusť v Cursoru **`/go-deep-quiz 17`**. AI tě ~5 minut p
 
 ## Úkol
 
-Pracuj v `exercise/`. Po doplnění spouštěj testy:
-
-Stupně jdou od jednodušších ke složitějším — po každém stupni spusť review, než jdeš dál.
+Pracuj v `exercise/`. Kontrakt je v komentáři nad funkcí. Stupně jdou od jednodušších
+ke složitějším — po každém stupni spusť review, než jdeš dál.
 
 ### Jednoduchý
 
-Funkce: `Median`
+Oprav: `Median` (kód je záměrně vadný — mutuje vstupní slice)
 
 ```bash
 make lesson L=17 PART=1
@@ -234,7 +233,7 @@ Pak **`/go-deep-review 17 easy`**.
 
 ### Střední
 
-Funkce: `ParseRecords`, `SumByCategory`
+Implementuj: `ParseRecords`, `SumByCategory`
 
 ```bash
 make lesson L=17 PART=2
@@ -244,7 +243,7 @@ Pak **`/go-deep-review 17 medium`**.
 
 ### Obtížný
 
-Funkce: `TopN`, `LoadFile`
+Doplň: `LoadFile` (`defer`, `%w`, `testdata/` / `t.TempDir`)
 
 ```bash
 make lesson L=17 PART=3

@@ -9,9 +9,6 @@ import (
 	"strings"
 )
 
-// separator je vodorovná linka faktury.
-const separator = "--------------------------------"
-
 // Chyby vracené při parsování uživatelských ID.
 var (
 	ErrEmptyID       = errors.New("empty user id")
@@ -50,21 +47,8 @@ type Summary struct {
 	Customers  []string
 }
 
-// InvoiceLine je jeden řádek faktury.
-type InvoiceLine struct {
-	Description string
-	Quantity    int
-	UnitCents   int
-}
-
-// Invoice je faktura připravená k vykreslení.
-type Invoice struct {
-	Number   string
-	Customer string
-	Lines    []InvoiceLine
-}
-
 // --- Stupeň: jednoduchý ---
+
 // ParseUserID převede textové ID na kladné celé číslo.
 func ParseUserID(raw string) (int, error) {
 	s := strings.TrimSpace(raw)
@@ -83,6 +67,7 @@ func ParseUserID(raw string) (int, error) {
 }
 
 // --- Stupeň: střední ---
+
 // ParseUserIDs převede čárkami oddělený seznam ID na slice čísel.
 func ParseUserIDs(raw string) ([]int, error) {
 	if strings.TrimSpace(raw) == "" {
@@ -102,6 +87,7 @@ func ParseUserIDs(raw string) ([]int, error) {
 }
 
 // --- Stupeň: obtížný ---
+
 // ProcessOrders agreguje objednávky do souhrnu.
 func ProcessOrders(orders []Order) (Summary, error) {
 	var sum Summary
@@ -150,47 +136,4 @@ func sumItems(o Order) (count, totalCents int, err error) {
 		totalCents += it.Quantity * it.UnitCents
 	}
 	return count, totalCents, nil
-}
-
-// RenderInvoice vykreslí fakturu do textové podoby.
-func RenderInvoice(inv Invoice) string {
-	total := 0
-	for _, l := range inv.Lines {
-		total += l.Quantity * l.UnitCents
-	}
-
-	var b strings.Builder
-	b.WriteString(renderHeader(inv))
-	b.WriteString(renderLines(inv.Lines))
-	b.WriteString(renderTotal(total))
-	return b.String()
-}
-
-// renderHeader vykreslí hlavičku faktury včetně oddělovače.
-func renderHeader(inv Invoice) string {
-	return fmt.Sprintf("INVOICE %s\nCUSTOMER: %s\n%s\n", inv.Number, inv.Customer, separator)
-}
-
-// renderLines vykreslí položky faktury.
-func renderLines(lines []InvoiceLine) string {
-	var b strings.Builder
-	for _, l := range lines {
-		fmt.Fprintf(&b, "%s | %d x %s = %s\n",
-			l.Description,
-			l.Quantity,
-			formatCents(l.UnitCents),
-			formatCents(l.Quantity*l.UnitCents),
-		)
-	}
-	return b.String()
-}
-
-// renderTotal vykreslí oddělovač a celkovou částku.
-func renderTotal(totalCents int) string {
-	return fmt.Sprintf("%s\nTOTAL: %s\n", separator, formatCents(totalCents))
-}
-
-// formatCents převede centy na desetinný zápis se dvěma místy.
-func formatCents(cents int) string {
-	return fmt.Sprintf("%d.%02d", cents/100, cents%100)
 }

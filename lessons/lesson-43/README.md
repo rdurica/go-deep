@@ -1,6 +1,6 @@
 # Lekce 43 — Mutex vs kanál
 
-> **Čas:** ~90 min · **Fáze:** 5 — Concurrency do hloubky · **AI režim:** `JUNIOR POD REVIEW`
+> **Čas:** ~70 min · **Fáze:** 5 — Concurrency do hloubky · **AI režim:** `JUNIOR POD REVIEW`
 
 ## Co budeš umět
 
@@ -98,7 +98,7 @@ func Client() *http.Client {
 Pozor na dvě věci: `Once` se nedá „resetovat" a `Do` počítá i volání, které panikovalo
 (podruhé už se funkce nespustí). Když potřebuješ jednorázovost **na klíč**, uděláš mapu
 `map[string]*sync.Once` (nebo strukturu s `Once` uvnitř) chráněnou mutexem — přesně to
-je úkol B v téhle lekci a přesně tak funguje single-flight cache.
+je `NewCache` ve středním stupni a přesně tak funguje single-flight cache.
 
 Kritická věc v návrhu: zámek cache **nesmíš držet během volání `f`**. Kdybys ho držel,
 jeden pomalý výpočet zablokuje celou cache pro všechny klíče.
@@ -209,13 +209,12 @@ Po přečtení teorie spusť v Cursoru **`/go-deep-quiz 43`**. AI tě ~5 minut p
 
 ## Úkol
 
-Pracuj v `exercise/`. Po doplnění spouštěj testy:
-
-Stupně jdou od jednodušších ke složitějším — po každém stupni spusť review, než jdeš dál.
+Pracuj v `exercise/`. Kontrakt je v komentáři nad funkcí. Stupně jdou od jednodušších
+ke složitějším — po každém stupni spusť review, než jdeš dál.
 
 ### Jednoduchý
 
-Funkce: `Inc`, `Add`, `Value`, `NewCache`
+Oprav: `Inc`, `Add`, `Value` na `Counter` (datový závod)
 
 ```bash
 make lesson L=43 PART=1
@@ -225,7 +224,7 @@ Pak **`/go-deep-review 43 easy`**.
 
 ### Střední
 
-Funkce: `Get`, `Set`, `Delete`, `Len`
+Implementuj: `NewCache`, `Get`, `Set` (`Delete`, `Len` jsou hotové)
 
 ```bash
 make lesson L=43 PART=2
@@ -235,7 +234,7 @@ Pak **`/go-deep-review 43 medium`**.
 
 ### Obtížný
 
-Funkce: `GetOrCompute`, `NewBank`, `Balance`, `Total`, `Transfer`
+Doplň: `Transfer` (pevné pořadí zámků; `NewBank`, `Balance`, `Total` jsou hotové)
 
 ```bash
 make lesson L=43 PART=3

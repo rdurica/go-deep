@@ -1,6 +1,6 @@
 # Lekce 32 — Project layout a `internal/`
 
-> **Čas:** ~90 min · **Fáze:** 4 — Architektura v Go · **AI režim:** `BOILERPLATE OK`
+> **Čas:** ~70 min · **Fáze:** 4 — Architektura v Go · **AI režim:** `BOILERPLATE OK`
 
 ## Co budeš umět
 
@@ -183,13 +183,14 @@ Po přečtení teorie spusť v Cursoru **`/go-deep-quiz 32`**. AI tě ~5 minut p
 
 ## Úkol
 
-Pracuj v `exercise/`. Po doplnění spouštěj testy:
-
-Stupně jdou od jednodušších ke složitějším — po každém stupni spusť review, než jdeš dál.
+Pracuj v `exercise/`. Balíčky `catalog/`, `pricing/` a `internal/idgen/` jsou hotové —
+ukazují layout; ty skládáš tenkou aplikační vrstvu v kořeni. Kontrakt je v komentáři
+nad funkcí. Stupně jdou od jednodušších ke složitějším — po každém stupni spusť review,
+než jdeš dál.
 
 ### Jednoduchý
 
-Funkce: `Validate`
+Oprav: `Snapshot` (sdílení pointeru na katalog)
 
 ```bash
 make lesson L=32 PART=1
@@ -199,7 +200,7 @@ Pak **`/go-deep-review 32 easy`**.
 
 ### Střední
 
-Funkce: `BuildCatalog`, `PriceOf`
+Implementuj: `BuildCatalog`, `PriceOf`
 
 ```bash
 make lesson L=32 PART=2
@@ -209,7 +210,7 @@ Pak **`/go-deep-review 32 medium`**.
 
 ### Obtížný
 
-Funkce: `TotalOf`, `NewIDGen`
+Doplň: `TotalOf`, `NewIDGen` (wiring přes `pricing` a `internal/idgen`)
 
 ```bash
 make lesson L=32 PART=3

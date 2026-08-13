@@ -2,8 +2,8 @@
 
 package exercise
 
+// --- Stupeň: obtížný ---
 // FeatureName vrací jméno feature buildu s tagem fancy.
-// Při buildu s -tags fancy vrací "fancy"; bez tagu se kompiluje feature_off.go.
 func FeatureName() string {
 	// TODO
 	return ""

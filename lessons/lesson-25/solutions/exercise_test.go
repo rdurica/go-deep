@@ -47,24 +47,6 @@ func seededStore(t *testing.T) *exercise.Store {
 	return store
 }
 
-func TestStoreAddGet(t *testing.T) {
-	store := exercise.NewStore()
-	a := store.Add("Apple")
-	if a.ID != "1" || a.Name != "Apple" {
-		t.Errorf("Add = %+v, chci ID=1 Name=Apple", a)
-	}
-	got, ok := store.Get("1")
-	if !ok {
-		t.Fatal(`Get("1") = false, chci true`)
-	}
-	if got != a {
-		t.Errorf("Get = %+v, chci %+v", got, a)
-	}
-	if _, ok := store.Get("missing"); ok {
-		t.Error(`Get("missing") = true, chci false`)
-	}
-}
-
 func TestItemsRouterGetItem(t *testing.T) {
 	router := exercise.ItemsRouter(seededStore(t))
 

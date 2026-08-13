@@ -238,13 +238,12 @@ Po přečtení teorie spusť v Cursoru **`/go-deep-quiz 12`**. AI tě ~5 minut p
 
 ## Úkol
 
-Pracuj v `exercise/`. Po doplnění spouštěj testy:
-
-Stupně jdou od jednodušších ke složitějším — po každém stupni spusť review, než jdeš dál.
+Pracuj v `exercise/`. Kontrakt je v komentáři nad funkcí. Stupně jdou od jednodušších
+ke složitějším — po každém stupni spusť review, než jdeš dál.
 
 ### Jednoduchý
 
-Funkce: `Area`, `Area`, `TotalArea`
+Oprav: `TotalArea` (záměrně vadný — nezkontroluje nil prvky v `[]Shape`)
 
 ```bash
 make lesson L=12 PART=1
@@ -254,7 +253,7 @@ Pak **`/go-deep-review 12 easy`**.
 
 ### Střední
 
-Funkce: `Describe`, `Notify`, `Messages`
+Implementuj: `Describe`, `Notify`, `Messages`
 
 ```bash
 make lesson L=12 PART=2
@@ -264,7 +263,7 @@ Pak **`/go-deep-review 12 medium`**.
 
 ### Obtížný
 
-Funkce: `NotifyAll`, `Area`, `ReturnsNilPointer`, `IsNilInterface`
+Doplň: `ReturnsNilPointer`, `IsNilInterface` (typed nil v interface)
 
 ```bash
 make lesson L=12 PART=3

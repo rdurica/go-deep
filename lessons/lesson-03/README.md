@@ -1,6 +1,6 @@
 # Lekce 03 — Typy, zero values a konstanty
 
-> **Čas:** ~90 min · **Fáze:** 1 — Jazyk a paměťový model · **AI režim:** `ZAKÁZÁNO`
+> **Čas:** ~70 min · **Fáze:** 1 — Jazyk a paměťový model · **AI režim:** `ZAKÁZÁNO`
 
 ## Co budeš umět
 
@@ -216,13 +216,12 @@ Po přečtení teorie spusť v Cursoru **`/go-deep-quiz 03`**. AI tě ~5 minut p
 
 ## Úkol
 
-Pracuj v `exercise/`. Po doplnění spouštěj testy:
-
-Stupně jdou od jednodušších ke složitějším — po každém stupni spusť review, než jdeš dál.
+Pracuj v `exercise/`. Kontrakt je v komentáři nad funkcí. Stupně jdou od jednodušších
+ke složitějším — po každém stupni spusť review, než jdeš dál.
 
 ### Jednoduchý
 
-Funkce: `Classify`, `ZeroValueOf`
+Oprav: `CentsToPrice` (kód je záměrně vadný — pořadí konverze a dělení)
 
 ```bash
 make lesson L=03 PART=1
@@ -232,7 +231,7 @@ Pak **`/go-deep-review 03 easy`**.
 
 ### Střední
 
-Funkce: `CentsToPrice`, `ToInt8`
+Implementuj: `Classify`, `ZeroValueOf`, `ToInt8`
 
 ```bash
 make lesson L=03 PART=2
@@ -242,7 +241,7 @@ Pak **`/go-deep-review 03 medium`**.
 
 ### Obtížný
 
-Funkce: `String`, `ParseLevel`, `Enabled`
+Doplň: `String`, `ParseLevel`, `Enabled` (`iota`, zero value jako „nenastaveno")
 
 ```bash
 make lesson L=03 PART=3

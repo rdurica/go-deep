@@ -2,6 +2,24 @@
 package exercise
 
 // --- Stupeň: jednoduchý ---
+
+// ForgetClose pošle všechna čísla do kanálu v goroutině, ale kanál nezavře.
+// Collect na výsledku by visel navždy.
+//
+// POZOR: kód níže je ZÁMĚRNĚ VADNÝ. Najdi chybu a oprav ji — testy před opravou padají.
+func ForgetClose(nums ...int) <-chan int {
+	out := make(chan int)
+	go func() {
+		for _, n := range nums {
+			out <- n
+		}
+		// Chybí close(out) — příjemce nikdy nedostane signál konce.
+	}()
+	return out
+}
+
+// --- Stupeň: střední ---
+
 // Generate pošle všechna čísla do kanálu v goroutině a kanál sám zavře.
 // Bez Collect nesmí blokovat volajícího.
 func Generate(nums ...int) <-chan int {
@@ -16,60 +34,13 @@ func Collect(ch <-chan int) []int {
 	return nil
 }
 
+// --- Stupeň: obtížný ---
+
 // Merge sloučí vstupní kanály (fan-in). Výstup zavře jednou po zavření všech vstupů.
 // Bez argumentů → rovnou zavřený kanál.
 func Merge(chs ...<-chan int) <-chan int {
 	// TODO
 	return closedInt()
-}
-
-// --- Stupeň: střední ---
-// Split rozdělí vstup mezi n kanálů; každá hodnota jen v jednom. Po vstupu
-// zavře všechny výstupy. n < 1 se chová jako 1.
-func Split(ch <-chan int, n int) []<-chan int {
-	// TODO
-	return nil
-}
-
-// Broker je publish/subscribe nad kanály s drop policy pro pomalé odběratele.
-type Broker struct {
-	// TODO
-}
-
-// NewBroker vytvoří brokera; buffer je velikost kanálu každého odběratele.
-// Záporný buffer se chová jako nula.
-func NewBroker(buffer int) *Broker {
-	// TODO
-	return nil
-}
-
-// Subscribe zaregistruje odběratele. Po Close vrací rovnou zavřený kanál.
-// Kanál odběratele má kapacitu buffer z NewBroker. Souběžně bezpečné s Publish/Close.
-func (b *Broker) Subscribe() <-chan string {
-	// TODO
-	ch := make(chan string)
-	close(ch)
-	return ch
-}
-
-// --- Stupeň: obtížný ---
-// Publish rozešle zprávu všem. Pomalý odběratel nesmí blokovat — zahoď a započítej Dropped.
-// Po Close nic nedělá.
-func (b *Broker) Publish(msg string) {
-	// TODO
-}
-
-// Dropped vrací počet zahozených zpráv.
-// Roste, když Publish najde plný buffer odběratele.
-func (b *Broker) Dropped() int {
-	// TODO
-	return 0
-}
-
-// Close zavře kanály všech odběratelů; opakované volání nepanikuje.
-// Další Subscribe → zavřený kanál; Publish po Close nic nedělá.
-func (b *Broker) Close() {
-	// TODO
 }
 
 // closedInt je fail-fast stub: nil kanál by v testech visel navždy.

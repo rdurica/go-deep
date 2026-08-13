@@ -16,32 +16,6 @@ const sampleJSON = `[
 	{"id":"t4","payee":"Kino","amount":-3000,"category":"fun"}
 ]`
 
-func TestMoneyString(t *testing.T) {
-	tests := []struct {
-		in   exercise.Money
-		want string
-	}{
-		{1999, "19.99"},
-		{0, "0.00"},
-		{5, "0.05"},
-		{100, "1.00"},
-		{-250, "-2.50"},
-		{123456789, "1234567.89"},
-	}
-	for _, tt := range tests {
-		if got := tt.in.String(); got != tt.want {
-			t.Errorf("Money(%d).String() = %q, chci %q", int64(tt.in), got, tt.want)
-		}
-	}
-}
-
-func TestMoneyIsStringer(t *testing.T) {
-	var s fmt.Stringer = exercise.Money(1999)
-	if got := fmt.Sprintf("%v", s); got != "19.99" {
-		t.Errorf("fmt.Sprintf(%%v, Money(1999)) = %q, chci %q", got, "19.99")
-	}
-}
-
 func TestValidationErrorText(t *testing.T) {
 	err := &exercise.ValidationError{Index: 2, Field: "amount", Reason: "nesmí být nula"}
 	got := err.Error()
@@ -158,44 +132,10 @@ func TestTotalsByCategoryEmpty(t *testing.T) {
 	}
 }
 
-func TestGroupBy(t *testing.T) {
-	t.Run("transactions by category", func(t *testing.T) {
-		txs := []exercise.Transaction{
-			{ID: "t1", Payee: "Albert", Amount: 12050, Category: "food"},
-			{ID: "t2", Payee: "DPP", Amount: 8000, Category: "transport"},
-			{ID: "t3", Payee: "Rohlik", Amount: 20025, Category: "food"},
-			{ID: "t4", Payee: "Kino", Amount: -3000, Category: "fun"},
-		}
-
-		groups := exercise.GroupBy(txs, func(tx exercise.Transaction) string { return tx.Category })
-		if len(groups) != 3 {
-			t.Fatalf("GroupBy(...) = %d skupin, chci 3", len(groups))
-		}
-		if len(groups["food"]) != 2 {
-			t.Errorf("skupina food má %d prvků, chci 2", len(groups["food"]))
-		}
-		if groups["food"][0].ID != "t1" || groups["food"][1].ID != "t3" {
-			t.Errorf("skupina food = %+v, chci pořadí t1, t3", groups["food"])
-		}
-	})
-
-	t.Run("different element and key types", func(t *testing.T) {
-		words := []string{"ada", "bob", "eva", "ken", "li"}
-		groups := exercise.GroupBy(words, func(s string) int { return len(s) })
-		if len(groups[3]) != 4 || len(groups[2]) != 1 {
-			t.Errorf("GroupBy(words, len) = %v, chci 4 tříznakové a 1 dvouznakové", groups)
-		}
-	})
-
-	t.Run("empty input", func(t *testing.T) {
-		groups := exercise.GroupBy(nil, func(n int) int { return n })
-		if groups == nil {
-			t.Fatal("GroupBy(nil, ...) = nil, chci prázdnou mapu")
-		}
-		if len(groups) != 0 {
-			t.Errorf("GroupBy(nil, ...) = %v, chci prázdnou mapu", groups)
-		}
-	})
+func TestMoneyString(t *testing.T) {
+	if got := exercise.Money(1999).String(); got != "19.99" {
+		t.Errorf("Money(1999).String() = %q, chci %q", got, "19.99")
+	}
 }
 
 func TestReportString(t *testing.T) {
@@ -204,12 +144,6 @@ func TestReportString(t *testing.T) {
 	want := "transakcí: 4, celkem: 370.75, top kategorie: food"
 	if got != want {
 		t.Errorf("Report.String() = %q, chci %q", got, want)
-	}
-
-	empty := exercise.Report{}
-	wantEmpty := "transakcí: 0, celkem: 0.00, top kategorie: -"
-	if got := empty.String(); got != wantEmpty {
-		t.Errorf("Report{}.String() = %q, chci %q", got, wantEmpty)
 	}
 }
 

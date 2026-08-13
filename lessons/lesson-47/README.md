@@ -1,6 +1,6 @@
 # Lekce 47 — errgroup a rušení přes context
 
-> **Čas:** ~90 min · **Fáze:** 5 — Concurrency do hloubky · **AI režim:** `JUNIOR POD REVIEW`
+> **Čas:** ~70 min · **Fáze:** 5 — Concurrency do hloubky · **AI režim:** `JUNIOR POD REVIEW`
 
 ## Co budeš umět
 
@@ -223,13 +223,12 @@ Po přečtení teorie spusť v Cursoru **`/go-deep-quiz 47`**. AI tě ~5 minut p
 
 ## Úkol
 
-Pracuj v `exercise/`. Po doplnění spouštěj testy:
-
-Stupně jdou od jednodušších ke složitějším — po každém stupni spusť review, než jdeš dál.
+Pracuj v `exercise/`. Kontrakt je v komentáři nad funkcí. Stupně jdou od jednodušších
+ke složitějším — po každém stupni spusť review, než jdeš dál.
 
 ### Jednoduchý
 
-Funkce: `WithContext`, `SetLimit`
+Oprav: `WithContext`
 
 ```bash
 make lesson L=47 PART=1
@@ -239,7 +238,7 @@ Pak **`/go-deep-review 47 easy`**.
 
 ### Střední
 
-Funkce: `Go`, `Wait`
+Implementuj: `Go`, `Wait`
 
 ```bash
 make lesson L=47 PART=2
@@ -249,7 +248,7 @@ Pak **`/go-deep-review 47 medium`**.
 
 ### Obtížný
 
-Funkce: `RunAll`, `Cause`
+Doplň: `RunAll`
 
 ```bash
 make lesson L=47 PART=3

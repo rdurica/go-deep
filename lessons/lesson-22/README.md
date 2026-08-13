@@ -1,6 +1,6 @@
 # Lekce 22 — Čtení stdlib a cizího kódu
 
-> **Čas:** ~85 min · **Fáze:** 2 — Idiomatický Go · **AI režim:** `JEN VYSVĚTLENÍ`
+> **Čas:** ~70 min · **Fáze:** 2 — Idiomatický Go · **AI režim:** `JEN VYSVĚTLENÍ`
 
 ## Co budeš umět
 
@@ -60,7 +60,7 @@ v `Handler` jednou konverzí — `http.HandlerFunc(myFunc)`. Žádná třída, �
 
 Tenhle vzor uvidíš v Go pořád: `sort.Reverse`, `http.HandlerFunc`, `context.CancelFunc`,
 `io/fs.WalkDirFunc`. Metoda na funkčním typu je nejlevnější adaptér, jaký jazyk nabízí,
-a v úkolu A si ho napíšeš sám.
+a v jednoduchém stupni ho doplníš u `HandlerFunc.Handle`.
 
 `ServeMux` je pak jen `Handler`, který drží mapu vzorů a deleguje. Pravidlo výběru
 (v klasické podobě, tedy bez metod a wildcardů z Go 1.22 — ty přijdou v lekci 25):
@@ -87,7 +87,7 @@ Z toho plyne všechno, co tě na `encoding/json` kdy zaskočí:
 - **tag je jediný způsob**, jak dekodéru sdělit jméno, protože jinak zná jen jméno pole.
 
 Naproti tomu **kódování** reflexi nutně nepotřebuje. Kdyby šlo o pár konkrétních typů,
-stačí `switch v := v.(type)` a rekurze — a přesně to si napíšeš v úkolu C. Až uvidíš,
+stačí `switch v := v.(type)` a rekurze — a přesně to je `Marshal` v obtížném stupni. Až uvidíš,
 kolik kódu je potřeba na čtyři typy, pochopíš, proč `encoding/json` sáhl po reflexi.
 
 ### Jak číst cizí repozitář
@@ -148,13 +148,12 @@ Po přečtení teorie spusť v Cursoru **`/go-deep-quiz 22`**. AI tě ~5 minut p
 
 ## Úkol
 
-Pracuj v `exercise/`. Po doplnění spouštěj testy:
-
-Stupně jdou od jednodušších ke složitějším — po každém stupni spusť review, než jdeš dál.
+Pracuj v `exercise/`. Kontrakt je v komentáři nad funkcí. Stupně jdou od jednodušších
+ke složitějším — po každém stupni spusť review, než jdeš dál.
 
 ### Jednoduchý
 
-Funkce: `Handle`
+Oprav: `HandlerFunc.Handle` (review-lab — chybějící adaptér ze stdlib)
 
 ```bash
 make lesson L=22 PART=1
@@ -164,7 +163,7 @@ Pak **`/go-deep-review 22 easy`**.
 
 ### Střední
 
-Funkce: `Register`, `SetNotFound`
+Implementuj: `Register`, `Handle` na `Mux`
 
 ```bash
 make lesson L=22 PART=2
@@ -174,7 +173,7 @@ Pak **`/go-deep-review 22 medium`**.
 
 ### Obtížný
 
-Funkce: `Handle`, `Marshal`
+Doplň: `Marshal` (mini-kodek bez reflexe)
 
 ```bash
 make lesson L=22 PART=3
@@ -200,8 +199,8 @@ Spusť **`/go-deep-review 22 final`**. AI projde body níže, doptá se a ověř
 `JEN VYSVĚTLENÍ` — viz [docs/ai-playbook.md](../../docs/ai-playbook.md).
 
 Zajímavý prompt pro tuhle lekci: *„Vysvětli, proč má `http.HandlerFunc` metodu se stejným
-jménem jako interface, který splňuje. Nenabízej kód."* Zákaz zní: nenech si vygenerovat
-`Mux` ani `Marshal` — obojí je krátké, a právě proto se to vyplatí napsat rukou.
+jménem jako interface, který splňuje. Nenabízej kód."* `Mux` a `Marshal` vlastníš ty —
+AI smí vysvětlit, nesmí je přepsat.
 
 ## Další čtení
 

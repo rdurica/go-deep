@@ -9,18 +9,14 @@ import (
 
 // Zátěž, kterou pouští StressTest.
 const (
-	// StressGoroutines je počet goroutin, ve kterých StressTest volá f.
 	StressGoroutines = 50
-	// StressIterations je počet volání f v každé goroutině.
 	StressIterations = 100
 )
 
 // --- Stupeň: jednoduchý ---
-// SafeIncrement spustí n goroutin, z nichž každá zvýší společný čítač o jedna,
-// a vrátí jeho výslednou hodnotu.
+
+// SafeIncrement spustí n goroutin, z nichž každá zvýší společný čítač o jedna.
 func SafeIncrement(n int) int {
-	// counter++ je čtení, přičtení a zápis. atomic.Int64 to udělá jako
-	// jednu nedělitelnou operaci.
 	var counter atomic.Int64
 	var wg sync.WaitGroup
 	wg.Add(n)
@@ -36,7 +32,7 @@ func SafeIncrement(n int) int {
 
 // Registry je registr hodnot bezpečný pro souběžné použití.
 type Registry struct {
-	once  sync.Once // líná inicializace právě jednou
+	once  sync.Once
 	mu    sync.RWMutex
 	items map[string]int
 }
@@ -64,7 +60,6 @@ func (r *Registry) Get(key string) (int, bool) {
 	return v, ok
 }
 
-// --- Stupeň: střední ---
 // Len vrací počet uložených klíčů.
 func (r *Registry) Len() int {
 	r.init()
@@ -73,33 +68,11 @@ func (r *Registry) Len() int {
 	return len(r.items)
 }
 
-// ParallelAppend vrátí druhé mocniny všech čísel (v libovolném pořadí),
-// spočítané souběžně.
-func ParallelAppend(nums []int) []int {
-	out := make([]int, 0, len(nums))
-	var mu sync.Mutex
-	var wg sync.WaitGroup
-	wg.Add(len(nums))
-	for _, n := range nums {
-		go func() {
-			defer wg.Done()
-			v := n * n // výpočet mimo zámek, pod zámkem jen append
-			mu.Lock()
-			out = append(out, v)
-			mu.Unlock()
-		}()
-	}
-	wg.Wait()
-	return out
-}
+// --- Stupeň: střední ---
 
-// StressTest zavolá f ve StressGoroutines goroutinách, každá StressIterations
-// krát, a počká na jejich dokončení.
+// StressTest zavolá f ve StressGoroutines goroutinách, každá StressIterations krát.
 func StressTest(t *testing.T, f func()) {
 	t.Helper()
-
-	// Startovní výstřel: goroutiny se rozeběhnou naráz, takže mají největší
-	// šanci se do sebe pustit.
 	start := make(chan struct{})
 	var wg sync.WaitGroup
 	wg.Add(StressGoroutines)
@@ -132,17 +105,15 @@ func NewSnapshot(endpoint string, timeout int) Snapshot {
 	}
 }
 
-// --- Stupeň: obtížný ---
 // Consistent hlásí, jestli snapshot dává smysl jako celek.
 func (s Snapshot) Consistent() bool {
 	return s.Checksum == len(s.Endpoint)+s.Timeout
 }
 
-// Config drží aktuální konfiguraci, kterou na pozadí přepisuje reloader,
-// zatímco ji ostatní goroutiny čtou.
+// --- Stupeň: obtížný ---
+
+// Config drží aktuální konfiguraci.
 type Config struct {
-	// Celá konfigurace se vyměňuje jako jedna hodnota, takže čtenář nikdy
-	// neuvidí půlku staré a půlku nové. Alternativa je RWMutex.
 	v atomic.Value
 }
 
@@ -153,12 +124,11 @@ func (c *Config) Store(s Snapshot) {
 
 // Load vrací aktuální konfiguraci.
 func (c *Config) Load() Snapshot {
-	s, _ := c.v.Load().(Snapshot) // nenaplněná Value vrací nil
+	s, _ := c.v.Load().(Snapshot)
 	return s
 }
 
-// StartReloader spustí goroutinu, která dokola ukládá snapshoty ze seznamu,
-// dokud volající nezavře stop.
+// StartReloader spustí goroutinu, která dokola ukládá snapshoty.
 func (c *Config) StartReloader(stop <-chan struct{}, snaps []Snapshot) <-chan struct{} {
 	done := make(chan struct{})
 	go func() {

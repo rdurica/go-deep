@@ -3,7 +3,6 @@ package solutions_test
 import (
 	"errors"
 	"fmt"
-	"slices"
 	"strings"
 	"testing"
 
@@ -46,7 +45,7 @@ func TestDivideByZero(t *testing.T) {
 	if !strings.Contains(err.Error(), "division by zero") {
 		t.Errorf("err.Error() = %q, chci text obsahující %q", err.Error(), "division by zero")
 	}
-	if err == exercise.ErrDivideByZero { // schválně porovnáváme identitu, ne errors.Is
+	if err == exercise.ErrDivideByZero {
 		t.Error("chyba se má obalit kontextem přes %w, ne vracet holý sentinel")
 	}
 }
@@ -58,15 +57,12 @@ func TestValidationErrorText(t *testing.T) {
 		t.Errorf("ValidationError.Error() = %q, chci %q", got, want)
 	}
 
-	// Musí splňovat error, a to s pointer receiverem.
 	var err error = ve
 	if err.Error() != want {
 		t.Errorf("přes interface error = %q, chci %q", err.Error(), want)
 	}
 }
 
-// validationFields vytáhne Field ze všech *ValidationError ve stromu přes errors.As —
-// bez volání studentského FieldsWithErrors / Error().
 func validationFields(err error) []string {
 	var fields []string
 	type multi interface{ Unwrap() []error }
@@ -116,8 +112,14 @@ func TestValidateUser(t *testing.T) {
 			}
 
 			got := validationFields(err)
-			if !slices.Equal(got, tt.wantFields) {
+			if len(got) != len(tt.wantFields) {
 				t.Errorf("pole z ValidateUser = %v, chci %v", got, tt.wantFields)
+				return
+			}
+			for i := range tt.wantFields {
+				if got[i] != tt.wantFields[i] {
+					t.Errorf("pole[%d] = %q, chci %q", i, got[i], tt.wantFields[i])
+				}
 			}
 		})
 	}
@@ -135,51 +137,6 @@ func TestValidateUserErrorsAs(t *testing.T) {
 	}
 }
 
-func TestFieldsWithErrors(t *testing.T) {
-	t.Run("nil error", func(t *testing.T) {
-		if got := exercise.FieldsWithErrors(nil); len(got) != 0 {
-			t.Errorf("FieldsWithErrors(nil) = %v, chci prázdné", got)
-		}
-	})
-
-	t.Run("foreign error", func(t *testing.T) {
-		if got := exercise.FieldsWithErrors(errors.New("něco jiného")); len(got) != 0 {
-			t.Errorf("FieldsWithErrors() = %v, chci prázdné", got)
-		}
-	})
-
-	t.Run("wrapped ValidationError", func(t *testing.T) {
-		inner := &exercise.ValidationError{Field: "age", Reason: "must be positive"}
-		wrapped := fmt.Errorf("ověření vstupu: %w", inner)
-
-		got := exercise.FieldsWithErrors(wrapped)
-		if !slices.Equal(got, []string{"age"}) {
-			t.Errorf("FieldsWithErrors() = %v, chci [age]", got)
-		}
-	})
-
-	t.Run("mixed join", func(t *testing.T) {
-		err := errors.Join(
-			errors.New("nesouvisející"),
-			&exercise.ValidationError{Field: "a", Reason: "r"},
-			fmt.Errorf("kontext: %w", &exercise.ValidationError{Field: "b", Reason: "r"}),
-		)
-
-		got := exercise.FieldsWithErrors(err)
-		if !slices.Equal(got, []string{"a", "b"}) {
-			t.Errorf("FieldsWithErrors() = %v, chci [a b]", got)
-		}
-	})
-}
-
-func TestNotFoundErrorText(t *testing.T) {
-	nf := &exercise.NotFoundError{ID: "u9"}
-	want := "id u9 not found"
-	if got := nf.Error(); got != want {
-		t.Errorf("NotFoundError.Error() = %q, chci %q", got, want)
-	}
-}
-
 func TestLoadUserExists(t *testing.T) {
 	for _, id := range []string{"u1", "u2"} {
 		if err := exercise.LoadUser(id); err != nil {
@@ -188,8 +145,6 @@ func TestLoadUserExists(t *testing.T) {
 	}
 }
 
-// TestLoadUserWrapping je jádro lekce: obalená chyba si musí zachovat
-// text obou vrstev A ZÁROVEŇ zůstat rozpoznatelná přes errors.As.
 func TestLoadUserWrapping(t *testing.T) {
 	err := exercise.LoadUser("u9")
 	if err == nil {
@@ -239,8 +194,6 @@ func TestIsNotFound(t *testing.T) {
 	}
 }
 
-// TestErrorTextConventions hlídá konvenci textů chyb: malé počáteční písmeno,
-// bez tečky na konci a bez prefixu "error:".
 func TestErrorTextConventions(t *testing.T) {
 	_, divErr := exercise.Divide(1, 0)
 	errs := []error{

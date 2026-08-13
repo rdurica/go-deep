@@ -1,6 +1,6 @@
 # Lekce 53 — pprof a profilování
 
-> **Čas:** ~90 min · **Fáze:** 6 — Production Go · **AI režim:** `JUNIOR POD REVIEW`
+> **Čas:** ~70 min · **Fáze:** 6 — Production Go · **AI režim:** `JUNIOR POD REVIEW`
 
 ## Co budeš umět
 
@@ -181,13 +181,12 @@ Po přečtení teorie spusť v Cursoru **`/go-deep-quiz 53`**. AI tě ~5 minut p
 
 ## Úkol
 
-Pracuj v `exercise/`. Po doplnění spouštěj testy:
-
-Stupně jdou od jednodušších ke složitějším — po každém stupni spusť review, než jdeš dál.
+Pracuj v `exercise/`. Kontrakt je v komentáři nad funkcí. Stupně jdou od jednodušších
+ke složitějším — po každém stupni spusť review, než jdeš dál.
 
 ### Jednoduchý
 
-Funkce: `SumDigitsSlow`, `CountWordsSlow`, `IsWordRune`
+Oprav: `JoinIDs` (kód je záměrně vadný — fmt.Sprintf v cyklu místo Builderu)
 
 ```bash
 make lesson L=53 PART=1
@@ -197,7 +196,7 @@ Pak **`/go-deep-review 53 easy`**.
 
 ### Střední
 
-Funkce: `SumDigits`, `CountWords`, `JoinIDs`
+Implementuj: `SumDigits`, `CountWords` (ověř proti referenčním Slow variantám)
 
 ```bash
 make lesson L=53 PART=2
@@ -207,7 +206,7 @@ Pak **`/go-deep-review 53 medium`**.
 
 ### Obtížný
 
-Funkce: `CaptureCPUProfile`, `CaptureHeapProfile`, `PprofHandler`
+Doplň: `CaptureCPUProfile`, `CaptureHeapProfile`, `PprofHandler`
 
 ```bash
 make lesson L=53 PART=3

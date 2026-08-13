@@ -3,8 +3,12 @@ package exercise
 
 import (
 	"errors"
+	"net/url"
+	"sort"
+	"strings"
 	"sync"
 	"time"
+	"unicode/utf8"
 )
 
 // Limity domény záložek.
@@ -44,16 +48,87 @@ type Bookmark struct {
 // malý host; pryč výchozí port; prázdný host je chyba; pryč fragment; pryč parametry utm_*
 // (case-insensitive); zbytek query seřazený podle klíče; useknuté koncové lomítko.
 // Musí být idempotentní: NormalizeURL(NormalizeURL(x)) == NormalizeURL(x).
+//
+// POZOR: kód níže je ZÁMĚRNĚ VADNÝ — chybí odstranění utm_* parametrů.
+// Najdi chybu a oprav — testy před opravou padají.
 func NormalizeURL(raw string) (string, error) {
-	// TODO
-	return "", nil
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return "", ErrInvalidURL
+	}
+
+	u, err := url.Parse(raw)
+	if err != nil {
+		return "", ErrInvalidURL
+	}
+
+	scheme := strings.ToLower(u.Scheme)
+	if scheme != "http" && scheme != "https" {
+		return "", ErrInvalidURL
+	}
+	u.Scheme = scheme
+
+	host := strings.ToLower(u.Hostname())
+	if host == "" {
+		return "", ErrInvalidURL
+	}
+	port := u.Port()
+	if (scheme == "http" && port == "80") || (scheme == "https" && port == "443") {
+		port = ""
+	}
+	u.Host = host
+	if port != "" {
+		u.Host = host + ":" + port
+	}
+
+	u.Fragment = ""
+	u.RawFragment = ""
+
+	if u.Path != "" {
+		u.Path = strings.TrimRight(u.Path, "/")
+		u.RawPath = ""
+	}
+	return u.String(), nil
 }
 
-// NormalizeTags: trim, malá písmena, zahození prázdných, deduplikace, abecední řazení.
-// Tag smí jen a–z, 0–9 a '-' (jinak ErrInvalidTag). Po deduplikaci víc než MaxTags → ErrTooManyTags.
+// validTag vrací true pro tag složený z malých písmen, číslic a pomlček.
+func validTag(tag string) bool {
+	if tag == "" {
+		return false
+	}
+	for _, r := range tag {
+		switch {
+		case r >= 'a' && r <= 'z', r >= '0' && r <= '9', r == '-':
+		default:
+			return false
+		}
+	}
+	return true
+}
+
+// NormalizeTags ořeže, převede na malá písmena, odstraní duplicity a seřadí tagy.
 func NormalizeTags(tags []string) ([]string, error) {
-	// TODO
-	return nil, nil
+	seen := make(map[string]struct{}, len(tags))
+	out := make([]string, 0, len(tags))
+	for _, tag := range tags {
+		tag = strings.ToLower(strings.TrimSpace(tag))
+		if tag == "" {
+			continue
+		}
+		if !validTag(tag) {
+			return nil, ErrInvalidTag
+		}
+		if _, dup := seen[tag]; dup {
+			continue
+		}
+		seen[tag] = struct{}{}
+		out = append(out, tag)
+	}
+	if len(out) > MaxTags {
+		return nil, ErrTooManyTags
+	}
+	sort.Strings(out)
+	return out, nil
 }
 
 // Validate je hodnotový receiver — nic nemění. Kontroluje: neprázdné ID (ErrEmptyID),
@@ -61,7 +136,35 @@ func NormalizeTags(tags []string) ([]string, error) {
 // do MaxTitleLen run (ErrTitleTooLong), tagy (ErrInvalidTag), bez duplicit (ErrDuplicateTag)
 // a nanejvýš MaxTags (ErrTooManyTags).
 func (b Bookmark) Validate() error {
-	// TODO
+	if strings.TrimSpace(b.ID) == "" {
+		return ErrEmptyID
+	}
+	norm, err := NormalizeURL(b.URL)
+	if err != nil {
+		return err
+	}
+	if norm != b.URL {
+		return ErrInvalidURL
+	}
+	if strings.TrimSpace(b.Title) == "" {
+		return ErrEmptyTitle
+	}
+	if utf8.RuneCountInString(b.Title) > MaxTitleLen {
+		return ErrTitleTooLong
+	}
+	if len(b.Tags) > MaxTags {
+		return ErrTooManyTags
+	}
+	seen := make(map[string]struct{}, len(b.Tags))
+	for _, tag := range b.Tags {
+		if !validTag(tag) {
+			return ErrInvalidTag
+		}
+		if _, dup := seen[tag]; dup {
+			return ErrDuplicateTag
+		}
+		seen[tag] = struct{}{}
+	}
 	return nil
 }
 
@@ -81,44 +184,112 @@ type Store struct {
 	byTag map[string]map[string]struct{}
 }
 
+// clone vrátí hlubokou kopii záložky.
+func clone(b Bookmark) Bookmark {
+	out := b
+	if b.Tags != nil {
+		out.Tags = make([]string, len(b.Tags))
+		copy(out.Tags, b.Tags)
+	}
+	return out
+}
+
 // NewStore vytvoří úložiště s připravenými (ne-nil) mapami.
 func NewStore() *Store {
-	// TODO
-	return nil
+	return &Store{
+		items: make(map[string]Bookmark),
+		byTag: make(map[string]map[string]struct{}),
+	}
 }
 
 // Add nejdřív Validate — neplatná záložka se neuloží. Při kolizi ID → ErrDuplicateID.
-// Jinak ulož a aktualizuj index tagů (vlastní kopie Tags).
 func (s *Store) Add(b Bookmark) error {
-	// TODO
+	if err := b.Validate(); err != nil {
+		return err
+	}
+	stored := clone(b)
+
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if _, exists := s.items[stored.ID]; exists {
+		return ErrDuplicateID
+	}
+	s.items[stored.ID] = stored
+	for _, tag := range stored.Tags {
+		ids, ok := s.byTag[tag]
+		if !ok {
+			ids = make(map[string]struct{})
+			s.byTag[tag] = ids
+		}
+		ids[stored.ID] = struct{}{}
+	}
 	return nil
 }
 
 // Get vrátí kopii záložky (včetně kopie Tags). Neznámé ID → ErrNotFound.
 func (s *Store) Get(id string) (Bookmark, error) {
-	// TODO
-	return Bookmark{}, nil
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	b, ok := s.items[id]
+	if !ok {
+		return Bookmark{}, ErrNotFound
+	}
+	return clone(b), nil
 }
 
-// --- Stupeň: obtížný ---
-// Delete smaže položku i všechny její záznamy v indexu (prázdný tag klíč z indexu zmizí).
-// Neznámé ID → ErrNotFound.
+// Delete smaže položku i všechny její záznamy v indexu.
 func (s *Store) Delete(id string) error {
-	// TODO
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	b, ok := s.items[id]
+	if !ok {
+		return ErrNotFound
+	}
+	delete(s.items, id)
+	for _, tag := range b.Tags {
+		ids := s.byTag[tag]
+		delete(ids, id)
+		if len(ids) == 0 {
+			delete(s.byTag, tag)
+		}
+	}
 	return nil
 }
 
-// Len vrací počet uložených záložek (položky v items).
+// Len vrací počet uložených záložek.
 func (s *Store) Len() int {
-	// TODO
-	return 0
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	return len(s.items)
+}
+
+// sortNewest seřadí záložky od nejnovější, při shodě podle ID.
+func sortNewest(items []Bookmark) {
+	sort.SliceStable(items, func(i, j int) bool {
+		if !items[i].CreatedAt.Equal(items[j].CreatedAt) {
+			return items[i].CreatedAt.After(items[j].CreatedAt)
+		}
+		return items[i].ID < items[j].ID
+	})
 }
 
 // ByTag normalizuje tag stejně jako při ukládání (trim, malá písmena).
-// Výsledek seřazený od nejnovější; při shodě času podle ID. Neznámý tag → prázdný (ne-nil) slice.
 func (s *Store) ByTag(tag string) []Bookmark {
-	// TODO
-	return nil
+	tag = strings.ToLower(strings.TrimSpace(tag))
+
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+
+	ids := s.byTag[tag]
+	out := make([]Bookmark, 0, len(ids))
+	for id := range ids {
+		out = append(out, clone(s.items[id]))
+	}
+	sortNewest(out)
+	return out
 }
 
 // SortOrder je řazení výsledků hledání.
@@ -147,6 +318,7 @@ type Page struct {
 	Total      int
 }
 
+// --- Stupeň: obtížný ---
 // Search filtruje, řadí a stránkuje.
 // Validace: Limit < 0 nebo > MaxLimit / neznámé Sort / neplatný tag → ErrInvalidQuery;
 // Limit == 0 znamená DefaultLimit.

@@ -15,8 +15,11 @@ zažité, a kde ho jeho reflexy zradí.
 |---|---|
 | Čas na lekci | 60–90 minut včetně cvičení |
 | Teorie | 1200–2000 slov |
-| Cvičení | stuby v `exercise/` od jednodušších ke složitějším, 3 stupně |
-| Funkcí k implementaci | typicky 5–9 |
+| Cvičení | 3 stupně; cílově ~45–60 min práce studenta |
+| Jednotek k úpravě | typicky **2–4** (funkce/metody, které student píše nebo opravuje) |
+
+Cvičení trénuje **úsudek**, ne katalog API. Když zadání vypadá jako mini-projekt
+(více balíčků, desítky TODO), patří do [`projects/`](../projects/), ne do lekce.
 
 ## Struktura souborů
 
@@ -75,9 +78,10 @@ Aspoň dvě z nich musí vycházet z PHP reflexů.
 **AI kvíz** — výzva spustit **`/go-deep-quiz NN`** (~5 min). Otázky generuje skill
 z Teorie; v README nehardcoduj sadu otázek. Odkaz na [`GAPS.md`](../GAPS.md).
 
-**Úkol** — tři podsekce **Jednoduchý / Střední / Obtížný**. U každé: seznam identifikátorů
-(jen jména funkcí/metod pro navigaci), `make lesson L=NN PART=1|2|3`, výzva
-`/go-deep-review NN easy|medium|hard`. Kontrakt zůstává v komentáři nad metodou ve stubu.
+**Úkol** — tři podsekce **Jednoduchý / Střední / Obtížný**. U každé: krátká akce
+(`Oprav …` / `Implementuj …` / `Doplň …`) + identifikátory pro navigaci,
+`make lesson L=NN PART=1|2|3`, výzva `/go-deep-review NN easy|medium|hard`.
+Kontrakt zůstává v komentáři nad metodou ve stubu.
 Žádné labely A/B/C, žádné `např.` / `Příklady:`.
 
 **Závěrečné otázky** — koncepční checklist (bez „make … prochází“ — to řeší final review
@@ -93,12 +97,12 @@ příkazem). Výzva **`/go-deep-review NN final`**.
 Tři řádky, regex pro `go test -run` (jména `Test…` funkcí, oddělená `|`):
 
 ```
-1:TestWordCount|TestNewSet|TestSetAdd
-2:TestSetRemove|TestSetSorted|TestSetUnion|TestSetIntersect
-3:TestAddStock|TestGroupBy
+1:TestCloneMap|TestCloneMapIndependent
+2:TestWordCount|TestNewSet|TestSetAdd|TestSetHas
+3:TestAddStock
 ```
 
-`make lesson L=NN PART=1` spustí jen odpovídající testy.
+`make lesson L=NN PART=1` spustí jen odpovídající testy. Etalon: lekce 08.
 
 ## AI režimy podle lekcí
 
@@ -114,6 +118,25 @@ Tři řádky, regex pro `go test -run` (jména `Test…` funkcí, oddělená `|`
 
 Cvičení musí **skutečně učit téma lekce**. Tohle je nejdůležitější pravidlo v celém
 dokumentu, protože předchozí verze kurzu na něm ztroskotala.
+
+### Typy podle stupně (pevný default)
+
+| Stupeň | Default | Kdy jinak |
+|--------|---------|-----------|
+| 1 | Find-the-bug nebo complete-the-gap | L21/22/23/56/57 → review lab |
+| 2 | Short greenfield 1–2 funkce | — |
+| 3 | Jedna věc úsudku (edge / `map[K]*V` / race / leak) | — |
+
+Žádný volný mix. Soft limit: studentská práce ve stubu typicky **< ~80 LOC** (ne 200+ TODO).
+
+### Katalog typů úkolů
+
+Slovník pojmů — typ patří na stupeň podle tabulky výše, ne libovolně.
+
+1. **Find-the-bug** — záměrně vadný kód; testy před opravou padají (vzor L08 `CloneMap`, L44)
+2. **Complete-the-gap** — většina kódu hotová, chybí kritický kus
+3. **Short greenfield** — max 1–2 funkce, ne katalog CRUD
+4. **Review lab** — hotový „PR“ / diff; student opraví nebo napíše failing test. Jen L21/22/23/56/57, stupeň 1.
 
 Zakázané vzory:
 
@@ -154,12 +177,15 @@ Správně vypadá cvičení tak, že student musí použít přesně tu konstruk
   Ve stubách je komentář nad metodou **zdroj pravdy** pro zadání: 2–5 řádků česky
   (chování + hraniční případy), bez hotového řešení. Pořadí funkcí od jednodušších
   ke složitějším; skupiny odděl komentáři `// --- Stupeň: jednoduchý|střední|obtížný ---`.
-- Stuby v `exercise/` nepanikují — mají `// TODO` a vrací zero value
+- Stuby v `exercise/` nepanikují — greenfield mají `// TODO` a vrací zero value
   (`""`, `0`, `nil`, `*new(T)` u pojmenovaných typů). Void funkce mají jen komentář;
   funkce s `t *testing.T` volají `t.Fatal("TODO")`. Typy, konstanty a signatury
   jsou předvyplněné, aby se balíček zkompiloval a `go test` padal přes `t.Error`/`t.Fatal`.
   Stuby vracející `<-chan` mají vracet zavřený prázdný kanál, ne `nil` — jinak testy
   visí na čtení z nil kanálu.
+- **Find-the-bug** je výjimka: tělo je záměrně vadná (ale kompilující) implementace,
+  ne `// TODO`. Nad funkcí uveď `// POZOR: kód níže je ZÁMĚRNĚ VADNÝ.` Testy musí
+  před opravou padat a po opravě procházet. V `solutions/` je správná verze.
 - Řešení v `solutions/` musí být idiomatické — je to zároveň ukázka stylu.
   V `solutions/` nepoužívej `// TODO`. Stejné `// --- Stupeň: … ---` komentáře jako ve stubu.
 

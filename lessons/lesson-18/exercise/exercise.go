@@ -2,8 +2,11 @@
 package exercise
 
 import (
+	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
+	"strings"
 )
 
 // Money je částka v celých centech.
@@ -34,24 +37,42 @@ type Report struct {
 	Top   string
 }
 
-// --- Stupeň: obtížný ---
 // String formátuje částku jako desetinné číslo se dvěma místy.
-// 1999 → "19.99", 5 → "0.05", 0 → "0.00", -250 → "-2.50". Hodnotový receiver pro fmt.Stringer.
+// 1999 → "19.99", 5 → "0.05", 0 → "0.00", -250 → "-2.50".
 func (m Money) String() string {
-	// TODO
-	return ""
+	v := int64(m)
+	sign := ""
+	if v < 0 {
+		sign = "-"
+		v = -v
+	}
+	return fmt.Sprintf("%s%d.%02d", sign, v/100, v%100)
+}
+
+// String implementuje fmt.Stringer.
+// Výstup: transakcí: N, celkem: X.XX, top kategorie: cat. Prázdná Top → "-".
+func (r Report) String() string {
+	top := r.Top
+	if top == "" {
+		top = "-"
+	}
+	return fmt.Sprintf("transakcí: %d, celkem: %s, top kategorie: %s", r.Count, r.Total, top)
 }
 
 // --- Stupeň: jednoduchý ---
+
 // Error implementuje rozhraní error.
 // Text musí obsahovat index transakce, jméno pole a důvod, např.
 // transakce 2: pole "amount": nesmí být nula.
+//
+// POZOR: kód níže je ZÁMĚRNĚ VADNÝ. Vrací jen důvod, bez indexu a pole.
+// Najdi chybu a oprav — testy před opravou padají.
 func (e *ValidationError) Error() string {
-	// TODO
-	return ""
+	return e.Reason
 }
 
 // --- Stupeň: střední ---
+
 // ParseTransactions načte pole transakcí z JSON přes json.Decoder (ne Unmarshal nad řetězcem).
 // Ověř id, payee, category (neprázdné po oříznutí) a amount (nesmí být nula; záporné OK).
 // První neplatná transakce skončí chybou obalující *ValidationError (errors.As).
@@ -68,19 +89,7 @@ func TotalsByCategory(txs []Transaction) map[string]Money {
 	return nil
 }
 
-// GroupBy seskupí prvky podle klíče spočítaného funkcí key.
-// Pořadí prvků uvnitř skupiny odpovídá vstupu; prázdný vstup → prázdná mapa.
-func GroupBy[T any, K comparable](items []T, key func(T) K) map[K][]T {
-	// TODO
-	return nil
-}
-
-// String implementuje fmt.Stringer.
-// Výstup: transakcí: N, celkem: X.XX, top kategorie: cat. Prázdná Top → "-".
-func (r Report) String() string {
-	// TODO
-	return ""
-}
+// --- Stupeň: obtížný ---
 
 // BuildReport načte transakce ze vstupu a sestaví z nich souhrn.
 // Kniha bez transakcí → ErrEmptyLedger (errors.Is); chyba validace se propíše beze změny.
@@ -88,4 +97,28 @@ func (r Report) String() string {
 func BuildReport(r io.Reader) (Report, error) {
 	// TODO
 	return *new(Report), nil
+}
+
+func validate(i int, tx Transaction) error {
+	switch {
+	case strings.TrimSpace(tx.ID) == "":
+		return &ValidationError{Index: i, Field: "id", Reason: "nesmí být prázdné"}
+	case strings.TrimSpace(tx.Payee) == "":
+		return &ValidationError{Index: i, Field: "payee", Reason: "nesmí být prázdné"}
+	case strings.TrimSpace(tx.Category) == "":
+		return &ValidationError{Index: i, Field: "category", Reason: "nesmí být prázdné"}
+	case tx.Amount == 0:
+		return &ValidationError{Index: i, Field: "amount", Reason: "nesmí být nula"}
+	default:
+		return nil
+	}
+}
+
+// decodeTransactions je interní helper — student ho nemění.
+func decodeTransactions(r io.Reader) ([]Transaction, error) {
+	var txs []Transaction
+	if err := json.NewDecoder(r).Decode(&txs); err != nil {
+		return nil, fmt.Errorf("ledger: dekódování: %w", err)
+	}
+	return txs, nil
 }

@@ -1,6 +1,6 @@
 # Lekce 04 — Funkce, multiple returns, closures
 
-> **Čas:** ~90 min · **Fáze:** 1 — Jazyk a paměťový model · **AI režim:** `ZAKÁZÁNO`
+> **Čas:** ~70 min · **Fáze:** 1 — Jazyk a paměťový model · **AI režim:** `ZAKÁZÁNO`
 
 ## Co budeš umět
 
@@ -155,8 +155,9 @@ func Pair() (func(), func() int) {
 }
 ```
 
-Přesně o tohle se opírá úkol C. A pozor — sdílený stav mezi closures není chráněný proti
-souběhu. Jakmile budeš closure volat z víc goroutin, potřebuješ mutex (fáze 5).
+Přesně o tohle se opírá obtížný stupeň (`Compose`, `Memoize`). A pozor — sdílený stav
+mezi closures není chráněný proti souběhu. Jakmile budeš closure volat z víc goroutin,
+potřebuješ mutex (fáze 5).
 
 ### Proměnná cyklu: past, která od Go 1.22 zmizela
 
@@ -260,13 +261,12 @@ Po přečtení teorie spusť v Cursoru **`/go-deep-quiz 04`**. AI tě ~5 minut p
 
 ## Úkol
 
-Pracuj v `exercise/`. Po doplnění spouštěj testy:
-
-Stupně jdou od jednodušších ke složitějším — po každém stupni spusť review, než jdeš dál.
+Pracuj v `exercise/`. Kontrakt je v komentáři nad funkcí. Stupně jdou od jednodušších
+ke složitějším — po každém stupni spusť review, než jdeš dál.
 
 ### Jednoduchý
 
-Funkce: `Sum`, `MinMax`
+Oprav: `MinMax` (kód je záměrně vadný — inicializace min/max)
 
 ```bash
 make lesson L=04 PART=1
@@ -276,7 +276,7 @@ Pak **`/go-deep-review 04 easy`**.
 
 ### Střední
 
-Funkce: `Counter`, `Apply`
+Implementuj: `Sum`, `Counter`, `Apply`
 
 ```bash
 make lesson L=04 PART=2
@@ -286,7 +286,7 @@ Pak **`/go-deep-review 04 medium`**.
 
 ### Obtížný
 
-Funkce: `Compose`, `Memoize`
+Doplň: `Compose`, `Memoize` (closure, sdílený stav)
 
 ```bash
 make lesson L=04 PART=3

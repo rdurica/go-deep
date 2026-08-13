@@ -3,6 +3,8 @@ package exercise
 
 import (
 	"encoding/json"
+	"errors"
+	"fmt"
 	"time"
 )
 
@@ -35,29 +37,30 @@ type UserDeleted struct {
 	Reason string `json:"reason,omitempty"`
 }
 
-// Cents je peněžní částka v celých centech.
-// V JSON se objevuje jako desetinné číslo (1999 -> 19.99).
-type Cents int64
-
 // --- Stupeň: jednoduchý ---
-// ToJSON serializuje uživatele do JSON.
-// Password v JSON nikdy není; prázdný email a nil tags zmizí (omitempty).
-// Active zůstane i při false; created_at je RFC 3339.
-// Chybu z json.Marshal obal přes %w.
-func ToJSON(u User) ([]byte, error) {
-	// TODO
-	return nil, nil
-}
 
 // FromJSON deserializuje uživatele z JSON a ověří povinná pole.
 // ID musí být kladné, Name neprázdné i po oříznutí bílých znaků.
 // Při chybě vrať nulový User a chybu; rozbitý JSON je taky chyba.
+//
+// POZOR: kód níže je ZÁMĚRNĚ VADNÝ. Jméno nekontroluje po oříznutí bílých znaků.
+// Najdi chybu a oprav — testy před opravou padají.
 func FromJSON(data []byte) (User, error) {
-	// TODO
-	return *new(User), nil
+	var u User
+	if err := json.Unmarshal(data, &u); err != nil {
+		return User{}, fmt.Errorf("unmarshal user: %w", err)
+	}
+	if u.ID <= 0 {
+		return User{}, fmt.Errorf("user: id musí být kladné, je %d", u.ID)
+	}
+	if u.Name == "" {
+		return User{}, errors.New("user: name nesmí být prázdné")
+	}
+	return u, nil
 }
 
 // --- Stupeň: střední ---
+
 // DecodeEvent podle pole Kind dekóduje payload do odpovídajícího typu.
 // user.created → UserCreated, user.deleted → UserDeleted; vracej hodnotu, ne pointer.
 // Neznámý kind, chybějící nebo nevalidní payload jsou chyby s názvem kindu v hlášce.
@@ -66,20 +69,7 @@ func DecodeEvent(data []byte) (any, error) {
 	return nil, nil
 }
 
-// MarshalJSON zapíše částku jako desetinné číslo vždy se dvěma místy.
-// 1999 → 19.99, 5 → 0.05, 0 → 0.00, -250 → -2.50.
-func (c Cents) MarshalJSON() ([]byte, error) {
-	// TODO
-	return nil, nil
-}
-
 // --- Stupeň: obtížný ---
-// UnmarshalJSON načte částku z desetinného čísla, řetězce nebo celého čísla (1 → 100 centů).
-// null nechá hodnotu beze změny; round-trip musí být přesný (pozor na float).
-func (c *Cents) UnmarshalJSON(data []byte) error {
-	// TODO
-	return nil
-}
 
 // StrictDecode dekóduje data do v přes json.Decoder s DisallowUnknownFields.
 // Data za první JSON hodnotou jsou chyba.

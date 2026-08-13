@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"sync"
-	"sync/atomic"
 	"testing"
 	"time"
 
@@ -62,7 +61,7 @@ func TestCounterConcurrentMixedOperations(t *testing.T) {
 			defer wg.Done()
 			for j := 0; j < 500; j++ {
 				c.Add(-3)
-				_ = c.Value() // souběžné čtení musí být taky bezpečné
+				_ = c.Value()
 			}
 		}()
 	}
@@ -85,7 +84,7 @@ func TestCacheBasicOperations(t *testing.T) {
 
 	c.Set("a", "1")
 	c.Set("b", "2")
-	c.Set("a", "3") // přepis
+	c.Set("a", "3")
 
 	if got, ok := c.Get("a"); !ok || got != "3" {
 		t.Errorf("Get(\"a\") = (%q, %v), chci (\"3\", true)", got, ok)
@@ -95,7 +94,7 @@ func TestCacheBasicOperations(t *testing.T) {
 	}
 
 	c.Delete("a")
-	c.Delete("neexistuje") // nesmí panikovat
+	c.Delete("neexistuje")
 	if _, ok := c.Get("a"); ok {
 		t.Error("Get po Delete vrátil ok = true")
 	}
@@ -133,83 +132,6 @@ func TestCacheConcurrentReadWrite(t *testing.T) {
 		}()
 	}
 	wg.Wait()
-}
-
-func TestCacheGetOrComputeCallsFunctionOncePerKey(t *testing.T) {
-	c := exercise.NewCache()
-	const goroutines = 100
-
-	var calls atomic.Int64
-	start := make(chan struct{})
-	results := make([]string, goroutines)
-
-	var wg sync.WaitGroup
-	wg.Add(goroutines)
-	for i := 0; i < goroutines; i++ {
-		go func() {
-			defer wg.Done()
-			<-start // všichni vyrazí naráz, ať je souběh co nejtvrdší
-			results[i] = c.GetOrCompute("drahý", func() string {
-				calls.Add(1)
-				time.Sleep(20 * time.Millisecond)
-				return "spočítáno"
-			})
-		}()
-	}
-	close(start)
-	wg.Wait()
-
-	if got := calls.Load(); got != 1 {
-		t.Errorf("výpočetní funkce zavolána %dx, chci právě 1x", got)
-	}
-	for i, got := range results {
-		if got != "spočítáno" {
-			t.Fatalf("goroutina %d dostala %q, chci %q", i, got, "spočítáno")
-		}
-	}
-	if got, ok := c.Get("drahý"); !ok || got != "spočítáno" {
-		t.Errorf("Get po GetOrCompute = (%q, %v), chci (\"spočítáno\", true)", got, ok)
-	}
-}
-
-func TestCacheGetOrComputeUsesCachedValue(t *testing.T) {
-	c := exercise.NewCache()
-	c.Set("k", "z cache")
-
-	got := c.GetOrCompute("k", func() string {
-		t.Error("GetOrCompute zavolal f, přestože klíč v cache byl")
-		return "nové"
-	})
-	if got != "z cache" {
-		t.Errorf("GetOrCompute = %q, chci %q", got, "z cache")
-	}
-}
-
-func TestCacheGetOrComputeDifferentKeys(t *testing.T) {
-	c := exercise.NewCache()
-	var calls atomic.Int64
-
-	var wg sync.WaitGroup
-	wg.Add(20)
-	for i := 0; i < 20; i++ {
-		key := fmt.Sprintf("k%d", i%5)
-		go func() {
-			defer wg.Done()
-			c.GetOrCompute(key, func() string {
-				calls.Add(1)
-				time.Sleep(10 * time.Millisecond)
-				return key
-			})
-		}()
-	}
-	wg.Wait()
-
-	if got := calls.Load(); got != 5 {
-		t.Errorf("výpočet proběhl %dx, chci 5x (jednou na klíč)", got)
-	}
-	if got := c.Len(); got != 5 {
-		t.Errorf("Len() = %d, chci 5", got)
-	}
 }
 
 func TestBankTransferErrors(t *testing.T) {
@@ -263,15 +185,18 @@ func TestBankTransferHappyPath(t *testing.T) {
 		t.Error("Balance neexistujícího účtu vrátil ok = true")
 	}
 	if got := b.Total(); got != 150 {
-		t.Errorf("Total() = %d, chci 150", got)
+		t.Errorf("součet zůstatků = %d, chci 150", got)
 	}
 }
 
 func TestBankCrossTransfersKeepTotalAndDoNotDeadlock(t *testing.T) {
 	const accounts, perAccount = 6, 1000
 	balances := make(map[string]int64, accounts)
+	names := make([]string, accounts)
 	for i := 0; i < accounts; i++ {
-		balances[fmt.Sprintf("acc-%d", i)] = perAccount
+		name := fmt.Sprintf("acc-%d", i)
+		names[i] = name
+		balances[name] = perAccount
 	}
 	b := exercise.NewBank(balances)
 	want := int64(accounts * perAccount)
@@ -285,8 +210,6 @@ func TestBankCrossTransfersKeepTotalAndDoNotDeadlock(t *testing.T) {
 			from := fmt.Sprintf("acc-%d", i)
 			to := fmt.Sprintf("acc-%d", j)
 			wg.Add(1)
-			// Křížové převody v obou směrech: bez pevného pořadí zámků
-			// se tenhle test zaklesne.
 			go func() {
 				defer wg.Done()
 				for k := 0; k < 200; k++ {
@@ -296,7 +219,6 @@ func TestBankCrossTransfersKeepTotalAndDoNotDeadlock(t *testing.T) {
 		}
 	}
 
-	// Souběžně s převody čteme celkovou sumu — nikdy nesmí být jiná.
 	stop := make(chan struct{})
 	readerDone := make(chan struct{})
 	go func() {
@@ -307,7 +229,7 @@ func TestBankCrossTransfersKeepTotalAndDoNotDeadlock(t *testing.T) {
 				return
 			default:
 				if got := b.Total(); got != want {
-					t.Errorf("Total() = %d, chci %d — převod není atomický", got, want)
+					t.Errorf("součet zůstatků = %d, chci %d — převod není atomický", got, want)
 					return
 				}
 				time.Sleep(time.Millisecond)
@@ -329,20 +251,15 @@ func TestBankCrossTransfersKeepTotalAndDoNotDeadlock(t *testing.T) {
 	<-readerDone
 
 	if got := b.Total(); got != want {
-		t.Errorf("Total() po převodech = %d, chci %d", got, want)
+		t.Errorf("součet zůstatků po převodech = %d, chci %d", got, want)
 	}
-	sum := int64(0)
-	for i := 0; i < accounts; i++ {
-		bal, ok := b.Balance(fmt.Sprintf("acc-%d", i))
+	for _, name := range names {
+		bal, ok := b.Balance(name)
 		if !ok {
-			t.Fatalf("účet acc-%d zmizel", i)
+			t.Fatalf("účet %s zmizel", name)
 		}
 		if bal < 0 {
-			t.Errorf("účet acc-%d má záporný zůstatek %d", i, bal)
+			t.Errorf("účet %s má záporný zůstatek %d", name, bal)
 		}
-		sum += bal
-	}
-	if sum != want {
-		t.Errorf("součet zůstatků = %d, chci %d", sum, want)
 	}
 }

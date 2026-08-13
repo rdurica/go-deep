@@ -6,6 +6,8 @@ import (
 	"errors"
 	"net/http"
 	"net/url"
+	"os"
+	"path/filepath"
 	"strconv"
 	"sync"
 )
@@ -46,7 +48,6 @@ type Store struct {
 	items map[string]Item
 }
 
-// --- Stupeň: jednoduchý ---
 // NewStore vytvoří prázdné úložiště.
 func NewStore() *Store {
 	return &Store{items: make(map[string]Item)}
@@ -73,7 +74,6 @@ func (s *Store) Get(id string) (Item, bool) {
 	return item, ok
 }
 
-// --- Stupeň: střední ---
 // Delete smaže položku podle ID a vrátí true, pokud existovala.
 func (s *Store) Delete(id string) bool {
 	s.mu.Lock()
@@ -105,12 +105,26 @@ func (s *Store) List() []Item {
 }
 
 // WriteJSON zapíše v jako JSON odpověď se status kódem status.
-// Hotové z lekce 24, tady se soustřeď na routing.
 func WriteJSON(w http.ResponseWriter, status int, v any) error {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(status)
 	return json.NewEncoder(w).Encode(v)
 }
+
+func writeError(w http.ResponseWriter, status int, msg string) {
+	_ = WriteJSON(w, status, ErrorResponse{Error: msg})
+}
+
+// --- Stupeň: jednoduchý ---
+
+// ParseListQuery přečte a zvaliduje query parametry limit a q.
+// Chybějící limit → 0; jinak celé číslo ≥ 1, jinak ErrInvalidQuery. q ořízni od bílých znaků.
+func ParseListQuery(values url.Values) (limit int, q string, err error) {
+	// TODO
+	return
+}
+
+// --- Stupeň: střední ---
 
 // ItemsRouter vrací ServeMux nad úložištěm. Chybové odpovědi jako ErrorResponse JSON.
 // GET /{$} → 200 ServiceInfo{Service:"items"} (přesný kořen).
@@ -125,29 +139,39 @@ func ItemsRouter(store *Store) http.Handler {
 }
 
 // --- Stupeň: obtížný ---
-// ParseListQuery přečte a zvaliduje query parametry limit a q.
-// Chybějící limit → 0; jinak celé číslo ≥ 1, jinak ErrInvalidQuery. q ořízni od bílých znaků.
-func ParseListQuery(values url.Values) (limit int, q string, err error) {
-	// TODO
-	return
-}
 
 // SafeJoin složí cestu k souboru pod kořenem root a odmítne pokus o únik z něj.
 // Odmítni prázdný rel, absolutní cestu a segmenty "", ".", ".."; ověř prefix pod root.
+//
+// POZOR: kód níže je ZÁMĚRNĚ VADNÝ. filepath.Join cestu „uklidí" a umožní únik.
+// Najdi chybu a oprav — testy před opravou padají.
 func SafeJoin(root, rel string) (string, error) {
-	// TODO
-	return "", nil
+	return filepath.Join(root, rel), nil
 }
 
 // FilesHandler servíruje soubory pod adresářem root podle wildcardu {path...}.
-// SafeJoin chyba → 400; neexistující nebo adresář → 404; jinak http.ServeFile.
+// Hotové — soustřeď se na SafeJoin. SafeJoin chyba → 400; neexistující nebo adresář → 404.
 func FilesHandler(root string) http.Handler {
-	// TODO
-	return *new(http.Handler)
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		full, err := SafeJoin(root, r.PathValue("path"))
+		if err != nil {
+			writeError(w, http.StatusBadRequest, "invalid path")
+			return
+		}
+
+		info, err := os.Stat(full)
+		if err != nil || info.IsDir() {
+			writeError(w, http.StatusNotFound, "file not found")
+			return
+		}
+
+		http.ServeFile(w, r, full)
+	})
 }
 
 // FilesRouter registruje FilesHandler na vzor "GET /files/{path...}".
 func FilesRouter(root string) http.Handler {
-	// TODO
-	return *new(http.Handler)
+	mux := http.NewServeMux()
+	mux.Handle("GET /files/{path...}", FilesHandler(root))
+	return mux
 }

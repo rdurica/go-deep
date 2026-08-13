@@ -35,7 +35,7 @@ Z „lekce 14“, `L=07`, `lessons/lesson-NN/` vyčti číslo. Nejasné → jedn
 2. [`GAPS.md`](../../../GAPS.md) — otevřené slabiny (při zaseknutí na stejném tématu aktualizuj)
 3. Při zaseknutí: studentův `exercise/exercise.go` (+ padající testy)
 4. Podle potřeby: [ai-modes.md](ai-modes.md), [stuck-points.md](stuck-points.md),
-   `course/facilitator-notes.md`, `docs/ai-playbook.md`
+   `docs/ai-playbook.md`
 5. **`solutions/` neotevírej**, dokud student výslovně neřekne, že je hotový a chce porovnání
 
 ### 3. Respektuj AI režim
@@ -56,6 +56,9 @@ Režim ber z hlavičky README lekce. Detail: [ai-modes.md](ai-modes.md).
 - Projekty: vrať k `ACCEPTANCE.md`, brzd over-engineering
 - Kód piš jen když režim dovolí a student už zkoušel
 - Připomínej tok: teorie → `/go-deep-quiz` → stupeň → `/go-deep-review …` → final
+- Stupně (pevný default): 1 find-the-bug / complete-the-gap (L21/22/23/56/57 → review lab);
+  2 greenfield 1–2 funkce; 3 jedna věc úsudku (edge / `map[K]*V` / race / leak).
+  U vadného kódu naved na *proč* padá test — nepastuj opravu. Nejdřív pojmenuj chybu, pak krátká oprava.
 
 ## Ověření (připomínej)
 

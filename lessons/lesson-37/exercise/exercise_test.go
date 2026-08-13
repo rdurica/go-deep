@@ -152,7 +152,7 @@ func TestAuthenticateRejects(t *testing.T) {
 	tests := map[string]string{
 		"bez hlavičky":     "",
 		"prázdná hlavička": "   ",
-		"other scheme":      "Basic dG9rLWFsaWNl",
+		"other scheme":     "Basic dG9rLWFsaWNl",
 		"unknown token":    "Bearer tok-mallory",
 		"prefix tokenu":    "Bearer tok-alic",
 		"token s příponou": "Bearer tok-alice2",

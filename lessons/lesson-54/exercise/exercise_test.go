@@ -2,15 +2,11 @@ package exercise_test
 
 import (
 	"errors"
-	"fmt"
 	"strconv"
 	"testing"
 
 	exercise "github.com/rdurica/go-deep/lessons/lesson-54/exercise"
 )
-
-// Sinky pro benchmarky.
-var sinkMap map[string]any
 
 var errTest = errors.New("testovací chyba")
 
@@ -75,7 +71,6 @@ func TestMap(t *testing.T) {
 }
 
 func TestMapTypeChange(t *testing.T) {
-	// Řetěz Map přes tři různé typy ověří, že typový parametr U opravdu funguje.
 	step1 := exercise.Map(exercise.Ok("7"), func(s string) int {
 		n, _ := strconv.Atoi(s)
 		return n
@@ -88,23 +83,6 @@ func TestMapTypeChange(t *testing.T) {
 	if len(v) != 2 || v[0] != 7 || v[1] != 7 {
 		t.Errorf("řetěz Map = %v, chci [7 7]", v)
 	}
-}
-
-func TestMust(t *testing.T) {
-	if got := exercise.Must(strconv.Atoi("123")); got != 123 {
-		t.Errorf("Must(Atoi(\"123\")) = %d, chci 123", got)
-	}
-
-	defer func() {
-		r := recover()
-		if r == nil {
-			t.Fatal("Must nad chybou nepanikoval")
-		}
-		if err, ok := r.(error); !ok || !errors.Is(err, errTest) {
-			t.Errorf("Must panikoval s %v, chci errTest", r)
-		}
-	}()
-	exercise.Must("x", errTest)
 }
 
 func TestStructToMap(t *testing.T) {
@@ -148,82 +126,10 @@ func TestStructToMapErrors(t *testing.T) {
 	}
 }
 
-func TestUserToMapMatchesReflection(t *testing.T) {
-	for i := 0; i < 5; i++ {
-		u := exercise.NewUser(i, fmt.Sprintf("user-%d", i), "x@example.com", i%2 == 0, "p")
-		want, err := exercise.StructToMap(u)
-		if err != nil {
-			t.Fatalf("StructToMap = chyba %v", err)
-		}
-		overMapy(t, "UserToMap", exercise.UserToMap(u), want)
+func TestFeatureName(t *testing.T) {
+	if got := exercise.FeatureName(); got != "basic" {
+		t.Errorf("FeatureName() = %q, chci %q ve výchozím buildu", got, "basic")
 	}
-}
-
-func TestSetDefaults(t *testing.T) {
-	var c exercise.Config
-	if err := exercise.SetDefaults(&c); err != nil {
-		t.Fatalf("SetDefaults = chyba %v", err)
-	}
-	if c.Host != "localhost" {
-		t.Errorf("Host = %q, chci %q", c.Host, "localhost")
-	}
-	if c.Port != 8080 {
-		t.Errorf("Port = %d, chci 8080", c.Port)
-	}
-	if !c.Debug {
-		t.Error("Debug = false, chci true")
-	}
-	if c.Retries != 3 {
-		t.Errorf("Retries = %d, chci 3", c.Retries)
-	}
-	if c.Timeout != 0 {
-		t.Errorf("Timeout = %d, chci 0 (pole bez tagu)", c.Timeout)
-	}
-	if c.Secret() != "" {
-		t.Errorf("secret = %q, neexportované pole se nemá nastavovat", c.Secret())
-	}
-}
-
-func TestSetDefaultsDoesNotOverwrite(t *testing.T) {
-	c := exercise.Config{Host: "db.internal", Port: 5432}
-	if err := exercise.SetDefaults(&c); err != nil {
-		t.Fatalf("SetDefaults = chyba %v", err)
-	}
-	if c.Host != "db.internal" {
-		t.Errorf("Host = %q, vyplněné pole se nemá přepsat", c.Host)
-	}
-	if c.Port != 5432 {
-		t.Errorf("Port = %d, vyplněné pole se nemá přepsat", c.Port)
-	}
-	if !c.Debug {
-		t.Error("Debug = false, nulové pole se doplnit má")
-	}
-}
-
-func TestSetDefaultsErrors(t *testing.T) {
-	t.Run("not a pointer", func(t *testing.T) {
-		if err := exercise.SetDefaults(exercise.Config{}); !errors.Is(err, exercise.ErrNotPointer) {
-			t.Errorf("chci ErrNotPointer, dostal jsem %v", err)
-		}
-	})
-	t.Run("nil pointer", func(t *testing.T) {
-		var c *exercise.Config
-		if err := exercise.SetDefaults(c); !errors.Is(err, exercise.ErrNotPointer) {
-			t.Errorf("chci ErrNotPointer, dostal jsem %v", err)
-		}
-	})
-	t.Run("pointer to other type", func(t *testing.T) {
-		n := 0
-		if err := exercise.SetDefaults(&n); !errors.Is(err, exercise.ErrNotPointer) {
-			t.Errorf("chci ErrNotPointer, dostal jsem %v", err)
-		}
-	})
-	t.Run("unsupported type", func(t *testing.T) {
-		var bc exercise.BadConfig
-		if err := exercise.SetDefaults(&bc); !errors.Is(err, exercise.ErrUnsupportedKind) {
-			t.Errorf("chci ErrUnsupportedKind, dostal jsem %v", err)
-		}
-	})
 }
 
 func TestDiscount(t *testing.T) {
@@ -232,6 +138,9 @@ func TestDiscount(t *testing.T) {
 	}
 	if got := exercise.Discount(-100); got != 0 {
 		t.Errorf("Discount(-100) = %d, chci 0", got)
+	}
+	if got := exercise.Discount(100); got != 0 {
+		t.Errorf("Discount(100) = %d, chci 0 ve výchozím buildu (!fancy)", got)
 	}
 }
 
@@ -250,23 +159,5 @@ func overMapy(t *testing.T, jmeno string, got, want map[string]any) {
 		if g != w {
 			t.Errorf("%s[%q] = %v (%T), chci %v (%T)", jmeno, k, g, g, w, w)
 		}
-	}
-}
-
-func BenchmarkStructToMapReflexe(b *testing.B) {
-	u := exercise.NewUser(7, "Alice", "alice@example.com", true, "tajne")
-	b.ReportAllocs()
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		sinkMap, _ = exercise.StructToMap(u)
-	}
-}
-
-func BenchmarkUserToMapRucne(b *testing.B) {
-	u := exercise.NewUser(7, "Alice", "alice@example.com", true, "tajne")
-	b.ReportAllocs()
-	b.ResetTimer()
-	for i := 0; i < b.N; i++ {
-		sinkMap = exercise.UserToMap(u)
 	}
 }

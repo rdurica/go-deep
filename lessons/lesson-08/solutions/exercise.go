@@ -1,8 +1,6 @@
 // Package solutions obsahuje referenční řešení lekce 08.
 package solutions
 
-import "sort"
-
 // Set je množina řetězců postavená na mapě s nulovou hodnotou struct{}.
 type Set map[string]struct{}
 
@@ -17,6 +15,22 @@ type Item struct {
 type Inventory map[string]*Item
 
 // --- Stupeň: jednoduchý ---
+
+// CloneMap vrátí nezávislou kopii mapy. Zápis do výsledku nesmí měnit originál.
+// Pro nil vstup vrať nil. Pro prázdnou ne-nil mapu vrať prázdnou ne-nil mapu.
+func CloneMap(in map[string]int) map[string]int {
+	if in == nil {
+		return nil
+	}
+	out := make(map[string]int, len(in))
+	for k, v := range in {
+		out[k] = v
+	}
+	return out
+}
+
+// --- Stupeň: střední ---
+
 // WordCount spočítá výskyty každého slova. Vždy vrací ne-nil mapu.
 func WordCount(words []string) map[string]int {
 	counts := make(map[string]int, len(words))
@@ -41,62 +55,13 @@ func (s Set) Add(item string) {
 	s[item] = struct{}{}
 }
 
-// --- Stupeň: střední ---
 // Has vrací true, pokud je prvek v množině. Funguje i na nil množině.
 func (s Set) Has(item string) bool {
 	_, ok := s[item]
 	return ok
 }
 
-// Remove odebere prvek z množiny. Neexistující prvek i nil množina jsou no-op.
-func (s Set) Remove(item string) {
-	delete(s, item)
-}
-
-// Len vrací počet prvků množiny.
-// Nil množina vrací 0 bez paniky.
-func (s Set) Len() int {
-	return len(s)
-}
-
-// Sorted vrací prvky množiny vzestupně seřazené.
-func (s Set) Sorted() []string {
-	items := make([]string, 0, len(s))
-	for item := range s {
-		items = append(items, item)
-	}
-	sort.Strings(items)
-	return items
-}
-
 // --- Stupeň: obtížný ---
-// Union vrací novou množinu se všemi prvky s i other.
-func (s Set) Union(other Set) Set {
-	out := make(Set, len(s)+len(other))
-	for item := range s {
-		out.Add(item)
-	}
-	for item := range other {
-		out.Add(item)
-	}
-	return out
-}
-
-// Intersect vrací novou množinu s prvky, které jsou v s i v other.
-func (s Set) Intersect(other Set) Set {
-	// Iterujeme přes menší množinu, práce je pak úměrná té menší.
-	smaller, larger := s, other
-	if len(larger) < len(smaller) {
-		smaller, larger = larger, smaller
-	}
-	out := make(Set, len(smaller))
-	for item := range smaller {
-		if larger.Has(item) {
-			out.Add(item)
-		}
-	}
-	return out
-}
 
 // AddStock přičte n kusů k položce sku. Chybějící položku založí.
 // Nil inventář a n <= 0 jsou no-op.
@@ -110,15 +75,4 @@ func AddStock(inv Inventory, sku string, n int) {
 		return
 	}
 	inv[sku] = &Item{SKU: sku, Qty: n}
-}
-
-// GroupBy seskupí slova podle klíče vráceného funkcí key.
-// Uvnitř skupiny zachovává pořadí vstupu. Vždy vrací ne-nil mapu.
-func GroupBy(words []string, key func(string) string) map[string][]string {
-	groups := make(map[string][]string)
-	for _, w := range words {
-		k := key(w)
-		groups[k] = append(groups[k], w)
-	}
-	return groups
 }

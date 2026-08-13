@@ -1,6 +1,6 @@
 # Lekce 24 — net/http od nuly: handler, ServeMux, httptest
 
-> **Čas:** ~90 min · **Fáze:** 3 — net/http a tooling · **AI režim:** `BOILERPLATE OK`
+> **Čas:** ~70 min · **Fáze:** 3 — net/http a tooling · **AI režim:** `BOILERPLATE OK`
 
 ## Co budeš umět
 
@@ -263,13 +263,12 @@ Po přečtení teorie spusť v Cursoru **`/go-deep-quiz 24`**. AI tě ~5 minut p
 
 ## Úkol
 
-Pracuj v `exercise/`. Po doplnění spouštěj testy:
-
-Stupně jdou od jednodušších ke složitějším — po každém stupni spusť review, než jdeš dál.
+Pracuj v `exercise/`. Kontrakt je v komentáři nad funkcí. Stupně jdou od jednodušších
+ke složitějším — po každém stupni spusť review, než jdeš dál.
 
 ### Jednoduchý
 
-Funkce: `WriteJSON`, `HealthHandler`
+Oprav: `WriteJSON` (kód je záměrně vadný — pořadí hlavičky a statusu)
 
 ```bash
 make lesson L=24 PART=1
@@ -279,7 +278,7 @@ Pak **`/go-deep-review 24 easy`**.
 
 ### Střední
 
-Funkce: `EchoHandler`, `NotFoundHandler`
+Implementuj: `HealthHandler`, `NotFoundHandler`
 
 ```bash
 make lesson L=24 PART=2
@@ -289,7 +288,7 @@ Pak **`/go-deep-review 24 medium`**.
 
 ### Obtížný
 
-Funkce: `NewRouter`, `NewServer`
+Doplň: `NewServer` (čtyři timeouty a vztah ReadHeaderTimeout ≤ ReadTimeout)
 
 ```bash
 make lesson L=24 PART=3

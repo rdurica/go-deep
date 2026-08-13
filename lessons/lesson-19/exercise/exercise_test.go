@@ -2,6 +2,7 @@ package exercise_test
 
 import (
 	"errors"
+	"os"
 	"strings"
 	"testing"
 
@@ -36,6 +37,18 @@ func TestParseUserID(t *testing.T) {
 				t.Errorf("ParseUserID(%q) = %d, chci %d", tt.in, got, tt.want)
 			}
 		})
+	}
+}
+
+func TestParseUserIDStyle(t *testing.T) {
+	// Kontrakt stylu: žádné else, maximální hloubka zanoření 1.
+	src := readExerciseSource(t)
+	body := functionBody(src, "ParseUserID")
+	if strings.Contains(body, "else") {
+		t.Error("ParseUserID obsahuje else — přepiš na early return")
+	}
+	if maxNestingDepth(body) > 1 {
+		t.Errorf("ParseUserID má hloubku zanoření %d, chci max 1", maxNestingDepth(body))
 	}
 }
 
@@ -147,7 +160,7 @@ func TestProcessOrders(t *testing.T) {
 
 func TestProcessOrdersEmpty(t *testing.T) {
 	for name, in := range map[string][]exercise.Order{
-		"nil":     nil,
+		"nil":   nil,
 		"empty": {},
 	} {
 		t.Run(name, func(t *testing.T) {
@@ -220,71 +233,54 @@ func TestProcessOrdersErrors(t *testing.T) {
 	}
 }
 
-func TestRenderInvoice(t *testing.T) {
-	inv := exercise.Invoice{
-		Number:   "2024-001",
-		Customer: "Acme s.r.o.",
-		Lines: []exercise.InvoiceLine{
-			{Description: "Widget", Quantity: 2, UnitCents: 1999},
-			{Description: "Gadget", Quantity: 1, UnitCents: 500},
-		},
+func readExerciseSource(t *testing.T) string {
+	t.Helper()
+	data, err := os.ReadFile("exercise.go")
+	if err != nil {
+		t.Fatalf("nelze načíst exercise.go: %v", err)
 	}
-
-	want := strings.Join([]string{
-		"INVOICE 2024-001",
-		"CUSTOMER: Acme s.r.o.",
-		"--------------------------------",
-		"Widget | 2 x 19.99 = 39.98",
-		"Gadget | 1 x 5.00 = 5.00",
-		"--------------------------------",
-		"TOTAL: 44.98",
-		"",
-	}, "\n")
-
-	if got := exercise.RenderInvoice(inv); got != want {
-		t.Errorf("RenderInvoice() =\n%q\nchci\n%q", got, want)
-	}
+	return string(data)
 }
 
-func TestRenderInvoiceEmpty(t *testing.T) {
-	inv := exercise.Invoice{Number: "2024-002", Customer: "Nikdo"}
-
-	want := strings.Join([]string{
-		"INVOICE 2024-002",
-		"CUSTOMER: Nikdo",
-		"--------------------------------",
-		"--------------------------------",
-		"TOTAL: 0.00",
-		"",
-	}, "\n")
-
-	if got := exercise.RenderInvoice(inv); got != want {
-		t.Errorf("RenderInvoice() =\n%q\nchci\n%q", got, want)
+func functionBody(src, name string) string {
+	marker := "func " + name
+	start := strings.Index(src, marker)
+	if start < 0 {
+		return ""
 	}
+	brace := strings.Index(src[start:], "{")
+	if brace < 0 {
+		return ""
+	}
+	bodyStart := start + brace + 1
+	depth := 1
+	for i := bodyStart; i < len(src); i++ {
+		switch src[i] {
+		case '{':
+			depth++
+		case '}':
+			depth--
+			if depth == 0 {
+				return src[bodyStart:i]
+			}
+		}
+	}
+	return ""
 }
 
-func TestRenderInvoiceRounding(t *testing.T) {
-	inv := exercise.Invoice{
-		Number:   "2024-003",
-		Customer: "Bit s.r.o.",
-		Lines: []exercise.InvoiceLine{
-			{Description: "Bit", Quantity: 3, UnitCents: 1},
-			{Description: "Byte", Quantity: 1, UnitCents: 100000},
-		},
+func maxNestingDepth(body string) int {
+	maxDepth := 0
+	depth := 0
+	for _, r := range body {
+		switch r {
+		case '{':
+			depth++
+			if depth > maxDepth {
+				maxDepth = depth
+			}
+		case '}':
+			depth--
+		}
 	}
-
-	want := strings.Join([]string{
-		"INVOICE 2024-003",
-		"CUSTOMER: Bit s.r.o.",
-		"--------------------------------",
-		"Bit | 3 x 0.01 = 0.03",
-		"Byte | 1 x 1000.00 = 1000.00",
-		"--------------------------------",
-		"TOTAL: 1000.03",
-		"",
-	}, "\n")
-
-	if got := exercise.RenderInvoice(inv); got != want {
-		t.Errorf("RenderInvoice() =\n%q\nchci\n%q", got, want)
-	}
+	return maxDepth
 }

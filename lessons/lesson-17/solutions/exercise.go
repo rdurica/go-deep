@@ -2,7 +2,6 @@
 package solutions
 
 import (
-	"cmp"
 	"encoding/csv"
 	"errors"
 	"fmt"
@@ -23,8 +22,8 @@ type Record struct {
 var wantHeader = []string{"name", "amount", "category"}
 
 // --- Stupeň: jednoduchý ---
+
 // Median vrací medián hodnot a false pro prázdný vstup.
-// Vstupní slice nemění.
 func Median(nums []float64) (float64, bool) {
 	if len(nums) == 0 {
 		return 0, false
@@ -40,7 +39,8 @@ func Median(nums []float64) (float64, bool) {
 }
 
 // --- Stupeň: střední ---
-// ParseRecords načte CSV s hlavičkou "name,amount,category" a vrátí datové řádky.
+
+// ParseRecords načte CSV s hlavičkou "name,amount,category".
 func ParseRecords(r io.Reader) ([]Record, error) {
 	cr := csv.NewReader(r)
 	cr.FieldsPerRecord = len(wantHeader)
@@ -102,20 +102,6 @@ func SumByCategory(recs []Record) map[string]float64 {
 }
 
 // --- Stupeň: obtížný ---
-// TopN vrací n záznamů s nejvyšší částkou, při shodě v původním pořadí.
-func TopN(recs []Record, n int) []Record {
-	if n <= 0 || len(recs) == 0 {
-		return []Record{}
-	}
-	sorted := slices.Clone(recs)
-	slices.SortStableFunc(sorted, func(a, b Record) int {
-		return cmp.Compare(b.Amount, a.Amount)
-	})
-	if n > len(sorted) {
-		n = len(sorted)
-	}
-	return sorted[:n]
-}
 
 // LoadFile načte záznamy ze souboru na dané cestě.
 func LoadFile(path string) ([]Record, error) {

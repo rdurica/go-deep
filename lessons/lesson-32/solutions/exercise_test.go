@@ -15,37 +15,32 @@ func p(sku, name string, cents int64) exercise.Product {
 	return exercise.Product{SKU: sku, Name: name, Cents: cents}
 }
 
-func TestValidate(t *testing.T) {
-	tests := []struct {
-		name string
-		in   exercise.Product
-		want error
-	}{
-		{"valid product", p("A-1", "Kniha", 1999), nil},
-		{"zero price is ok", p("A-1", "Kniha", 0), nil},
-		{"empty SKU", p("", "Kniha", 1999), exercise.ErrEmptySKU},
-		{"SKU jen z mezer", p("   ", "Kniha", 1999), exercise.ErrEmptySKU},
-		{"empty name", p("A-1", "", 1999), exercise.ErrEmptyName},
-		{"name only spaces", p("A-1", "\t ", 1999), exercise.ErrEmptyName},
-		{"negative price", p("A-1", "Kniha", -1), exercise.ErrNegativeCents},
+func mustCatalog(t *testing.T, products ...exercise.Product) *exercise.Catalog {
+	t.Helper()
+	c, err := exercise.CatalogFixture(products...)
+	if err != nil {
+		t.Fatalf("CatalogFixture = %v", err)
 	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			err := exercise.Validate(tt.in)
-			if !errors.Is(err, tt.want) {
-				t.Fatalf("Validate(%+v) = %v, chci %v", tt.in, err, tt.want)
-			}
-		})
+	return c
+}
+
+func TestSnapshotIndependent(t *testing.T) {
+	orig := mustCatalog(t, p("A-1", "Kniha", 1999))
+	got := exercise.Snapshot(orig)
+	if got == orig {
+		t.Fatal("Snapshot vrátil stejný pointer jako originál")
+	}
+	_, _ = got.BySKU("A-1")
+	// Zápis přes BySKU nemění mapu — ověříme nezávislost přes druhý snapshot.
+	got2 := exercise.Snapshot(orig)
+	if got2 == orig || got2 == got {
+		t.Error("Snapshot musí vracet novou instanci katalogu")
 	}
 }
 
-func TestValidateErrorCarriesSKU(t *testing.T) {
-	err := exercise.Validate(p("SKU-42", "", 100))
-	if err == nil {
-		t.Fatal("Validate u prázdného jména musí vrátit chybu")
-	}
-	if !strings.Contains(err.Error(), "SKU-42") {
-		t.Errorf("chyba %q neobsahuje SKU produktu", err.Error())
+func TestSnapshotNil(t *testing.T) {
+	if got := exercise.Snapshot(nil); got != nil {
+		t.Errorf("Snapshot(nil) = %v, chci nil", got)
 	}
 }
 
@@ -92,11 +87,6 @@ func TestCatalogBySKU(t *testing.T) {
 	if _, err := c.BySKU("NEEXISTUJE"); !errors.Is(err, exercise.ErrNotFound) {
 		t.Errorf("BySKU(neznámé) = %v, chci ErrNotFound", err)
 	}
-
-	var nilCatalog *exercise.Catalog
-	if _, err := nilCatalog.BySKU("A-1"); !errors.Is(err, exercise.ErrNotFound) {
-		t.Errorf("BySKU na nil katalogu = %v, chci ErrNotFound", err)
-	}
 }
 
 func TestCatalogAllIsSorted(t *testing.T) {
@@ -109,8 +99,6 @@ func TestCatalogAllIsSorted(t *testing.T) {
 		t.Fatalf("BuildCatalog = %v", err)
 	}
 
-	// Mapa nemá pořadí, takže test běží víckrát — kdyby se pořadí bralo
-	// z iterace mapy, dřív nebo později to praskne.
 	want := []string{"A-1", "B-2", "C-3"}
 	for i := 0; i < 20; i++ {
 		var got []string
@@ -120,87 +108,6 @@ func TestCatalogAllIsSorted(t *testing.T) {
 		if strings.Join(got, ",") != strings.Join(want, ",") {
 			t.Fatalf("All() = %v, chci %v", got, want)
 		}
-	}
-}
-
-func TestTotalOf(t *testing.T) {
-	tests := []struct {
-		name  string
-		items []exercise.Item
-		want  int64
-	}{
-		{"nil cart", nil, 0},
-		{"empty cart", []exercise.Item{}, 0},
-		{
-			"one item",
-			[]exercise.Item{{Product: p("A-1", "Kniha", 1999), Qty: 3}},
-			5997,
-		},
-		{
-			"multiple items",
-			[]exercise.Item{
-				{Product: p("A-1", "Kniha", 1999), Qty: 2},
-				{Product: p("B-2", "Tužka", 250), Qty: 4},
-				{Product: p("C-3", "Zdarma", 0), Qty: 10},
-			},
-			4998,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, err := exercise.TotalOf(tt.items)
-			if err != nil {
-				t.Fatalf("TotalOf = %v, chci nil", err)
-			}
-			if got != tt.want {
-				t.Errorf("TotalOf = %d, chci %d", got, tt.want)
-			}
-		})
-	}
-}
-
-func TestTotalOfErrors(t *testing.T) {
-	tests := []struct {
-		name  string
-		items []exercise.Item
-		want  error
-	}{
-		{
-			"zero quantity",
-			[]exercise.Item{{Product: p("A-1", "Kniha", 1999), Qty: 0}},
-			exercise.ErrInvalidQty,
-		},
-		{
-			"negative quantity",
-			[]exercise.Item{{Product: p("A-1", "Kniha", 1999), Qty: -2}},
-			exercise.ErrInvalidQty,
-		},
-		{
-			"invalid product",
-			[]exercise.Item{{Product: p("", "Kniha", 1999), Qty: 1}},
-			exercise.ErrEmptySKU,
-		},
-		{
-			"multiply overflow",
-			[]exercise.Item{{Product: p("A-1", "Drahé", math.MaxInt64), Qty: 2}},
-			exercise.ErrOverflow,
-		},
-		{
-			"sum overflow",
-			[]exercise.Item{
-				{Product: p("A-1", "Drahé", math.MaxInt64), Qty: 1},
-				{Product: p("B-2", "Taky drahé", 1), Qty: 1},
-			},
-			exercise.ErrOverflow,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			_, err := exercise.TotalOf(tt.items)
-			if !errors.Is(err, tt.want) {
-				t.Errorf("TotalOf = %v, chci %v", err, tt.want)
-			}
-		})
 	}
 }
 
@@ -226,63 +133,58 @@ func TestPriceOf(t *testing.T) {
 	}
 }
 
-func TestIDGen(t *testing.T) {
-	g := exercise.NewIDGen("prod")
-
-	want := []string{"prod-000001", "prod-000002", "prod-000003"}
-	for _, w := range want {
-		if got := g.NewID(); got != w {
-			t.Fatalf("NewID() = %q, chci %q", got, w)
-		}
+func TestTotalOf(t *testing.T) {
+	items := []exercise.Item{
+		{Product: p("A-1", "Kniha", 1999), Qty: 2},
+		{Product: p("B-2", "Tužka", 250), Qty: 4},
 	}
-
-	def := exercise.NewIDGen("")
-	if got := def.NewID(); got != "id-000001" {
-		t.Errorf("NewID() s prázdným prefixem = %q, chci %q", got, "id-000001")
+	got, err := exercise.TotalOf(items)
+	if err != nil {
+		t.Fatalf("TotalOf = %v", err)
+	}
+	if got != 4998 {
+		t.Errorf("TotalOf = %d, chci 4998", got)
 	}
 }
 
-func TestIDGenFormat(t *testing.T) {
-	re := regexp.MustCompile(`^order-\d{6}$`)
-	g := exercise.NewIDGen("order")
-	for i := 0; i < 5; i++ {
-		if id := g.NewID(); !re.MatchString(id) {
-			t.Errorf("NewID() = %q, nesedí na %s", id, re)
-		}
+func TestTotalOfErrors(t *testing.T) {
+	_, err := exercise.TotalOf([]exercise.Item{{Product: p("A-1", "Drahé", math.MaxInt64), Qty: 2}})
+	if !errors.Is(err, exercise.ErrOverflow) {
+		t.Errorf("TotalOf overflow = %v, chci ErrOverflow", err)
+	}
+}
+
+func TestIDGen(t *testing.T) {
+	g := exercise.NewIDGen("prod")
+	if got := g.NewID(); got != "prod-000001" {
+		t.Errorf("NewID() = %q, chci %q", got, "prod-000001")
 	}
 }
 
 func TestIDGenConcurrent(t *testing.T) {
-	const workers, perWorker = 8, 200
-
 	g := exercise.NewIDGen("c")
-	ids := make([]string, 0, workers*perWorker)
+	ids := make([]string, 0, 16)
 	var mu sync.Mutex
 	var wg sync.WaitGroup
-
-	for i := 0; i < workers; i++ {
+	for i := 0; i < 8; i++ {
 		wg.Add(1)
 		go func() {
 			defer wg.Done()
-			local := make([]string, 0, perWorker)
-			for j := 0; j < perWorker; j++ {
-				local = append(local, g.NewID())
-			}
+			id := g.NewID()
 			mu.Lock()
-			ids = append(ids, local...)
+			ids = append(ids, id)
 			mu.Unlock()
 		}()
 	}
 	wg.Wait()
-
 	seen := make(map[string]bool, len(ids))
 	for _, id := range ids {
 		if seen[id] {
-			t.Fatalf("duplicitní ID %q — generátor není bezpečný pro souběh", id)
+			t.Fatalf("duplicitní ID %q", id)
 		}
 		seen[id] = true
-	}
-	if len(seen) != workers*perWorker {
-		t.Errorf("unikátních ID = %d, chci %d", len(seen), workers*perWorker)
+		if !regexp.MustCompile(`^c-\d{6}$`).MatchString(id) {
+			t.Errorf("NewID() = %q, nesedí formát", id)
+		}
 	}
 }

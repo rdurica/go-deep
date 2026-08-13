@@ -17,22 +17,34 @@ type NotFoundError struct {
 	ID string
 }
 
-// --- Stupeň: jednoduchý ---
-// Divide dělí a/b celočíselně. Při b == 0 vrací 0 a chybu obalující ErrDivideByZero
-// s kontextem o dělenci. Vrácená chyba nesmí být holý sentinel.
-func Divide(a, b int) (int, error) {
-	// TODO
-	return 0, nil
+// knownUsers je in-memory náhrada databáze.
+var knownUsers = map[string]struct{}{
+	"u1": {},
+	"u2": {},
 }
 
-// --- Stupeň: obtížný ---
+// --- Stupeň: jednoduchý ---
+
+// Divide dělí a/b celočíselně. Při b == 0 vrací 0 a chybu obalující ErrDivideByZero
+// s kontextem o dělenci. Vrácená chyba nesmí být holý sentinel.
+//
+// POZOR: kód níže je ZÁMĚRNĚ VADNÝ — vrací sentinel bez obalení přes %w.
+// Najdi chybu a oprav.
+func Divide(a, b int) (int, error) {
+	if b == 0 {
+		return 0, ErrDivideByZero
+	}
+	return a / b, nil
+}
+
+// --- Stupeň: střední ---
+
 // Error implementuje error ve tvaru "invalid <Field>: <Reason>".
 func (e *ValidationError) Error() string {
 	// TODO
 	return ""
 }
 
-// --- Stupeň: střední ---
 // ValidateUser posbírá všechny problémy a vrátí je přes errors.Join.
 // Prázdné name → ValidationError{name, must not be empty}; prázdný email → totéž;
 // email bez @ → ValidationError{email, must contain @}. Pořadí: name, email.
@@ -42,23 +54,18 @@ func ValidateUser(name, email string) error {
 	return nil
 }
 
-// FieldsWithErrors projde strom chyb (včetně errors.Join) a vrátí jména polí
-// všech *ValidationError v pořadí. Použij errors.As / Unwrap — nesmí duplikovat
-// stejnou chybu. Nil a chyba bez ValidationError → prázdný výsledek.
-func FieldsWithErrors(err error) []string {
-	// TODO
-	return nil
-}
+// --- Stupeň: obtížný ---
 
-// Error implementuje error ve tvaru "id <ID> not found".
+// Error implementuje error ve tvaru "id <ID> not found". Hotová — neimplementuj.
 func (e *NotFoundError) Error() string {
-	// TODO
-	return ""
+	return "id " + e.ID + " not found"
 }
 
-// fetchFromStore simuluje úložiště. Zná "u1" a "u2" (nil), jinak &NotFoundError{ID: id}.
+// fetchFromStore simuluje úložiště. Hotová — neimplementuj.
 func fetchFromStore(id string) error {
-	// TODO
+	if _, ok := knownUsers[id]; !ok {
+		return &NotFoundError{ID: id}
+	}
 	return nil
 }
 

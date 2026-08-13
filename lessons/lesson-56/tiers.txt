@@ -1,3 +1,3 @@
-1:TestParseStatus|TestSlug|TestFold
-2:TestFilename|TestRender|TestParseADRRoundTrip|TestParseADRErrors|TestIndexSorted|TestIndexDuplicates|TestIndexEmpty
-3:TestStatusString|TestCheckSpecComplete|TestCheckSpecHoley|TestCheckSpecPartial|TestCheckSpecCustomRules|TestSeverityString
+1:TestCheckSpecCustomRules
+2:TestFold|TestSlug
+3:TestCheckSpecComplete|TestCheckSpecHoley|TestCheckSpecPartial|TestDefaultSpecCheck|TestSeverityString

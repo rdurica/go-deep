@@ -1,6 +1,6 @@
 # Lekce 08 — Mapy
 
-> **Čas:** ~85 min · **Fáze:** 1 — Jazyk a paměťový model · **AI režim:** `ZAKÁZÁNO`
+> **Čas:** ~70 min · **Fáze:** 1 — Jazyk a paměťový model · **AI režim:** `ZAKÁZÁNO`
 
 ## Co budeš umět
 
@@ -292,13 +292,12 @@ Po přečtení teorie spusť v Cursoru **`/go-deep-quiz 08`**. AI tě ~5 minut p
 
 ## Úkol
 
-Pracuj v `exercise/`. Po doplnění spouštěj testy:
-
-Stupně jdou od jednodušších ke složitějším — po každém stupni spusť review, než jdeš dál.
+Pracuj v `exercise/`. Kontrakt je v komentáři nad funkcí. Stupně jdou od jednodušších
+ke složitějším — po každém stupni spusť review, než jdeš dál.
 
 ### Jednoduchý
 
-Funkce: `WordCount`, `NewSet`, `Add`
+Oprav: `CloneMap` (kód je záměrně vadný — sdílení mapy)
 
 ```bash
 make lesson L=08 PART=1
@@ -308,7 +307,7 @@ Pak **`/go-deep-review 08 easy`**.
 
 ### Střední
 
-Funkce: `Has`, `Remove`, `Len`, `Sorted`
+Implementuj: `WordCount`, `NewSet`, `Add`, `Has`
 
 ```bash
 make lesson L=08 PART=2
@@ -318,7 +317,7 @@ Pak **`/go-deep-review 08 medium`**.
 
 ### Obtížný
 
-Funkce: `Union`, `Intersect`, `AddStock`, `GroupBy`
+Doplň: `AddStock` (`map[K]*V` — mutace přes pointer)
 
 ```bash
 make lesson L=08 PART=3

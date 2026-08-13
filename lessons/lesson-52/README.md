@@ -1,6 +1,6 @@
 # Lekce 52 — Testování do hloubky: benchmarky, fuzz, golden files
 
-> **Čas:** ~90 min · **Fáze:** 6 — Production Go · **AI režim:** `JUNIOR POD REVIEW`
+> **Čas:** ~75 min · **Fáze:** 6 — Production Go · **AI režim:** `JUNIOR POD REVIEW`
 
 ## Co budeš umět
 
@@ -218,13 +218,12 @@ Po přečtení teorie spusť v Cursoru **`/go-deep-quiz 52`**. AI tě ~5 minut p
 
 ## Úkol
 
-Pracuj v `exercise/`. Po doplnění spouštěj testy:
-
-Stupně jdou od jednodušších ke složitějším — po každém stupni spusť review, než jdeš dál.
+Pracuj v `exercise/`. Kontrakt je v komentáři nad funkcí. Stupně jdou od jednodušších
+ke složitějším — po každém stupni spusť review, než jdeš dál.
 
 ### Jednoduchý
 
-Funkce: `Normalize`
+Oprav: `Normalize` (kód je záměrně vadný — chybí převod na malá písmena)
 
 ```bash
 make lesson L=52 PART=1
@@ -234,7 +233,7 @@ Pak **`/go-deep-review 52 easy`**.
 
 ### Střední
 
-Funkce: `Encode`, `Decode`
+Implementuj: `Encode`, `Decode` (fuzz invariant round-trip)
 
 ```bash
 make lesson L=52 PART=2
@@ -244,7 +243,7 @@ Pak **`/go-deep-review 52 medium`**.
 
 ### Obtížný
 
-Funkce: `RenderTable`, `RenderTableFast`
+Doplň: `RenderTable`, `RenderTableFast` (golden file v `testdata/`)
 
 ```bash
 make lesson L=52 PART=3

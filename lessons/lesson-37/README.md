@@ -1,6 +1,6 @@
 # Lekce 37 — Autentizace a observabilita
 
-> **Čas:** ~90 min · **Fáze:** 4 — Architektura v Go · **AI režim:** `BOILERPLATE OK`
+> **Čas:** ~70 min · **Fáze:** 4 — Architektura v Go · **AI režim:** `BOILERPLATE OK`
 
 ## Co budeš umět
 
@@ -298,13 +298,11 @@ Po přečtení teorie spusť v Cursoru **`/go-deep-quiz 37`**. AI tě ~5 minut p
 
 ## Úkol
 
-Pracuj v `exercise/`. Po doplnění spouštěj testy:
-
-Stupně jdou od jednodušších ke složitějším — po každém stupni spusť review, než jdeš dál.
+Pracuj v `exercise/`. Kontrakt je v komentáři nad funkcí.
 
 ### Jednoduchý
 
-Funkce: `ParseBearer`, `HashPassword`, `VerifyPassword`, `Authenticate`
+Oprav: `VerifyPassword` (== místo `ConstantTimeCompare`) · implementuj `ParseBearer`
 
 ```bash
 make lesson L=37 PART=1
@@ -314,7 +312,7 @@ Pak **`/go-deep-review 37 easy`**.
 
 ### Střední
 
-Funkce: `UserFrom`, `NewMetrics`, `SeriesKey`, `Inc`, `Observe`
+Implementuj: `Authenticate`
 
 ```bash
 make lesson L=37 PART=2
@@ -324,7 +322,7 @@ Pak **`/go-deep-review 37 medium`**.
 
 ### Obtížný
 
-Funkce: `Snapshot`, `Text`, `WithRoute`, `RouteFrom`, `Instrument`
+Doplň: `Instrument` (metriky se vzorem trasy, ne `r.URL.Path`)
 
 ```bash
 make lesson L=37 PART=3

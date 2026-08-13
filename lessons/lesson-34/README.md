@@ -1,6 +1,6 @@
 # Lekce 34 — Doménové typy: Money a value objekty
 
-> **Čas:** ~90 min · **Fáze:** 4 — Architektura v Go · **AI režim:** `BOILERPLATE OK`
+> **Čas:** ~70 min · **Fáze:** 4 — Architektura v Go · **AI režim:** `BOILERPLATE OK`
 
 ## Co budeš umět
 
@@ -220,13 +220,12 @@ Po přečtení teorie spusť v Cursoru **`/go-deep-quiz 34`**. AI tě ~5 minut p
 
 ## Úkol
 
-Pracuj v `exercise/`. Po doplnění spouštěj testy:
-
-Stupně jdou od jednodušších ke složitějším — po každém stupni spusť review, než jdeš dál.
+Pracuj v `exercise/`. Kontrakt je v komentáři nad funkcí. Stupně jdou od
+jednodušších ke složitějším — po každém stupni spusť review, než jdeš dál.
 
 ### Jednoduchý
 
-Funkce: `NewMoney`, `Cents`, `Currency`, `String`
+Oprav: `Add` (mutuje příjemce místo nové hodnoty)
 
 ```bash
 make lesson L=34 PART=1
@@ -236,7 +235,7 @@ Pak **`/go-deep-review 34 easy`**.
 
 ### Střední
 
-Funkce: `Add`, `Sub`, `Mul`, `IsZero`
+Implementuj: `NewMoney`, `String`
 
 ```bash
 make lesson L=34 PART=2
@@ -246,7 +245,7 @@ Pak **`/go-deep-review 34 medium`**.
 
 ### Obtížný
 
-Funkce: `Neg`, `Compare`, `Allocate`, `AllocateRatio`, `ParseMoney`
+Doplň: `Allocate` (celočíselné dělení se zbytkem)
 
 ```bash
 make lesson L=34 PART=3

@@ -1,6 +1,6 @@
 # Lekce 48 — Paměťový model a happens-before
 
-> **Čas:** ~90 min · **Fáze:** 5 — Concurrency do hloubky · **AI režim:** `JUNIOR POD REVIEW`
+> **Čas:** ~70 min · **Fáze:** 5 — Concurrency do hloubky · **AI režim:** `JUNIOR POD REVIEW`
 
 ## Co budeš umět
 
@@ -223,13 +223,12 @@ Po přečtení teorie spusť v Cursoru **`/go-deep-quiz 48`**. AI tě ~5 minut p
 
 ## Úkol
 
-Pracuj v `exercise/`. Po doplnění spouštěj testy:
-
-Stupně jdou od jednodušších ke složitějším — po každém stupni spusť review, než jdeš dál.
+Pracuj v `exercise/`. Kontrakt je v komentáři nad funkcí. Stupně jdou od jednodušších
+ke složitějším — po každém stupni spusť review, než jdeš dál.
 
 ### Jednoduchý
 
-Funkce: `Set`, `Get`, `Set`, `Get`
+Oprav: `Set`, `Get` na `NaiveFlag` (sdílený bool bez synchronizace)
 
 ```bash
 make lesson L=48 PART=1
@@ -239,7 +238,7 @@ Pak **`/go-deep-review 48 easy`**.
 
 ### Střední
 
-Funkce: `StressFlag`, `NewLazyInit`, `Value`, `ConcurrentValues`
+Implementuj: `Set`, `Get` na `AtomicFlag` (`LazyInit` je hotový)
 
 ```bash
 make lesson L=48 PART=2
@@ -249,7 +248,7 @@ Pak **`/go-deep-review 48 medium`**.
 
 ### Obtížný
 
-Funkce: `NewBox`, `Publish`, `Consume`, `PublishAndConsume`, `WaitGroupVisibility`
+Doplň: `Publish`, `Consume` (kanál jako synchronizační bod; `NewBox` je hotový)
 
 ```bash
 make lesson L=48 PART=3

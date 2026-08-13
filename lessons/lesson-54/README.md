@@ -1,6 +1,6 @@
 # Lekce 54 — Generics v API, reflexe a build tagy
 
-> **Čas:** ~90 min · **Fáze:** 6 — Production Go · **AI režim:** `JUNIOR POD REVIEW`
+> **Čas:** ~70 min · **Fáze:** 6 — Production Go · **AI režim:** `JUNIOR POD REVIEW`
 
 ## Co budeš umět
 
@@ -175,13 +175,12 @@ Po přečtení teorie spusť v Cursoru **`/go-deep-quiz 54`**. AI tě ~5 minut p
 
 ## Úkol
 
-Pracuj v `exercise/`. Po doplnění spouštěj testy:
-
-Stupně jdou od jednodušších ke složitějším — po každém stupni spusť review, než jdeš dál.
+Pracuj v `exercise/`. Kontrakt je v komentáři nad funkcí. Stupně jdou od jednodušších
+ke složitějším — po každém stupni spusť review, než jdeš dál.
 
 ### Jednoduchý
 
-Funkce: `IsOk`, `Unwrap`
+Oprav: `IsOk`, `Unwrap` (kód je záměrně vadný — opačná logika u `IsOk`)
 
 ```bash
 make lesson L=54 PART=1
@@ -191,7 +190,7 @@ Pak **`/go-deep-review 54 easy`**.
 
 ### Střední
 
-Funkce: `NewUser`, `Password`, `Secret`
+Implementuj: `Map` (volná funkce — metoda s vlastním typovým parametrem nejde)
 
 ```bash
 make lesson L=54 PART=2
@@ -201,7 +200,7 @@ Pak **`/go-deep-review 54 medium`**.
 
 ### Obtížný
 
-Funkce: `StructToMap`, `UserToMap`, `SetDefaults`
+Doplň: `StructToMap`, `FeatureName`, `Discount` (build tagy v `feature_off.go` / `feature_on.go`)
 
 ```bash
 make lesson L=54 PART=3

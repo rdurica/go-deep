@@ -77,7 +77,6 @@ func (m *Metrics) Leave(err error) {
 	m.inFlight.Add(-1)
 }
 
-// --- Stupeň: obtížný ---
 // Snapshot vrátí aktuální metriky doplněné o dobu běhu.
 func (m *Metrics) Snapshot(elapsed time.Duration) Stats {
 	return Stats{
@@ -87,6 +86,8 @@ func (m *Metrics) Snapshot(elapsed time.Duration) Stats {
 		Elapsed:     elapsed,
 	}
 }
+
+// --- Stupeň: obtížný ---
 
 // Item je jedna úloha v dávce.
 type Item struct {
@@ -213,106 +214,5 @@ func Process(ctx context.Context, cfg Config, items []Item) ([]Outcome, Stats, e
 		return nil, stats, feedErr
 	default:
 		return out, stats, nil
-	}
-}
-
-// ProcessStream zpracuje neomezený proud úloh z kanálu in a výsledky posílá
-// do out, který na konci zavře.
-//
-// Mezi in a workery je vlastní fronta o kapacitě cfg.QueueSize, takže odesílatel
-// do in dostane backpressure, jakmile se zaplní. Funkce skončí, až se in zavře
-// a fronta se vyprázdní, nebo při zrušení kontextu, nebo při první chybě
-// v režimu FailFast. Kanál out nesmí být nil.
-func ProcessStream(ctx context.Context, cfg Config, in <-chan Item, out chan<- Outcome) (Stats, error) {
-	var m Metrics
-	started := time.Now()
-
-	// Kanál výsledků vlastníme, takže ho zavíráme za všech okolností —
-	// i když skončíme na chybě konfigurace.
-	defer close(out)
-
-	if err := cfg.validate(); err != nil {
-		return m.Snapshot(0), err
-	}
-
-	ctx, cancel := context.WithCancel(ctx)
-	defer cancel()
-
-	jobs := make(chan Item, cfg.QueueSize)
-
-	var (
-		wg       sync.WaitGroup
-		once     sync.Once
-		firstErr error
-	)
-	fail := func(err error) {
-		once.Do(func() {
-			firstErr = err
-			cancel()
-		})
-	}
-
-	wg.Add(cfg.Workers)
-	for w := 0; w < cfg.Workers; w++ {
-		go func() {
-			defer wg.Done()
-			for {
-				select {
-				case <-ctx.Done():
-					return
-				case item, ok := <-jobs:
-					if !ok {
-						return
-					}
-					m.Enter()
-					v, err := cfg.Handler(ctx, item)
-					m.Leave(err)
-
-					// Nikdy holé out <- …: kdyby konzument odešel,
-					// worker by tady visel navždy.
-					select {
-					case out <- Outcome{ID: item.ID, Value: v, Err: err}:
-					case <-ctx.Done():
-						return
-					}
-					if err != nil && cfg.FailFast {
-						fail(err)
-						return
-					}
-				}
-			}
-		}()
-	}
-
-	var feedErr error
-feed:
-	for {
-		select {
-		case <-ctx.Done():
-			feedErr = ctx.Err()
-			break feed
-		case item, ok := <-in:
-			if !ok {
-				break feed
-			}
-			select {
-			case jobs <- item:
-			case <-ctx.Done():
-				feedErr = ctx.Err()
-				break feed
-			}
-		}
-	}
-	close(jobs)
-	wg.Wait()
-
-	stats := m.Snapshot(time.Since(started))
-	switch {
-	case firstErr != nil:
-		return stats, firstErr
-	case feedErr != nil:
-		return stats, feedErr
-	default:
-		return stats, nil
 	}
 }

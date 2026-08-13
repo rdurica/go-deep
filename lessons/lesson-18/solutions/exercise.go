@@ -37,7 +37,6 @@ type Report struct {
 	Top   string
 }
 
-// --- Stupeň: obtížný ---
 // String formátuje částku jako desetinné číslo se dvěma místy.
 func (m Money) String() string {
 	v := int64(m)
@@ -49,41 +48,36 @@ func (m Money) String() string {
 	return fmt.Sprintf("%s%d.%02d", sign, v/100, v%100)
 }
 
+// String implementuje fmt.Stringer.
+func (r Report) String() string {
+	top := r.Top
+	if top == "" {
+		top = "-"
+	}
+	return fmt.Sprintf("transakcí: %d, celkem: %s, top kategorie: %s", r.Count, r.Total, top)
+}
+
 // --- Stupeň: jednoduchý ---
+
 // Error implementuje rozhraní error.
 func (e *ValidationError) Error() string {
 	return fmt.Sprintf("transakce %d: pole %q: %s", e.Index, e.Field, e.Reason)
 }
 
 // --- Stupeň: střední ---
+
 // ParseTransactions načte pole transakcí z JSON a ověří je.
 func ParseTransactions(r io.Reader) ([]Transaction, error) {
-	var txs []Transaction
-	if err := json.NewDecoder(r).Decode(&txs); err != nil {
-		return nil, fmt.Errorf("ledger: dekódování: %w", err)
+	txs, err := decodeTransactions(r)
+	if err != nil {
+		return nil, err
 	}
-
 	for i, tx := range txs {
 		if err := validate(i, tx); err != nil {
 			return nil, fmt.Errorf("ledger: %w", err)
 		}
 	}
 	return txs, nil
-}
-
-func validate(i int, tx Transaction) error {
-	switch {
-	case strings.TrimSpace(tx.ID) == "":
-		return &ValidationError{Index: i, Field: "id", Reason: "nesmí být prázdné"}
-	case strings.TrimSpace(tx.Payee) == "":
-		return &ValidationError{Index: i, Field: "payee", Reason: "nesmí být prázdné"}
-	case strings.TrimSpace(tx.Category) == "":
-		return &ValidationError{Index: i, Field: "category", Reason: "nesmí být prázdné"}
-	case tx.Amount == 0:
-		return &ValidationError{Index: i, Field: "amount", Reason: "nesmí být nula"}
-	default:
-		return nil
-	}
 }
 
 // TotalsByCategory sečte částky podle kategorie.
@@ -95,24 +89,7 @@ func TotalsByCategory(txs []Transaction) map[string]Money {
 	return totals
 }
 
-// GroupBy seskupí prvky podle klíče spočítaného funkcí key.
-func GroupBy[T any, K comparable](items []T, key func(T) K) map[K][]T {
-	groups := make(map[K][]T)
-	for _, item := range items {
-		k := key(item)
-		groups[k] = append(groups[k], item)
-	}
-	return groups
-}
-
-// String implementuje fmt.Stringer.
-func (r Report) String() string {
-	top := r.Top
-	if top == "" {
-		top = "-"
-	}
-	return fmt.Sprintf("transakcí: %d, celkem: %s, top kategorie: %s", r.Count, r.Total, top)
-}
+// --- Stupeň: obtížný ---
 
 // BuildReport načte transakce ze vstupu a sestaví z nich souhrn.
 func BuildReport(r io.Reader) (Report, error) {
@@ -136,4 +113,27 @@ func BuildReport(r io.Reader) (Report, error) {
 		}
 	}
 	return rep, nil
+}
+
+func validate(i int, tx Transaction) error {
+	switch {
+	case strings.TrimSpace(tx.ID) == "":
+		return &ValidationError{Index: i, Field: "id", Reason: "nesmí být prázdné"}
+	case strings.TrimSpace(tx.Payee) == "":
+		return &ValidationError{Index: i, Field: "payee", Reason: "nesmí být prázdné"}
+	case strings.TrimSpace(tx.Category) == "":
+		return &ValidationError{Index: i, Field: "category", Reason: "nesmí být prázdné"}
+	case tx.Amount == 0:
+		return &ValidationError{Index: i, Field: "amount", Reason: "nesmí být nula"}
+	default:
+		return nil
+	}
+}
+
+func decodeTransactions(r io.Reader) ([]Transaction, error) {
+	var txs []Transaction
+	if err := json.NewDecoder(r).Decode(&txs); err != nil {
+		return nil, fmt.Errorf("ledger: dekódování: %w", err)
+	}
+	return txs, nil
 }

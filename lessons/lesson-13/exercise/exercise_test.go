@@ -11,7 +11,6 @@ import (
 	exercise "github.com/rdurica/go-deep/lessons/lesson-13/exercise"
 )
 
-// errWriter je Writer, který po okWrites zápisech začne vracet chybu.
 type errWriter struct {
 	okWrites int
 	seen     int
@@ -26,6 +25,59 @@ func (w *errWriter) Write(p []byte) (int, error) {
 	w.seen++
 	return len(p), nil
 }
+
+func TestCountLines(t *testing.T) {
+	tests := []struct {
+		name string
+		in   string
+		want int
+	}{
+		{"empty input", "", 0},
+		{"one line without newline", "ahoj", 1},
+		{"one line with newline", "ahoj\n", 1},
+		{"two lines", "a\nb", 2},
+		{"two lines with newline", "a\nb\n", 2},
+		{"empty lines count", "a\n\nb\n", 3},
+		{"CRLF", "a\r\nb\r\n", 2},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := exercise.CountLines(strings.NewReader(tt.in))
+			if err != nil {
+				t.Fatalf("CountLines(%q) = chyba %v, chci nil", tt.in, err)
+			}
+			if got != tt.want {
+				t.Errorf("CountLines(%q) = %d, chci %d", tt.in, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestCountLinesLongLine(t *testing.T) {
+	long := strings.Repeat("x", 200*1024)
+	in := "krátký\n" + long + "\nkrátký\n"
+
+	got, err := exercise.CountLines(strings.NewReader(in))
+	if err != nil {
+		t.Fatalf("CountLines() = chyba %v, chci nil (zvětši buffer scanneru)", err)
+	}
+	if got != 3 {
+		t.Errorf("CountLines() = %d, chci 3", got)
+	}
+}
+
+func TestCountLinesReturnsReadError(t *testing.T) {
+	want := errors.New("čtení selhalo")
+	r := io.MultiReader(strings.NewReader("a\nb\n"), &errReader{err: want})
+
+	if _, err := exercise.CountLines(r); !errors.Is(err, want) {
+		t.Errorf("CountLines() = %v, chci %v", err, want)
+	}
+}
+
+type errReader struct{ err error }
+
+func (r *errReader) Read([]byte) (int, error) { return 0, r.err }
 
 func TestWriteReport(t *testing.T) {
 	tests := []struct {
@@ -59,62 +111,6 @@ func TestWriteReportPropagatesError(t *testing.T) {
 	}
 }
 
-func TestCountLines(t *testing.T) {
-	tests := []struct {
-		name string
-		in   string
-		want int
-	}{
-		{"empty input", "", 0},
-		{"one line without newline", "ahoj", 1},
-		{"one line with newline", "ahoj\n", 1},
-		{"two lines", "a\nb", 2},
-		{"two lines with newline", "a\nb\n", 2},
-		{"empty lines count", "a\n\nb\n", 3},
-		{"CRLF", "a\r\nb\r\n", 2},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, err := exercise.CountLines(strings.NewReader(tt.in))
-			if err != nil {
-				t.Fatalf("CountLines(%q) = chyba %v, chci nil", tt.in, err)
-			}
-			if got != tt.want {
-				t.Errorf("CountLines(%q) = %d, chci %d", tt.in, got, tt.want)
-			}
-		})
-	}
-}
-
-// TestCountLinesLongLine hlídá, že sis pohlídal výchozí 64 KiB limit
-// bufio.Scanneru.
-func TestCountLinesLongLine(t *testing.T) {
-	long := strings.Repeat("x", 200*1024)
-	in := "krátký\n" + long + "\nkrátký\n"
-
-	got, err := exercise.CountLines(strings.NewReader(in))
-	if err != nil {
-		t.Fatalf("CountLines() = chyba %v, chci nil (zvětši buffer scanneru)", err)
-	}
-	if got != 3 {
-		t.Errorf("CountLines() = %d, chci 3", got)
-	}
-}
-
-func TestCountLinesReturnsReadError(t *testing.T) {
-	want := errors.New("čtení selhalo")
-	r := io.MultiReader(strings.NewReader("a\nb\n"), &errReader{err: want})
-
-	if _, err := exercise.CountLines(r); !errors.Is(err, want) {
-		t.Errorf("CountLines() = %v, chci %v", err, want)
-	}
-}
-
-// errReader vždycky selže.
-type errReader struct{ err error }
-
-func (r *errReader) Read([]byte) (int, error) { return 0, r.err }
-
 func TestUpperReader(t *testing.T) {
 	tests := []struct {
 		in   string
@@ -137,7 +133,6 @@ func TestUpperReader(t *testing.T) {
 	}
 }
 
-// TestUpperReaderLeavesNonASCII ověřuje, že převod je bajtový a nerozbije UTF-8.
 func TestUpperReaderLeavesNonASCII(t *testing.T) {
 	got, err := io.ReadAll(exercise.NewUpperReader(strings.NewReader("Světe")))
 	if err != nil {
@@ -148,8 +143,6 @@ func TestUpperReaderLeavesNonASCII(t *testing.T) {
 	}
 }
 
-// TestUpperReaderSmallChunks ověřuje, že převod probíhá průběžně a funguje
-// i při čtení po třech bajtech.
 func TestUpperReaderSmallChunks(t *testing.T) {
 	r := exercise.NewUpperReader(strings.NewReader("abcdefghij"))
 
@@ -170,8 +163,6 @@ func TestUpperReaderSmallChunks(t *testing.T) {
 	}
 }
 
-// TestUpperReaderWorksWithDecorators ověřuje, že UpperReader nečte dopředu:
-// io.LimitReader nad ním musí vrátit přesně tolik bajtů, kolik povolí.
 func TestUpperReaderWorksWithDecorators(t *testing.T) {
 	r := io.LimitReader(exercise.NewUpperReader(strings.NewReader("abcdef")), 3)
 	got, err := io.ReadAll(r)
@@ -180,39 +171,6 @@ func TestUpperReaderWorksWithDecorators(t *testing.T) {
 	}
 	if string(got) != "ABC" {
 		t.Errorf("LimitReader(UpperReader(...), 3) = %q, chci %q", string(got), "ABC")
-	}
-}
-
-func TestTail(t *testing.T) {
-	tests := []struct {
-		name string
-		in   string
-		n    int
-		want []string
-	}{
-		{"last two", "a\nb\nc\nd\n", 2, []string{"c", "d"}},
-		{"more than lines", "a\nb\n", 5, []string{"a", "b"}},
-		{"exactly all", "a\nb\n", 2, []string{"a", "b"}},
-		{"jeden", "a\nb\nc", 1, []string{"c"}},
-		{"empty input", "", 3, nil},
-		{"n je nula", "a\nb\n", 0, nil},
-		{"n is negative", "a\nb\n", -2, nil},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got, err := exercise.Tail(strings.NewReader(tt.in), tt.n)
-			if err != nil {
-				t.Fatalf("Tail() = chyba %v, chci nil", err)
-			}
-			if len(got) != len(tt.want) {
-				t.Fatalf("Tail(%q, %d) = %v, chci %v", tt.in, tt.n, got, tt.want)
-			}
-			for i := range tt.want {
-				if got[i] != tt.want[i] {
-					t.Errorf("Tail(%q, %d)[%d] = %q, chci %q", tt.in, tt.n, i, got[i], tt.want[i])
-				}
-			}
-		})
 	}
 }
 
@@ -264,74 +222,5 @@ func TestCountingWriterPropagatesError(t *testing.T) {
 	}
 	if got := cw.Bytes(); got != 0 {
 		t.Errorf("Bytes() = %d, chci 0 — nezapsané bajty se nepočítají", got)
-	}
-}
-
-func TestPipeline(t *testing.T) {
-	tests := []struct {
-		name      string
-		in        string
-		transform func(string) string
-		want      string
-		wantLines int
-	}{
-		{"uppercase", "a\nb\n", strings.ToUpper, "A\nB\n", 2},
-		{"unchanged", "x\ny\nz", func(s string) string { return s }, "x\ny\nz\n", 3},
-		{"empty input", "", strings.ToUpper, "", 0},
-		{
-			"prefix",
-			"jedna\ndva\n",
-			func(s string) string { return "> " + s },
-			"> jedna\n> dva\n",
-			2,
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			var out bytes.Buffer
-			n, err := exercise.Pipeline(strings.NewReader(tt.in), &out, tt.transform)
-			if err != nil {
-				t.Fatalf("Pipeline() = chyba %v, chci nil", err)
-			}
-			if n != tt.wantLines {
-				t.Errorf("Pipeline() = %d řádků, chci %d", n, tt.wantLines)
-			}
-			if got := out.String(); got != tt.want {
-				t.Errorf("Pipeline() zapsal %q, chci %q", got, tt.want)
-			}
-		})
-	}
-}
-
-// TestPipelineWithCustomTypes propojí všechno dohromady: zdrojem je vlastní
-// UpperReader, cílem vlastní CountingWriter.
-func TestPipelineWithCustomTypes(t *testing.T) {
-	src := exercise.NewUpperReader(strings.NewReader("ahoj\nsvete\n"))
-	var sink bytes.Buffer
-	cw := &exercise.CountingWriter{W: &sink}
-
-	n, err := exercise.Pipeline(src, cw, func(s string) string { return s + "!" })
-	if err != nil {
-		t.Fatalf("Pipeline() = %v, chci nil", err)
-	}
-	if n != 2 {
-		t.Errorf("Pipeline() = %d, chci 2", n)
-	}
-	if got, want := sink.String(), "AHOJ!\nSVETE!\n"; got != want {
-		t.Errorf("výstup = %q, chci %q", got, want)
-	}
-	if got := cw.Lines(); got != 2 {
-		t.Errorf("CountingWriter.Lines() = %d, chci 2", got)
-	}
-}
-
-func TestPipelinePropagatesError(t *testing.T) {
-	_, err := exercise.Pipeline(
-		strings.NewReader("a\nb\nc\n"),
-		&errWriter{okWrites: 1},
-		strings.ToUpper,
-	)
-	if !errors.Is(err, errDisk) {
-		t.Errorf("Pipeline() = %v, chci %v", err, errDisk)
 	}
 }

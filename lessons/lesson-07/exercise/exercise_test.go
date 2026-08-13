@@ -8,75 +8,6 @@ import (
 	exercise "github.com/rdurica/go-deep/lessons/lesson-07/exercise"
 )
 
-func TestSum(t *testing.T) {
-	tests := []struct {
-		name string
-		in   []int
-		want int
-	}{
-		{"nil", nil, 0},
-		{"empty", []int{}, 0},
-		{"one element", []int{7}, 7},
-		{"positive", []int{1, 2, 3, 4}, 10},
-		{"with negatives", []int{-5, 5, -2}, -2},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := exercise.Sum(tt.in); got != tt.want {
-				t.Errorf("Sum(%v) = %d, chci %d", tt.in, got, tt.want)
-			}
-		})
-	}
-}
-
-func TestSumRandomData(t *testing.T) {
-	// Náhodná data brání tomu, aby test prošel se zadrátovanou hodnotou.
-	nums := make([]int, 100)
-	want := 0
-	for i := range nums {
-		nums[i] = rand.Intn(2000) - 1000
-		want += nums[i]
-	}
-	if got := exercise.Sum(nums); got != want {
-		t.Errorf("Sum(náhodných 100 čísel) = %d, chci %d", got, want)
-	}
-}
-
-func TestReverse(t *testing.T) {
-	tests := []struct {
-		name string
-		in   []int
-		want []int
-	}{
-		{"empty", []int{}, []int{}},
-		{"one element", []int{1}, []int{1}},
-		{"even length", []int{1, 2, 3, 4}, []int{4, 3, 2, 1}},
-		{"odd length", []int{1, 2, 3}, []int{3, 2, 1}},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			exercise.Reverse(tt.in)
-			if !reflect.DeepEqual(tt.in, tt.want) {
-				t.Errorf("po Reverse je slice %v, chci %v", tt.in, tt.want)
-			}
-		})
-	}
-}
-
-func TestReverseNilDoesNotPanic(t *testing.T) {
-	exercise.Reverse(nil)
-}
-
-func TestReverseMutatesInput(t *testing.T) {
-	// Reverse nic nevrací, takže musí měnit backing pole volajícího.
-	nums := []int{1, 2, 3}
-	view := nums[:2]
-	exercise.Reverse(nums)
-	if view[0] != 3 {
-		t.Errorf("Reverse nezměnil sdílené backing pole: view = %v, chci [3 2]", view)
-	}
-}
-
 func TestGrowReturnsOriginalWhenCapacityEnough(t *testing.T) {
 	s := make([]int, 2, 8)
 	s[0], s[1] = 10, 20
@@ -121,6 +52,39 @@ func TestGrowNil(t *testing.T) {
 	}
 }
 
+func TestSum(t *testing.T) {
+	tests := []struct {
+		name string
+		in   []int
+		want int
+	}{
+		{"nil", nil, 0},
+		{"empty", []int{}, 0},
+		{"one element", []int{7}, 7},
+		{"positive", []int{1, 2, 3, 4}, 10},
+		{"with negatives", []int{-5, 5, -2}, -2},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := exercise.Sum(tt.in); got != tt.want {
+				t.Errorf("Sum(%v) = %d, chci %d", tt.in, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestSumRandomData(t *testing.T) {
+	nums := make([]int, 100)
+	want := 0
+	for i := range nums {
+		nums[i] = rand.Intn(2000) - 1000
+		want += nums[i]
+	}
+	if got := exercise.Sum(nums); got != want {
+		t.Errorf("Sum(náhodných 100 čísel) = %d, chci %d", got, want)
+	}
+}
+
 func TestRemoveAt(t *testing.T) {
 	tests := []struct {
 		name string
@@ -143,38 +107,6 @@ func TestRemoveAt(t *testing.T) {
 				t.Errorf("RemoveAt(%v, %d) = %v, chci %v", tt.in, tt.i, got, tt.want)
 			}
 		})
-	}
-}
-
-func TestRemoveFast(t *testing.T) {
-	tests := []struct {
-		name string
-		in   []int
-		i    int
-		want []int
-	}{
-		{"first", []int{1, 2, 3, 4}, 0, []int{4, 2, 3}},
-		{"middle", []int{1, 2, 3, 4}, 1, []int{1, 4, 3}},
-		{"last", []int{1, 2, 3, 4}, 3, []int{1, 2, 3}},
-		{"single element", []int{9}, 0, []int{}},
-		{"index too large", []int{1, 2, 3}, 5, []int{1, 2, 3}},
-		{"negative index", []int{1, 2, 3}, -2, []int{1, 2, 3}},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := exercise.RemoveFast(tt.in, tt.i)
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("RemoveFast(%v, %d) = %v, chci %v", tt.in, tt.i, got, tt.want)
-			}
-		})
-	}
-}
-
-func TestRemoveFastDoesNotAllocate(t *testing.T) {
-	s := []int{1, 2, 3, 4}
-	got := exercise.RemoveFast(s, 0)
-	if len(got) > 0 && &got[0] != &s[0] {
-		t.Error("RemoveFast má pracovat nad původním backing polem, ne alokovat nové")
 	}
 }
 
@@ -209,125 +141,5 @@ func TestCloneEmpty(t *testing.T) {
 	}
 	if len(got) != 0 {
 		t.Errorf("Clone([]int{}) má len %d, chci 0", len(got))
-	}
-}
-
-func TestChunk(t *testing.T) {
-	tests := []struct {
-		name string
-		in   []int
-		size int
-		want [][]int
-	}{
-		{"beze zbytku", []int{1, 2, 3, 4}, 2, [][]int{{1, 2}, {3, 4}}},
-		{"se zbytkem", []int{1, 2, 3, 4, 5}, 2, [][]int{{1, 2}, {3, 4}, {5}}},
-		{"size larger than length", []int{1, 2}, 10, [][]int{{1, 2}}},
-		{"size 1", []int{1, 2, 3}, 1, [][]int{{1}, {2}, {3}}},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := exercise.Chunk(tt.in, tt.size)
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("Chunk(%v, %d) = %v, chci %v", tt.in, tt.size, got, tt.want)
-			}
-		})
-	}
-}
-
-func TestChunkEdgeCases(t *testing.T) {
-	tests := []struct {
-		name string
-		in   []int
-		size int
-	}{
-		{"size 0", []int{1, 2, 3}, 0},
-		{"negative size", []int{1, 2, 3}, -1},
-		{"empty input", []int{}, 2},
-		{"nil input", nil, 2},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := exercise.Chunk(tt.in, tt.size); len(got) != 0 {
-				t.Errorf("Chunk(%v, %d) = %v, chci výsledek nulové délky", tt.in, tt.size, got)
-			}
-		})
-	}
-}
-
-func TestChunkReturnsIndependentCopies(t *testing.T) {
-	in := []int{1, 2, 3, 4, 5, 6}
-	got := exercise.Chunk(in, 2)
-	if len(got) != 3 {
-		t.Fatalf("Chunk vrátil %d chunků, chci 3", len(got))
-	}
-
-	got[0][0] = 99
-	got[0][1] = 98
-
-	if in[0] != 1 || in[1] != 2 {
-		t.Errorf("zápis do chunku přepsal vstup: in = %v, chci [1 2 3 4 5 6]", in)
-	}
-	if !reflect.DeepEqual(got[1], []int{3, 4}) {
-		t.Errorf("zápis do chunku 0 ovlivnil chunk 1: %v, chci [3 4]", got[1])
-	}
-
-	// Rozšíření jednoho chunku nesmí zasáhnout do sousedního.
-	got[1] = append(got[1], 42)
-	if !reflect.DeepEqual(got[2], []int{5, 6}) {
-		t.Errorf("append do chunku 1 přepsal chunk 2: %v, chci [5 6]", got[2])
-	}
-}
-
-func even(n int) bool { return n%2 == 0 }
-
-func TestFilter(t *testing.T) {
-	tests := []struct {
-		name string
-		in   []int
-		keep func(int) bool
-		want []int
-	}{
-		{"even numbers", []int{1, 2, 3, 4, 5, 6}, even, []int{2, 4, 6}},
-		{"nothing passes", []int{1, 3, 5}, even, []int{}},
-		{"all pass", []int{2, 4}, even, []int{2, 4}},
-		{"empty input", []int{}, even, []int{}},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			got := exercise.Filter(tt.in, tt.keep)
-			if len(got) != len(tt.want) {
-				t.Fatalf("Filter vrátil %v, chci %v", got, tt.want)
-			}
-			for i := range tt.want {
-				if got[i] != tt.want[i] {
-					t.Fatalf("Filter vrátil %v, chci %v", got, tt.want)
-				}
-			}
-		})
-	}
-}
-
-func TestFilterNil(t *testing.T) {
-	if got := exercise.Filter(nil, even); len(got) != 0 {
-		t.Errorf("Filter(nil, even) = %v, chci výsledek nulové délky", got)
-	}
-}
-
-func TestFilterOverwritesInput(t *testing.T) {
-	// Trik s[:0] skládá výsledek do backing pole vstupu. Test to schválně
-	// odhaluje: implementace přes make() by tímhle testem neprošla.
-	in := []int{1, 2, 3, 4, 5, 6}
-	got := exercise.Filter(in, even)
-
-	if len(got) != 3 {
-		t.Fatalf("Filter vrátil %v, chci [2 4 6]", got)
-	}
-	if &got[0] != &in[0] {
-		t.Fatal("Filter alokoval nový slice, chci trik s[:0] nad vstupním polem")
-	}
-	for i, want := range []int{2, 4, 6} {
-		if in[i] != want {
-			t.Errorf("vstup po Filter má in[%d] = %d, chci %d (výsledek se skládá do vstupu)", i, in[i], want)
-		}
 	}
 }

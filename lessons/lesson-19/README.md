@@ -1,6 +1,6 @@
 # Lekce 19 — Jména, balíčky a struktura kódu
 
-> **Čas:** ~85 min · **Fáze:** 2 — Idiomatický Go · **AI režim:** `JEN VYSVĚTLENÍ`
+> **Čas:** ~65 min · **Fáze:** 2 — Idiomatický Go · **AI režim:** `JEN VYSVĚTLENÍ`
 
 ## Co budeš umět
 
@@ -212,13 +212,12 @@ Po přečtení teorie spusť v Cursoru **`/go-deep-quiz 19`**. AI tě ~5 minut p
 
 ## Úkol
 
-Pracuj v `exercise/`. Po doplnění spouštěj testy:
-
-Stupně jdou od jednodušších ke složitějším — po každém stupni spusť review, než jdeš dál.
+Pracuj v `exercise/`. Kontrakt je v komentáři nad funkcí. Stupně jdou od jednodušších
+ke složitějším — po každém stupni spusť review, než jdeš dál.
 
 ### Jednoduchý
 
-Funkce: `ParseUserID`
+Oprav: `ParseUserID` (kód je záměrně vadný — else a hluboké zanoření)
 
 ```bash
 make lesson L=19 PART=1
@@ -228,7 +227,7 @@ Pak **`/go-deep-review 19 easy`**.
 
 ### Střední
 
-Funkce: `ParseUserIDs`
+Implementuj: `ParseUserIDs`
 
 ```bash
 make lesson L=19 PART=2
@@ -238,7 +237,7 @@ Pak **`/go-deep-review 19 medium`**.
 
 ### Obtížný
 
-Funkce: `ProcessOrders`, `RenderInvoice`
+Doplň: `ProcessOrders` (early return, extrakce helperu)
 
 ```bash
 make lesson L=19 PART=3

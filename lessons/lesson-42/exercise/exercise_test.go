@@ -3,7 +3,6 @@ package exercise_test
 import (
 	"context"
 	"errors"
-	"fmt"
 	"runtime"
 	"sync/atomic"
 	"testing"
@@ -30,18 +29,40 @@ func TestTrySend(t *testing.T) {
 		t.Error("TrySend do prázdného bufferu = false, chci true")
 		return
 	}
-	if exercise.TrySend(buf, 2) {
-		t.Error("TrySend do plného bufferu = true, chci false")
+	tryFull := make(chan bool, 1)
+	go func() { tryFull <- exercise.TrySend(buf, 2) }()
+	select {
+	case ok := <-tryFull:
+		if ok {
+			t.Error("TrySend do plného bufferu = true, chci false")
+		}
+	case <-time.After(2 * time.Second):
+		t.Error("TrySend do plného bufferu visí — chybí select s default")
 	}
 	if got := <-buf; got != 1 {
 		t.Errorf("v kanálu je %d, chci 1", got)
 	}
 
-	if exercise.TrySend(make(chan int), 1) {
-		t.Error("TrySend do nebufferovaného kanálu bez čtenáře = true, chci false")
+	tryUnbuffered := make(chan bool, 1)
+	go func() { tryUnbuffered <- exercise.TrySend(make(chan int), 1) }()
+	select {
+	case ok := <-tryUnbuffered:
+		if ok {
+			t.Error("TrySend do nebufferovaného kanálu bez čtenáře = true, chci false")
+		}
+	case <-time.After(2 * time.Second):
+		t.Error("TrySend do nebufferovaného kanálu visí — chybí select s default")
 	}
-	if exercise.TrySend(nil, 1) {
-		t.Error("TrySend do nil kanálu = true, chci false (nil kanál blokuje navždy)")
+
+	tryNil := make(chan bool, 1)
+	go func() { tryNil <- exercise.TrySend(nil, 1) }()
+	select {
+	case ok := <-tryNil:
+		if ok {
+			t.Error("TrySend do nil kanálu = true, chci false (nil kanál blokuje navždy)")
+		}
+	case <-time.After(2 * time.Second):
+		t.Error("TrySend do nil kanálu visí — chybí select s default")
 	}
 }
 
@@ -227,95 +248,6 @@ func TestFirstManyCompetitors(t *testing.T) {
 	got, err := exercise.First(context.Background(), fns...)
 	if err != nil || got != "vítěz" {
 		t.Fatalf("First = (%q, %v), chci (\"vítěz\", nil)", got, err)
-	}
-
-	waitNoLeak(t, before)
-}
-
-func TestDebounceCollapsesBurst(t *testing.T) {
-	before := runtime.NumGoroutine()
-
-	const d = 200 * time.Millisecond
-	in := make(chan string, 128)
-	out := exercise.Debounce(in, d)
-
-	for i := 0; i < 100; i++ {
-		in <- fmt.Sprintf("v%d", i)
-	}
-
-	select {
-	case got := <-out:
-		if got != "v99" {
-			t.Errorf("Debounce propustil %q, chci poslední hodnotu %q", got, "v99")
-		}
-	case <-time.After(5 * time.Second):
-		t.Fatal("Debounce nepropustil ani jednu hodnotu")
-	}
-
-	// Z celé dávky smí projít jen jedna hodnota.
-	time.Sleep(3 * d)
-	select {
-	case extra := <-out:
-		t.Errorf("Debounce propustil navíc %q, chci z dávky jedinou hodnotu", extra)
-	default:
-	}
-
-	close(in)
-	select {
-	case _, ok := <-out:
-		if ok {
-			t.Error("po zavření vstupu měl být výstup zavřený")
-		}
-	case <-time.After(3 * time.Second):
-		t.Fatal("Debounce nezavřel výstup po zavření vstupu")
-	}
-
-	waitNoLeak(t, before)
-}
-
-func TestDebounceFlushesPendingOnClose(t *testing.T) {
-	before := runtime.NumGoroutine()
-
-	in := make(chan string, 4)
-	out := exercise.Debounce(in, 10*time.Second) // timer nikdy nevyprší
-	in <- "a"
-	in <- "b"
-	close(in)
-
-	select {
-	case got := <-out:
-		if got != "b" {
-			t.Errorf("Debounce po zavření vstupu poslal %q, chci %q", got, "b")
-		}
-	case <-time.After(3 * time.Second):
-		t.Fatal("Debounce po zavření vstupu neposlal čekající hodnotu")
-	}
-	select {
-	case _, ok := <-out:
-		if ok {
-			t.Error("Debounce poslal víc hodnot, než měl")
-		}
-	case <-time.After(3 * time.Second):
-		t.Fatal("Debounce nezavřel výstup")
-	}
-
-	waitNoLeak(t, before)
-}
-
-func TestDebounceEmptyInput(t *testing.T) {
-	before := runtime.NumGoroutine()
-
-	in := make(chan string)
-	out := exercise.Debounce(in, 20*time.Millisecond)
-	close(in)
-
-	select {
-	case v, ok := <-out:
-		if ok {
-			t.Errorf("Debounce z prázdného vstupu poslal %q", v)
-		}
-	case <-time.After(3 * time.Second):
-		t.Fatal("Debounce nezavřel výstup u prázdného vstupu")
 	}
 
 	waitNoLeak(t, before)

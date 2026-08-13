@@ -78,7 +78,8 @@ lessons/lesson-07/
   solutions/             # referenční řešení (spoiler)
 ```
 
-Zadání je ve stubách. Po stupni: `make lesson L=NN PART=1` (nebo 2/3). Celé: `make lesson L=NN`.
+Zadání je ve stubách. Stupně jsou krátké: oprava nebo mezera, 1–2 funkce, jedna věc
+úsudku — ne mini-projekt. Po stupni: `make lesson L=NN PART=1` (nebo 2/3). Celé: `make lesson L=NN`.
 
 ## Checkpointy
 
@@ -161,7 +162,9 @@ make help
 ## Tempo
 
 Realisticky **5–7 h týdně** ≈ 14 týdnů, při 3 lekcích týdně ≈ 20 týdnů. Nesnaž se to
-proklikat — svalová paměť vzniká psaním, ne čtením řešení.
+proklikat. Cvičení trénují úsudek, ne objem kódu: rané lekce píšeš ty krátké kusy
+sám (AI vysvětluje), později AI navrhuje a ty držíš review. Cíl je mentální model,
+ať AI neřídí tebe.
 
 ## Licence a přispívání
 

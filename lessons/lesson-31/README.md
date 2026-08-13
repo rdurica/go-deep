@@ -1,6 +1,6 @@
 # Lekce 31 — Checkpoint fáze 3 + projekt P02
 
-> **Čas:** ~90 min · **Fáze:** 3 — net/http a tooling · **AI režim:** `BOILERPLATE OK`
+> **Čas:** ~70 min · **Fáze:** 3 — net/http a tooling · **AI režim:** `BOILERPLATE OK`
 
 Checkpoint nemá novou látku. Místo teorie je **recap** lekcí 24–30, cvičení je
 kumulativní a na konci je bodovaná rubrika. Lekce zároveň zadává projekt
@@ -115,13 +115,13 @@ Po přečtení teorie spusť v Cursoru **`/go-deep-quiz 31`**. AI tě ~5 minut p
 
 ## Úkol
 
-Pracuj v `exercise/`. Po doplnění spouštěj testy:
-
-Stupně jdou od jednodušších ke složitějším — po každém stupni spusť review, než jdeš dál.
+Pracuj v `exercise/`. `HealthHandler` je hotový — soustřeď se na konfiguraci,
+middleware a shutdown. Stupně jdou od jednodušších ke složitějším; po každém stupni
+spusť review, než jdeš dál.
 
 ### Jednoduchý
 
-Funkce: `LoadConfig`, `Chain`
+Implementuj: `LoadConfig`, `Chain`
 
 ```bash
 make lesson L=31 PART=1
@@ -131,7 +131,7 @@ Pak **`/go-deep-review 31 easy`**.
 
 ### Střední
 
-Funkce: `RequestIDMiddleware`, `RequestIDFromContext`
+Implementuj: `RequestIDMiddleware`, `RequestIDFromContext`
 
 ```bash
 make lesson L=31 PART=2
@@ -141,7 +141,7 @@ Pak **`/go-deep-review 31 medium`**.
 
 ### Obtížný
 
-Funkce: `NewServer`, `RecoveryMiddleware`, `Run`
+Doplň: `RecoveryMiddleware`, `Run` (shutdown s `cfg.ShutdownTimeout`)
 
 ```bash
 make lesson L=31 PART=3

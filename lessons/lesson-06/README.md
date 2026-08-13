@@ -1,6 +1,6 @@
 # Lekce 06 — Pointery: hodnota vs reference
 
-> **Čas:** ~90 min · **Fáze:** 1 — Jazyk a paměťový model · **AI režim:** `ZAKÁZÁNO`
+> **Čas:** ~70 min · **Fáze:** 1 — Jazyk a paměťový model · **AI režim:** `ZAKÁZÁNO`
 
 ## Co budeš umět
 
@@ -136,8 +136,8 @@ func broken(nums []int) {
 **kopie** headeru. Proto se výsledek `append` vždycky vrací nebo přiřazuje.
 
 Ošidnější je opačný případ: když má slice volný prostor v kapacitě, `append` zapíše do
-původního pole a přepíše data, na která se ještě někdo dívá. Proto úkol B žádá funkci, která
-si data nejdřív okopíruje. Celé to rozebereme v lekci 07.
+původního pole a přepíše data, na která se ještě někdo dívá. Proto `AppendSafe` data nejdřív
+okopíruje. Celé to rozebereme v lekci 07.
 
 Mapa je oproti tomu ukazatel na hashtable, takže funkce vidí i vložené klíče. Má ale
 omezení, které se přímo týká pointerů: **adresu prvku mapy nelze vzít**.
@@ -208,13 +208,12 @@ Po přečtení teorie spusť v Cursoru **`/go-deep-quiz 06`**. AI tě ~5 minut p
 
 ## Úkol
 
-Pracuj v `exercise/`. Po doplnění spouštěj testy:
-
-Stupně jdou od jednodušších ke složitějším — po každém stupni spusť review, než jdeš dál.
+Pracuj v `exercise/`. Kontrakt je v komentáři nad funkcí. Stupně jdou od jednodušších
+ke složitějším — po každém stupni spusť review, než jdeš dál.
 
 ### Jednoduchý
 
-Funkce: `Swap`, `ApplyDefaults`
+Oprav: `ApplyDefaults` (kód je záměrně vadný — přepisuje `*bool`)
 
 ```bash
 make lesson L=06 PART=1
@@ -224,7 +223,7 @@ Pak **`/go-deep-review 06 easy`**.
 
 ### Střední
 
-Funkce: `IncrementAll`, `AppendSafe`
+Implementuj: `Swap`, `IncrementAll`, `AppendSafe`
 
 ```bash
 make lesson L=06 PART=2
@@ -234,7 +233,7 @@ Pak **`/go-deep-review 06 medium`**.
 
 ### Obtížný
 
-Funkce: `Push`, `Len`, `Reverse`
+Doplň: `Push`, `Len` (pointery v rekurzivní struktuře)
 
 ```bash
 make lesson L=06 PART=3

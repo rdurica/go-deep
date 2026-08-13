@@ -3,6 +3,7 @@ package memstore
 
 import (
 	"context"
+	"fmt"
 	"sync"
 
 	"github.com/rdurica/go-deep/lessons/lesson-38/exercise/order"
@@ -14,23 +15,47 @@ type Repository struct {
 	orders map[string]order.Order
 }
 
-// New vytvoří prázdné in-memory úložiště s inicializovanou mapou.
-// Bezpečné pro souběžné použití díky sync.RWMutex.
+// --- Stupeň: jednoduchý ---
+// New vytvoří prázdné úložiště.
 func New() *Repository {
-	// TODO
-	return nil
+	return &Repository{orders: make(map[string]order.Order)}
 }
 
-// Save uloží nebo přepíše objednávku v mapě. Ukládá kopie položek (slice lines).
-// Zrušený kontext → chyba z ctx.Err().
+// --- Stupeň: střední ---
+// Save uloží nebo přepíše objednávku.
 func (r *Repository) Save(ctx context.Context, o order.Order) error {
-	// TODO
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	r.mu.Lock()
+	defer r.mu.Unlock()
+
+	r.orders[o.ID] = clone(o)
 	return nil
 }
 
-// Find vrátí kopii objednávky podle ID.
-// Neznámé ID → chyba obalující order.ErrNotFound. Zrušený kontext → ctx.Err().
+// --- Stupeň: obtížný ---
+// Find vrátí objednávku podle ID, jinak chybu obalující order.ErrNotFound.
 func (r *Repository) Find(ctx context.Context, id string) (order.Order, error) {
-	// TODO
-	return *new(order.Order), nil
+	if err := ctx.Err(); err != nil {
+		return order.Order{}, err
+	}
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+
+	o, ok := r.orders[id]
+	if !ok {
+		return order.Order{}, fmt.Errorf("%w: %s", order.ErrNotFound, id)
+	}
+	return clone(o), nil
+}
+
+// clone odděluje slice položek. Skutečná databáze data serializuje, takže
+// nic nesdílí; in-memory fake to musí dělat sám, jinak by se choval jinak
+// než produkční adaptér a testy by lhaly.
+func clone(o order.Order) order.Order {
+	lines := make([]order.Line, len(o.Lines))
+	copy(lines, o.Lines)
+	o.Lines = lines
+	return o
 }

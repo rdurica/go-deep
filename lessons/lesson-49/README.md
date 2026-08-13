@@ -1,6 +1,6 @@
 # Lekce 49 — Scheduler: mentální model G-M-P
 
-> **Čas:** ~90 min · **Fáze:** 5 — Concurrency do hloubky · **AI režim:** `JUNIOR POD REVIEW`
+> **Čas:** ~70 min · **Fáze:** 5 — Concurrency do hloubky · **AI režim:** `JUNIOR POD REVIEW`
 
 ## Co budeš umět
 
@@ -192,13 +192,12 @@ Po přečtení teorie spusť v Cursoru **`/go-deep-quiz 49`**. AI tě ~5 minut p
 
 ## Úkol
 
-Pracuj v `exercise/`. Po doplnění spouštěj testy:
-
-Stupně jdou od jednodušších ke složitějším — po každém stupni spusť review, než jdeš dál.
+Pracuj v `exercise/`. Kontrakt je v komentáři nad funkcí. Stupně jdou od jednodušších
+ke složitějším — po každém stupni spusť review, než jdeš dál.
 
 ### Jednoduchý
 
-Funkce: `RunWithMaxProcs`, `ObserveParallelism`
+Oprav: `RunWithMaxProcs`
 
 ```bash
 make lesson L=49 PART=1
@@ -208,7 +207,7 @@ Pak **`/go-deep-review 49 easy`**.
 
 ### Střední
 
-Funkce: `CPUBound`, `Blocking`, `Compare`
+Implementuj: `ObserveParallelism`, `Compare`
 
 ```bash
 make lesson L=49 PART=2
@@ -218,7 +217,7 @@ Pak **`/go-deep-review 49 medium`**.
 
 ### Obtížný
 
-Funkce: `StackGrowth`, `GoroutineCost`, `BytesPerGoroutine`
+Doplň: `GoroutineCost`
 
 ```bash
 make lesson L=49 PART=3

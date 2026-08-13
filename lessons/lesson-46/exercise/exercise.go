@@ -4,10 +4,8 @@ package exercise
 import (
 	"context"
 	"errors"
+	"sync"
 )
-
-// ErrInvalidWorkers signalizuje nekladný počet workerů nebo nekladný limit.
-var ErrInvalidWorkers = errors.New("pool: workers must be positive")
 
 // ErrNilJob signalizuje úlohu bez funkce Run.
 var ErrNilJob = errors.New("pool: job has no Run function")
@@ -22,19 +20,31 @@ type Semaphore struct {
 }
 
 // --- Stupeň: jednoduchý ---
+
 // NewSemaphore vytvoří semafor s kapacitou n nad bufferovaným kanálem.
-// Pro n <= 0 panikuje. Kapacita drží počet volných míst ve slots kanálu.
+// Pro n <= 0 panikuje.
 func NewSemaphore(n int) *Semaphore {
-	// TODO
-	return nil
+	if n <= 0 {
+		panic("NewSemaphore: kapacita musí být kladná")
+	}
+	return &Semaphore{slots: make(chan struct{}, n)}
 }
 
 // Acquire zabere jedno místo a blokuje, dokud není volné nebo se nezruší ctx.
 // Při chybě místo nezabírá; u už zrušeného kontextu vrací chybu i když je volno.
+//
+// POZOR: kód níže je ZÁMĚRNĚ VADNÝ. Chybí kontrola ctx.Err() před selectem.
+// Najdi chybu a oprav — testy před opravou padají.
 func (s *Semaphore) Acquire(ctx context.Context) error {
-	// TODO
-	return nil
+	select {
+	case s.slots <- struct{}{}:
+		return nil
+	case <-ctx.Done():
+		return ctx.Err()
+	}
 }
+
+// --- Stupeň: střední ---
 
 // TryAcquire zabere místo, pokud je zrovna volné, a vrátí true.
 // Nikdy neblokuje; při plném semaforu vrací false.
@@ -44,27 +54,14 @@ func (s *Semaphore) TryAcquire() bool {
 }
 
 // Release uvolní jedno místo na semaforu.
-// Uvolnění bez předchozího Acquire panikuje; NewSemaphore(0) taky panikuje.
+// Uvolnění bez předchozího Acquire panikuje.
 func (s *Semaphore) Release() {
 	// TODO
 }
 
-// --- Stupeň: střední ---
-// LimitedMap aplikuje f na všechny vstupy, nejvýš limit z nich souběžně,
-// a vrátí výsledky ve stejném pořadí jako vstup.
-// Pro limit <= 0 se použije limit 1, pro f == nil vrací nil.
-// Když se ctx zruší, nespuštěné položky zůstanou na prázdném řetězci.
-// Po návratu nesmí zůstat běžící goroutina.
-func LimitedMap(ctx context.Context, inputs []string, limit int, f func(string) string) []string {
-	// TODO
-	return nil
-}
-
 // Job je jedna úloha pro Pool.
 type Job struct {
-	// ID slouží ke spárování úlohy s výsledkem.
-	ID int
-	// Run je vlastní práce. Když je nil, výsledek nese ErrNilJob.
+	ID  int
 	Run func() (int, error)
 }
 
@@ -76,53 +73,65 @@ type Result struct {
 }
 
 // Pool je worker pool s pevným počtem goroutin nad sdíleným kanálem úloh.
-//
-// Vstupní kanál je nebufferovaný, takže Submit tlačí zpět (backpressure),
-// dokud se neuvolní worker. Z Results musíš číst souběžně se Submit,
-// jinak se pool zablokuje.
 type Pool struct {
 	jobs    chan Job
 	results chan Result
+	mu      sync.Mutex
+	closed  bool
 }
 
 // New spustí worker pool s daným počtem workerů nad nebufferovaným kanálem úloh.
-// Pro workers <= 0 panikuje. Z Results musíš číst souběžně se Submit (backpressure).
+// Pro workers <= 0 panikuje. Z Results musíš číst souběžně se Submit.
 func New(workers int) *Pool {
-	// TODO
-	return nil
+	if workers <= 0 {
+		panic("pool.New: workers musí být kladné")
+	}
+	p := &Pool{
+		jobs:    make(chan Job),
+		results: make(chan Result, workers),
+	}
+
+	var wg sync.WaitGroup
+	wg.Add(workers)
+	for i := 0; i < workers; i++ {
+		go func() {
+			defer wg.Done()
+			for job := range p.jobs {
+				p.results <- run(job)
+			}
+		}()
+	}
+	go func() {
+		wg.Wait()
+		close(p.results)
+	}()
+
+	return p
+}
+
+func run(job Job) Result {
+	if job.Run == nil {
+		return Result{ID: job.ID, Err: ErrNilJob}
+	}
+	v, err := job.Run()
+	return Result{ID: job.ID, Value: v, Err: err}
 }
 
 // --- Stupeň: obtížný ---
-// Submit předá úlohu poolu a blokuje, dokud ji nepřevezme worker (backpressure).
-// Po Close vrací ErrPoolClosed a úlohu zahodí; nesmí zapsat do zavřeného kanálu.
-// Job s Run == nil dá Result{Err: ErrNilJob}, ne paniku.
+
+// Submit předá úlohu poolu a blokuje, dokud ji nepřevezme worker.
+// Po Close vrací ErrPoolClosed. Job s Run == nil dá Result{Err: ErrNilJob}.
 func (p *Pool) Submit(job Job) error {
 	// TODO
 	return nil
 }
 
 // Results vrací kanál výsledků úloh přijatých před Close.
-// Kanál se zavře, až doběhnou všechny tyto úlohy.
 func (p *Pool) Results() <-chan Result {
-	// TODO
-	return nil
+	return p.results
 }
 
-// Close oznámí poolu, že další úlohy nepřijdou.
-// Idempotentní — opakované volání je bezpečné.
+// Close oznámí poolu, že další úlohy nepřijdou. Idempotentní.
 func (p *Pool) Close() {
 	// TODO
-}
-
-// MapErr aplikuje f na všechny prvky in, nejvýš limit z nich souběžně,
-// a vrátí výsledky ve stejném pořadí jako vstup.
-//
-// První chyba zruší odvozený kontext (takže se běžící volání f dozvědí, že
-// nemá cenu pokračovat), MapErr počká na doběhnutí rozběhnutých goroutin
-// a vrátí (nil, tu chybu).
-// Pro limit <= 0 vrací ErrInvalidWorkers, pro f == nil ErrNilJob.
-// Prázdný vstup vrací prázdný výsledek a nil; zrušený vstupní kontext vrací ctx.Err().
-func MapErr[T, U any](ctx context.Context, in []T, limit int, f func(context.Context, T) (U, error)) ([]U, error) {
-	// TODO
-	return nil, nil
 }

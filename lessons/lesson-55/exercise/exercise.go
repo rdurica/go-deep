@@ -69,14 +69,14 @@ func Current() BuildInfo {
 // Vždy vrací 200 a serializuje předané info.
 func VersionHandler(info BuildInfo) http.Handler {
 	// TODO
-	return nil
+	return http.HandlerFunc(func(http.ResponseWriter, *http.Request) {})
 }
 
 // NewHealthChecker vytvoří checker s timeoutem pro readiness kontroly.
 // Nekladný timeout nahradí jednou vteřinou.
 func NewHealthChecker(timeout time.Duration) *HealthChecker {
 	// TODO
-	return nil
+	return &HealthChecker{checks: make(map[string]Check)}
 }
 
 // Register přidá nebo přepíše kontrolu pod daným jménem.
@@ -88,16 +88,20 @@ func (h *HealthChecker) Register(name string, check Check) {
 // --- Stupeň: obtížný ---
 // LiveHandler vždy vrací 200 a nespouští žádnou registrovanou kontrolu.
 // I když je zaregistrovaná kontrola, která vždy selže, liveness vrací 200.
+//
+// POZOR: kód níže je ZÁMĚRNĚ VADNÝ. Vrací 503 jako readiness — liveness má být vždy 200.
+// Najdi chybu a oprav — testy před opravou padají.
 func (h *HealthChecker) LiveHandler() http.Handler {
-	// TODO
-	return nil
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Error(w, "unhealthy", http.StatusServiceUnavailable)
+	})
 }
 
 // ReadyHandler spustí kontroly souběžně s timeoutem z r.Context(); visící kontrola
 // po vypršení doplní ctx.Err(). Bez kontrol 200 a prázdná mapa; nesmí držet zámek při běhu kontrol.
 func (h *HealthChecker) ReadyHandler() http.Handler {
 	// TODO
-	return nil
+	return http.HandlerFunc(func(http.ResponseWriter, *http.Request) {})
 }
 
 // ShutdownSequence provede kroky v pořadí pod jedním rozpočtem timeout.

@@ -1,3 +1,3 @@
-1:TestNewServer|TestNewServerValidation|TestMustNewServer
-2:TestNewClientDefaultValues|TestNewClientOptions|TestNewClientValidation
-3:TestRegistryZeroValue|TestRegistryVeStructu|TestServiceWithStore|TestServiceErrors
+1:TestNewClientDefaultValues|TestNewClientOptions|TestNewClientValidation
+2:TestNewServer|TestNewServerValidation|TestMustNewServer
+3:TestRegistryZeroValue|TestRegistryVeStructu

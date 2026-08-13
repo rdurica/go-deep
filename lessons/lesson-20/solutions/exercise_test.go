@@ -4,7 +4,6 @@ import (
 	"errors"
 	"io"
 	"log/slog"
-	"strings"
 	"testing"
 	"time"
 
@@ -13,70 +12,6 @@ import (
 
 func testLogger() *slog.Logger {
 	return slog.New(slog.NewTextHandler(io.Discard, nil))
-}
-
-func TestNewServer(t *testing.T) {
-	logger := testLogger()
-
-	srv, err := exercise.NewServer(":8080", logger)
-	if err != nil {
-		t.Fatalf("NewServer vrátil chybu %v, chci nil", err)
-	}
-	if got := srv.Addr(); got != ":8080" {
-		t.Errorf("Addr() = %q, chci %q", got, ":8080")
-	}
-	if srv.Logger() != logger {
-		t.Error("Logger() nevrací logger předaný konstruktoru")
-	}
-}
-
-func TestNewServerValidation(t *testing.T) {
-	logger := testLogger()
-
-	tests := []struct {
-		name    string
-		addr    string
-		logger  *slog.Logger
-		wantErr error
-	}{
-		{"empty address", "", logger, exercise.ErrMissingAddr},
-		{"address without colon", "localhost", logger, exercise.ErrInvalidAddr},
-		{"missing logger", ":8080", nil, exercise.ErrMissingLogger},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			srv, err := exercise.NewServer(tt.addr, tt.logger)
-			if !errors.Is(err, tt.wantErr) {
-				t.Fatalf("chyba = %v, chci %v", err, tt.wantErr)
-			}
-			if srv != nil {
-				t.Errorf("při chybě chci nil server, mám %+v", srv)
-			}
-		})
-	}
-}
-
-func TestMustNewServer(t *testing.T) {
-	t.Run("valid input does not panic", func(t *testing.T) {
-		srv := exercise.MustNewServer("127.0.0.1:9000", testLogger())
-		if got := srv.Addr(); got != "127.0.0.1:9000" {
-			t.Errorf("Addr() = %q, chci %q", got, "127.0.0.1:9000")
-		}
-	})
-
-	t.Run("invalid input panics", func(t *testing.T) {
-		defer func() {
-			r := recover()
-			if r == nil {
-				t.Fatal("MustNewServer nepanikoval, chci paniku")
-			}
-			err, ok := r.(error)
-			if !ok || !errors.Is(err, exercise.ErrMissingLogger) {
-				t.Errorf("panika nese %v, chci ErrMissingLogger", r)
-			}
-		}()
-		exercise.MustNewServer(":8080", nil)
-	})
 }
 
 func TestNewClientDefaultValues(t *testing.T) {
@@ -204,94 +139,67 @@ func TestNewClientValidation(t *testing.T) {
 	}
 }
 
-// memStore je in-memory fake implementující exercise.Store.
-// Testovací dvojník patří k testu, ne do produkčního balíčku.
-type memStore struct {
-	records  []exercise.Record
-	failWith error
-}
+func TestNewServer(t *testing.T) {
+	logger := testLogger()
 
-func (m *memStore) Save(r exercise.Record) error {
-	if m.failWith != nil {
-		return m.failWith
-	}
-	m.records = append(m.records, r)
-	return nil
-}
-
-func (m *memStore) All() []exercise.Record {
-	return m.records
-}
-
-func TestServiceWithStore(t *testing.T) {
-	store := &memStore{}
-	svc, err := exercise.NewService(store)
+	srv, err := exercise.NewServer(":8080", logger)
 	if err != nil {
-		t.Fatalf("NewService vrátil chybu %v, chci nil", err)
+		t.Fatalf("NewServer vrátil chybu %v, chci nil", err)
 	}
-	if got := svc.Count(); got != 0 {
-		t.Errorf("Count() = %d, chci 0", got)
+	if got := srv.Addr(); got != ":8080" {
+		t.Errorf("Addr() = %q, chci %q", got, ":8080")
 	}
-
-	if err := svc.Add("a", "alfa"); err != nil {
-		t.Fatalf("Add vrátil chybu %v, chci nil", err)
-	}
-	if err := svc.Add("b", "beta"); err != nil {
-		t.Fatalf("Add vrátil chybu %v, chci nil", err)
-	}
-
-	if got := svc.Count(); got != 2 {
-		t.Errorf("Count() = %d, chci 2", got)
-	}
-	want := []string{"alfa", "beta"}
-	got := svc.Values()
-	if len(got) != len(want) {
-		t.Fatalf("Values() = %v, chci %v", got, want)
-	}
-	for i := range want {
-		if got[i] != want[i] {
-			t.Fatalf("Values() = %v, chci %v", got, want)
-		}
+	if srv.Logger() != logger {
+		t.Error("Logger() nevrací logger předaný konstruktoru")
 	}
 }
 
-func TestServiceErrors(t *testing.T) {
-	t.Run("nil store", func(t *testing.T) {
-		svc, err := exercise.NewService(nil)
-		if !errors.Is(err, exercise.ErrMissingStore) {
-			t.Fatalf("chyba = %v, chci ErrMissingStore", err)
-		}
-		if svc != nil {
-			t.Error("při chybě chci nil službu")
+func TestNewServerValidation(t *testing.T) {
+	logger := testLogger()
+
+	tests := []struct {
+		name    string
+		addr    string
+		logger  *slog.Logger
+		wantErr error
+	}{
+		{"empty address", "", logger, exercise.ErrMissingAddr},
+		{"address without colon", "localhost", logger, exercise.ErrInvalidAddr},
+		{"missing logger", ":8080", nil, exercise.ErrMissingLogger},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			srv, err := exercise.NewServer(tt.addr, tt.logger)
+			if !errors.Is(err, tt.wantErr) {
+				t.Fatalf("chyba = %v, chci %v", err, tt.wantErr)
+			}
+			if srv != nil {
+				t.Errorf("při chybě chci nil server, mám %+v", srv)
+			}
+		})
+	}
+}
+
+func TestMustNewServer(t *testing.T) {
+	t.Run("valid input does not panic", func(t *testing.T) {
+		srv := exercise.MustNewServer("127.0.0.1:9000", testLogger())
+		if got := srv.Addr(); got != "127.0.0.1:9000" {
+			t.Errorf("Addr() = %q, chci %q", got, "127.0.0.1:9000")
 		}
 	})
 
-	t.Run("empty ID", func(t *testing.T) {
-		svc, err := exercise.NewService(&memStore{})
-		if err != nil {
-			t.Fatalf("NewService vrátil chybu %v", err)
-		}
-		if err := svc.Add("", "hodnota"); !errors.Is(err, exercise.ErrEmptyRecordID) {
-			t.Errorf("chyba = %v, chci ErrEmptyRecordID", err)
-		}
-		if got := svc.Count(); got != 0 {
-			t.Errorf("Count() = %d, chci 0 — neplatný záznam se neukládá", got)
-		}
-	})
-
-	t.Run("store error is wrapped", func(t *testing.T) {
-		boom := errors.New("disk full")
-		svc, err := exercise.NewService(&memStore{failWith: boom})
-		if err != nil {
-			t.Fatalf("NewService vrátil chybu %v", err)
-		}
-		err = svc.Add("a", "alfa")
-		if !errors.Is(err, boom) {
-			t.Fatalf("chyba = %v, chci obalenou %v", err, boom)
-		}
-		if !strings.Contains(err.Error(), `"a"`) {
-			t.Errorf("chyba %q neobsahuje ID záznamu", err.Error())
-		}
+	t.Run("invalid input panics", func(t *testing.T) {
+		defer func() {
+			r := recover()
+			if r == nil {
+				t.Fatal("MustNewServer nepanikoval, chci paniku")
+			}
+			err, ok := r.(error)
+			if !ok || !errors.Is(err, exercise.ErrMissingLogger) {
+				t.Errorf("panika nese %v, chci ErrMissingLogger", r)
+			}
+		}()
+		exercise.MustNewServer(":8080", nil)
 	})
 }
 
@@ -304,9 +212,6 @@ func TestRegistryZeroValue(t *testing.T) {
 	if _, ok := reg.Lookup("chybí"); ok {
 		t.Error("Lookup na prázdné Registry vrátil ok = true")
 	}
-	if got := reg.Keys(); len(got) != 0 {
-		t.Errorf("Keys() = %v, chci prázdný slice", got)
-	}
 
 	reg.Set("zeta", "3")
 	reg.Set("alfa", "1")
@@ -318,16 +223,6 @@ func TestRegistryZeroValue(t *testing.T) {
 	}
 	if v, ok := reg.Lookup("alfa"); !ok || v != "42" {
 		t.Errorf("Lookup(\"alfa\") = (%q, %v), chci (\"42\", true)", v, ok)
-	}
-	want := []string{"alfa", "beta", "zeta"}
-	got := reg.Keys()
-	if len(got) != len(want) {
-		t.Fatalf("Keys() = %v, chci %v", got, want)
-	}
-	for i := range want {
-		if got[i] != want[i] {
-			t.Fatalf("Keys() = %v, chci %v", got, want)
-		}
 	}
 }
 

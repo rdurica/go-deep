@@ -23,18 +23,31 @@ type Group struct {
 }
 
 // --- Stupeň: jednoduchý ---
+
 // WithContext vrátí skupinu a odvozený kontext zrušený při první chybě.
 // Použij context.WithCancelCause; Wait musí kontext zrušit i v úspěšné větvi.
+//
+// POZOR: kód níže je ZÁMĚRNĚ VADNÝ. Najdi chybu a oprav ji — testy před opravou padají.
 func WithContext(ctx context.Context) (*Group, context.Context) {
-	// TODO
-	return nil, nil
+	_, cancel := context.WithCancelCause(ctx)
+	_ = cancel
+	return &Group{}, ctx
 }
 
 // SetLimit omezí počet souběžně běžících úloh; pro n <= 0 limit ruší.
 // Volání po prvním Go panikuje. Vstupenku ber v Go, ne uvnitř goroutiny.
 func (g *Group) SetLimit(n int) {
-	// TODO
+	if g.started.Load() {
+		panic("Group.SetLimit: limit nelze měnit po prvním Go")
+	}
+	if n <= 0 {
+		g.sem = nil
+		return
+	}
+	g.sem = make(chan struct{}, n)
 }
+
+// --- Stupeň: střední ---
 
 // Go spustí f v nové goroutině; nulová Group je použitelná.
 // Go(nil) se tiše přeskočí. Při limitu blokuje volajícího, dokud se neuvolní místo.
@@ -50,8 +63,6 @@ func (g *Group) Wait() error {
 	return nil
 }
 
-// --- Stupeň: střední ---
-
 // Task je jedna pojmenovaná úloha pro RunAll.
 type Task struct {
 	// Name se objeví v textu chyby.
@@ -63,6 +74,7 @@ type Task struct {
 }
 
 // --- Stupeň: obtížný ---
+
 // RunAll spustí všechny úlohy souběžně a počká i na odpojené (Detached).
 // Běžné dostanou kontext skupiny, odpojené context.WithoutCancel(ctx).
 // Chybu úlohy obal: fmt.Errorf("task %q: %w", …). Run == nil → ErrNilTask;
@@ -75,6 +87,15 @@ func RunAll(ctx context.Context, tasks []Task) error {
 // Cause rozbalí řetězec chyb až na tu nejhlubší a vrátí ji.
 // Pro nil vrací nil, pro chybu bez Unwrap vrací ji samotnou.
 func Cause(err error) error {
-	// TODO
-	return nil
+	for {
+		u, ok := err.(interface{ Unwrap() error })
+		if !ok {
+			return err
+		}
+		inner := u.Unwrap()
+		if inner == nil {
+			return err
+		}
+		err = inner
+	}
 }

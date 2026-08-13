@@ -1,6 +1,6 @@
 # Lekce 35 — Persistence: repozitář, in-memory fake, SQL mindset
 
-> **Čas:** ~90 min · **Fáze:** 4 — Architektura v Go · **AI režim:** `BOILERPLATE OK`
+> **Čas:** ~75 min · **Fáze:** 4 — Architektura v Go · **AI režim:** `BOILERPLATE OK`
 
 ## Co budeš umět
 
@@ -228,13 +228,12 @@ Po přečtení teorie spusť v Cursoru **`/go-deep-quiz 35`**. AI tě ~5 minut p
 
 ## Úkol
 
-Pracuj v `exercise/`. Po doplnění spouštěj testy:
-
-Stupně jdou od jednodušších ke složitějším — po každém stupni spusť review, než jdeš dál.
+Pracuj v `exercise/`. Většina typů a `List`/`Plan` je hotová — doplňuješ kritické
+mezery v adaptéru a staviteli dotazů. Kontrakt je v komentáři nad metodou.
 
 ### Jednoduchý
 
-Funkce: `NewMemoryRepo`, `Get`
+Oprav: `Get` (u chybějícího ID vrací nulu místo `ErrNotFound`)
 
 ```bash
 make lesson L=35 PART=1
@@ -244,7 +243,7 @@ Pak **`/go-deep-review 35 easy`**.
 
 ### Střední
 
-Funkce: `Save`, `Delete`
+Doplň: `Save`, `Delete`
 
 ```bash
 make lesson L=35 PART=2
@@ -254,7 +253,7 @@ Pak **`/go-deep-review 35 medium`**.
 
 ### Obtížný
 
-Funkce: `List`, `BuildSelect`, `Plan`
+Implementuj: `BuildSelect` (whitelist tabulek a sloupců)
 
 ```bash
 make lesson L=35 PART=3

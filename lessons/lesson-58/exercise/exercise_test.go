@@ -289,6 +289,9 @@ func TestSessionTimelineIsCopy(t *testing.T) {
 		t.Fatalf("Start() = %v", err)
 	}
 	timeline := s.Timeline()
+	if len(timeline) == 0 {
+		t.Fatal("Timeline() po Start je prázdná, chci alespoň jednu událost")
+	}
 	timeline[0].Reason = "podvrženo"
 
 	if got := s.Timeline()[0].Reason; got == "podvrženo" {

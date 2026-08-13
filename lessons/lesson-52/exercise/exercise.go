@@ -1,7 +1,10 @@
 // Package exercise obsahuje cvičení lekce 52.
 package exercise
 
-import "errors"
+import (
+	"errors"
+	"strings"
+)
 
 // ErrFormat označuje vstup, který neodpovídá formátu záznamů.
 var ErrFormat = errors.New("neplatný formát záznamu")
@@ -16,14 +19,20 @@ type Record struct {
 // --- Stupeň: jednoduchý ---
 // Normalize ořízne okraje, vnitřní bílé znaky (unicode.IsSpace) sjednotí na jednu mezeru
 // a převede na malá písmena. Už normalizovaný vstup vrací beze změny a bez alokace.
+//
+// POZOR: kód níže je ZÁMĚRNĚ VADNÝ. Chybí převod na malá písmena.
+// Najdi chybu a oprav — testy před opravou padají.
 func Normalize(s string) string {
-	// TODO
-	return ""
+	fields := strings.Fields(s)
+	if len(fields) == 0 {
+		return ""
+	}
+	return strings.Join(fields, " ")
 }
 
 // --- Stupeň: střední ---
 // Encode zapíše záznamy jako id|name|score po řádcích bez koncového LF.
-// ID a Name escapují \\, \p, \n, \r; prázdný vstup dá prázdný řetězec.
+// ID a Name escapují \\, \|, \n, \r; prázdný vstup dá prázdný řetězec.
 func Encode(recs []Record) string {
 	// TODO
 	return ""
@@ -45,7 +54,7 @@ func RenderTable(recs []Record) string {
 }
 
 // RenderTableFast vrací bajt po bajtu stejný výstup jako RenderTable přes strings.Builder,
-// Grow, strconv.AppendInt/AppendFloat a utf8.RuneCountInString pro šířku sloupců.
+// Grow, strconv.AppendInt a utf8.RuneCountInString pro šířku sloupců.
 func RenderTableFast(recs []Record) string {
 	// TODO
 	return ""

@@ -50,26 +50,53 @@ func TestMemoryRepoStoreAndLoad(t *testing.T) {
 	}
 }
 
-func TestMemoryRepoNotFound(t *testing.T) {
+func TestMemoryRepoGetNotFound(t *testing.T) {
 	ctx := context.Background()
 	repo := exercise.NewMemoryRepo()
-
 	if _, err := repo.Get(ctx, "nic"); !errors.Is(err, exercise.ErrNotFound) {
 		t.Errorf("Get(nic) = %v, chci ErrNotFound", err)
 	}
+}
+
+func TestMemoryRepoDeleteNotFound(t *testing.T) {
+	ctx := context.Background()
+	repo := exercise.NewMemoryRepo()
 	if err := repo.Delete(ctx, "nic"); !errors.Is(err, exercise.ErrNotFound) {
 		t.Errorf("Delete(nic) = %v, chci ErrNotFound", err)
 	}
+}
 
+func TestMemoryRepoDeleteExisting(t *testing.T) {
+	ctx := context.Background()
+	repo := exercise.NewMemoryRepo()
 	alice := user("u-del", "del@example.com")
 	if err := repo.Save(ctx, alice); err != nil {
 		t.Fatalf("Save = %v", err)
 	}
 	if err := repo.Delete(ctx, "u-del"); err != nil {
-		t.Fatalf("Delete existujícího = %v", err)
+		t.Fatalf("Delete = %v", err)
 	}
 	if _, err := repo.Get(ctx, "u-del"); !errors.Is(err, exercise.ErrNotFound) {
 		t.Errorf("Get po Delete = %v, chci ErrNotFound", err)
+	}
+}
+
+func TestGetRespectsContext(t *testing.T) {
+	repo := exercise.NewMemoryRepo()
+	_ = repo.Save(context.Background(), user("u-1", "a@example.com"))
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	if _, err := repo.Get(ctx, "u-1"); !errors.Is(err, context.Canceled) {
+		t.Errorf("Get = %v, chci context.Canceled", err)
+	}
+}
+
+func TestDeleteRespectsContext(t *testing.T) {
+	repo := exercise.NewMemoryRepo()
+	ctx, cancel := context.WithCancel(context.Background())
+	cancel()
+	if err := repo.Delete(ctx, "u-1"); !errors.Is(err, context.Canceled) {
+		t.Errorf("Delete = %v, chci context.Canceled", err)
 	}
 }
 

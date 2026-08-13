@@ -30,21 +30,23 @@ type Admin struct {
 	Level int
 }
 
+// --- Stupeň: jednoduchý ---
+
+// Inc zvýší počítadlo o jedna.
+func (c *Counter) Inc() {
+	c.n++
+}
+
 // --- Stupeň: střední ---
+
 // Add vrátí nový bod, který je součtem p a q.
 func (p Point) Add(q Point) Point {
 	return Point{X: p.X + q.X, Y: p.Y + q.Y}
 }
 
-// --- Stupeň: jednoduchý ---
-// String implementuje fmt.Stringer, formát je "(1,2)".
+// String implementuje fmt.Stringer, formát je "(x,y)".
 func (p Point) String() string {
 	return "(" + strconv.Itoa(p.X) + "," + strconv.Itoa(p.Y) + ")"
-}
-
-// Inc zvýší počítadlo o jedna.
-func (c *Counter) Inc() {
-	c.n++
 }
 
 // Add přičte n k počítadlu. Záporné n počítadlo snižuje.
@@ -58,13 +60,13 @@ func (c Counter) Value() int {
 }
 
 // --- Stupeň: obtížný ---
+
 // Describe vrací popis základu ve tvaru "base:<ID>".
 func (b Base) Describe() string {
 	return "base:" + b.ID
 }
 
 // Describe překrývá promotovanou metodu Base.Describe.
-// Formát je "user:<Name> (base:<ID>)".
 func (u User) Describe() string {
 	return "user:" + u.Name + " (" + u.Base.Describe() + ")"
 }

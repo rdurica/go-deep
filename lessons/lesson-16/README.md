@@ -1,6 +1,6 @@
 # Lekce 16 — JSON: marshal, unmarshal, tagy
 
-> **Čas:** ~90 min · **Fáze:** 1 — Jazyk a paměťový model · **AI režim:** `ZAKÁZÁNO`
+> **Čas:** ~70 min · **Fáze:** 1 — Jazyk a paměťový model · **AI režim:** `ZAKÁZÁNO`
 
 ## Co budeš umět
 
@@ -234,13 +234,12 @@ Po přečtení teorie spusť v Cursoru **`/go-deep-quiz 16`**. AI tě ~5 minut p
 
 ## Úkol
 
-Pracuj v `exercise/`. Po doplnění spouštěj testy:
-
-Stupně jdou od jednodušších ke složitějším — po každém stupni spusť review, než jdeš dál.
+Pracuj v `exercise/`. Kontrakt je v komentáři nad funkcí. Stupně jdou od jednodušších
+ke složitějším — po každém stupni spusť review, než jdeš dál.
 
 ### Jednoduchý
 
-Funkce: `ToJSON`, `FromJSON`
+Oprav: `FromJSON` (kód je záměrně vadný — jméno nekontroluje po TrimSpace)
 
 ```bash
 make lesson L=16 PART=1
@@ -250,7 +249,7 @@ Pak **`/go-deep-review 16 easy`**.
 
 ### Střední
 
-Funkce: `DecodeEvent`, `MarshalJSON`
+Implementuj: `DecodeEvent` (`json.RawMessage` + diskriminátor)
 
 ```bash
 make lesson L=16 PART=2
@@ -260,7 +259,7 @@ Pak **`/go-deep-review 16 medium`**.
 
 ### Obtížný
 
-Funkce: `UnmarshalJSON`, `StrictDecode`
+Doplň: `StrictDecode` (`DisallowUnknownFields` + kontrola zbytku vstupu)
 
 ```bash
 make lesson L=16 PART=3

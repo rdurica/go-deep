@@ -274,11 +274,11 @@ func TestDecodeAndValidateOK(t *testing.T) {
 
 func TestDecodeAndValidateBadJSON(t *testing.T) {
 	tests := map[string]string{
-		"broken JSON":       `{"email":`,
+		"broken JSON":        `{"email":`,
 		"špatný typ pole":    `{"email":"a@b.cz","username":"radek","age":"čtyřicet"}`,
-		"unknown field":       `{"email":"a@b.cz","username":"radek","age":40,"role":"admin"}`,
+		"unknown field":      `{"email":"a@b.cz","username":"radek","age":40,"role":"admin"}`,
 		"dva dokumenty":      `{"email":"a@b.cz","username":"radek","age":40}{"email":"x@y.cz"}`,
-		"empty body":       ``,
+		"empty body":         ``,
 		"pole místo objektu": `[1,2,3]`,
 	}
 	for name, body := range tests {

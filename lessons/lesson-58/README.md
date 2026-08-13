@@ -1,6 +1,6 @@
 # Lekce 58 — Osobní checklist, pairing protokol a manual rewrite
 
-> **Čas:** ~90 min · **Fáze:** 7 — Inženýrství v době AI · **AI režim:** `TECH LEAD`
+> **Čas:** ~70 min · **Fáze:** 7 — Inženýrství v době AI · **AI režim:** `TECH LEAD`
 
 ## Co budeš umět
 
@@ -26,7 +26,7 @@ Tři pravidla, aby checklist přežil měsíc:
 3. **Maximálně 12 položek.** Delší seznam nikdo neprojde poctivě; místo toho se ho naučíš
    odklikávat.
 
-Přesně tuhle logiku slučování implementuješ v úkolu A — a je to nástroj, který budeš
+Přesně tuhle logiku slučování implementuješ v `MergeChecklists` — a je to nástroj, který budeš
 používat i po kurzu.
 
 ### Pairing protokol s agentem
@@ -49,7 +49,8 @@ akceptačního kritéria.
 
 Každé předání má **důvod**. Věta „vracím do testů, protože chybí případ s `utm_`
 parametry" je zároveň log rozhodnutí a materiál pro retrospektivu. Session s časovou osou
-je model, který v úkolu B napíšeš — všimni si, že hodiny se předávají jako závislost:
+je model, který ve středním stupni napíšeš (`NewSession`, `Start`, `Handoff`) — všimni si,
+že hodiny se předávají jako závislost:
 
 ```go
 s := NewSession(func() time.Time { return fixed })  // v testu
@@ -147,13 +148,12 @@ Po přečtení teorie spusť v Cursoru **`/go-deep-quiz 58`**. AI tě ~5 minut p
 
 ## Úkol
 
-Pracuj v `exercise/`. Po doplnění spouštěj testy:
-
-Stupně jdou od jednodušších ke složitějším — po každém stupni spusť review, než jdeš dál.
+Pracuj v `exercise/`. Kontrakt je v komentáři nad funkcí. Stupně jdou od jednodušších
+ke složitějším — po každém stupni spusť review, než jdeš dál.
 
 ### Jednoduchý
 
-Funkce: `String`, `MergeChecklists`, `String`
+Oprav: `MergeChecklists` (kód je záměrně vadný — osobní položka nepřepíše základní)
 
 ```bash
 make lesson L=58 PART=1
@@ -163,7 +163,7 @@ Pak **`/go-deep-review 58 easy`**.
 
 ### Střední
 
-Funkce: `NewSession`, `Current`, `Start`, `Handoff`
+Implementuj: `NewSession`, `Start`, `Handoff` (pairing protokol)
 
 ```bash
 make lesson L=58 PART=2
@@ -173,7 +173,7 @@ Pak **`/go-deep-review 58 medium`**.
 
 ### Obtížný
 
-Funkce: `Finish`, `Timeline`, `RecommendLesson`, `ScoreReview`
+Doplň: `Finish`, `Timeline`, `ScoreReview` (měření precision a recall)
 
 ```bash
 make lesson L=58 PART=3

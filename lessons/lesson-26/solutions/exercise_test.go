@@ -9,10 +9,11 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
-	"time"
 
 	exercise "github.com/rdurica/go-deep/lessons/lesson-26/solutions"
 )
+
+const testTagHeader = "X-Test-Tag"
 
 // okHandler odpoví 200 a zadaným tělem.
 func okHandler(body string) http.Handler {
@@ -29,6 +30,36 @@ func trace(events *[]string, name string) exercise.Middleware {
 			next.ServeHTTP(w, r)
 			*events = append(*events, name+":po")
 		})
+	}
+}
+
+func TestStatusRecorderDefaultStatusIs200(t *testing.T) {
+	rec := httptest.NewRecorder()
+	sr := exercise.NewStatusRecorder(rec)
+
+	fmt.Fprint(sr, "ahoj")
+
+	if got := sr.RecordedStatus(); got != http.StatusOK {
+		t.Errorf("RecordedStatus = %d, chci %d (handler WriteHeader nezavolal)", got, http.StatusOK)
+	}
+	if got := sr.RecordedBytes(); got != 4 {
+		t.Errorf("RecordedBytes = %d, chci %d", got, 4)
+	}
+}
+
+func TestStatusRecorderIgnoresSecondWriteHeader(t *testing.T) {
+	rec := httptest.NewRecorder()
+	sr := exercise.NewStatusRecorder(rec)
+
+	sr.WriteHeader(http.StatusCreated)
+	sr.WriteHeader(http.StatusInternalServerError)
+	fmt.Fprint(sr, "ok")
+
+	if got := sr.RecordedStatus(); got != http.StatusCreated {
+		t.Errorf("RecordedStatus = %d, chci %d", got, http.StatusCreated)
+	}
+	if rec.Code != http.StatusCreated {
+		t.Errorf("status na odpovědi = %d, chci %d", rec.Code, http.StatusCreated)
 	}
 }
 
@@ -109,7 +140,6 @@ func TestLoggingWritesFields(t *testing.T) {
 		t.Errorf("bytes = %v, chci %d", entry["bytes"], 5)
 	}
 
-	// obalený writer musí odpověď stále doručit beze změny
 	if rec.Code != http.StatusTeapot {
 		t.Errorf("status na odpovědi = %d, chci %d", rec.Code, http.StatusTeapot)
 	}
@@ -126,21 +156,6 @@ func TestLoggingDefaultStatusIs200(t *testing.T) {
 	}
 	if got, ok := entry["bytes"].(float64); !ok || int(got) != 4 {
 		t.Errorf("bytes = %v, chci %d", entry["bytes"], 4)
-	}
-}
-
-func TestLoggingSecondWriteHeaderDoesNotOverwriteStatus(t *testing.T) {
-	entry, rec := runWithLogger(t, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusCreated)
-		w.WriteHeader(http.StatusInternalServerError) // nadbytečné volání, musí se ignorovat
-		fmt.Fprint(w, "ok")
-	}), http.MethodGet, "/")
-
-	if got, ok := entry["status"].(float64); !ok || int(got) != http.StatusCreated {
-		t.Errorf("zalogovaný status = %v, chci %d", entry["status"], http.StatusCreated)
-	}
-	if rec.Code != http.StatusCreated {
-		t.Errorf("status na odpovědi = %d, chci %d", rec.Code, http.StatusCreated)
 	}
 }
 
@@ -201,130 +216,16 @@ func TestRecoveryDoesNotSwallowErrAbortHandler(t *testing.T) {
 	t.Error("Recovery paniku spolkla, ale http.ErrAbortHandler má propustit")
 }
 
-// idCapturingHandler uloží ID požadavku z kontextu do got.
-func idCapturingHandler(got *string, found *bool) http.Handler {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		*got, *found = exercise.RequestIDFrom(r.Context())
-	})
-}
-
-func TestRequestIDPropagatesHeader(t *testing.T) {
-	var fromCtx string
-	var found bool
-
-	handler := exercise.RequestID()(idCapturingHandler(&fromCtx, &found))
-
-	req := httptest.NewRequest(http.MethodGet, "/", nil)
-	req.Header.Set(exercise.RequestIDHeader, "abc-123")
-	rec := httptest.NewRecorder()
-
-	handler.ServeHTTP(rec, req)
-
-	if !found {
-		t.Fatal("RequestIDFrom(ctx) nenašlo ID")
-	}
-	if fromCtx != "abc-123" {
-		t.Errorf("ID v kontextu = %q, chci %q", fromCtx, "abc-123")
-	}
-	if got := rec.Header().Get(exercise.RequestIDHeader); got != "abc-123" {
-		t.Errorf("hlavička v odpovědi = %q, chci %q", got, "abc-123")
-	}
-}
-
-func TestRequestIDGeneratesUniqueID(t *testing.T) {
-	var fromCtx string
-	var found bool
-	handler := exercise.RequestID()(idCapturingHandler(&fromCtx, &found))
-
-	seen := make(map[string]bool)
-	for i := 0; i < 20; i++ {
-		rec := httptest.NewRecorder()
-		handler.ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/", nil))
-
-		if !found || fromCtx == "" {
-			t.Fatalf("iterace %d: middleware nevygeneroval ID", i)
-		}
-		if got := rec.Header().Get(exercise.RequestIDHeader); got != fromCtx {
-			t.Fatalf("iterace %d: hlavička = %q, kontext = %q, chci shodu", i, got, fromCtx)
-		}
-		if seen[fromCtx] {
-			t.Fatalf("iterace %d: ID %q se zopakovalo", i, fromCtx)
-		}
-		seen[fromCtx] = true
-	}
-}
-
-func TestRequestIDFromEmptyContext(t *testing.T) {
-	req := httptest.NewRequest(http.MethodGet, "/", nil)
-
-	if id, ok := exercise.RequestIDFrom(req.Context()); ok {
-		t.Errorf("RequestIDFrom bez middlewaru = (%q, true), chci (\"\", false)", id)
-	}
-}
-
-func TestTimeoutFastHandlerPasses(t *testing.T) {
-	rec := httptest.NewRecorder()
-
-	exercise.Timeout(time.Second)(okHandler("hotovo")).
-		ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/", nil))
-
-	if rec.Code != http.StatusOK {
-		t.Errorf("status = %d, chci %d", rec.Code, http.StatusOK)
-	}
-	if rec.Body.String() != "hotovo" {
-		t.Errorf("tělo = %q, chci %q", rec.Body.String(), "hotovo")
-	}
-}
-
-func TestTimeoutSetsDeadline(t *testing.T) {
-	var hasDeadline bool
-
-	exercise.Timeout(time.Second)(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		_, hasDeadline = r.Context().Deadline()
-	})).ServeHTTP(httptest.NewRecorder(), httptest.NewRequest(http.MethodGet, "/", nil))
-
-	if !hasDeadline {
-		t.Error("handler nedostal kontext s deadline")
-	}
-}
-
-func TestTimeoutSlowHandlerGets503(t *testing.T) {
-	done := make(chan struct{})
-
-	slow := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		<-r.Context().Done() // handler korektně čeká na zrušení, ne na pevný sleep
-		close(done)
-	})
-
-	rec := httptest.NewRecorder()
-	exercise.Timeout(50*time.Millisecond)(slow).
-		ServeHTTP(rec, httptest.NewRequest(http.MethodGet, "/", nil))
-
-	if rec.Code != http.StatusServiceUnavailable {
-		t.Fatalf("status = %d, chci %d", rec.Code, http.StatusServiceUnavailable)
-	}
-	if !strings.Contains(rec.Body.String(), "timeout") {
-		t.Errorf("tělo = %q, chci aby obsahovalo %q", rec.Body.String(), "timeout")
-	}
-
-	select {
-	case <-done:
-	case <-time.After(2 * time.Second):
-		t.Error("handler po vypršení deadline neskončil")
-	}
-}
-
 func TestChainMultipleMiddlewareTogether(t *testing.T) {
 	var events []string
 	var loggedStatus int
 
-	// Anonymní middleware — ne Logging/Recovery/RequestID stuby.
-	setID := func(next http.Handler) http.Handler {
+	setTag := func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			events = append(events, "id:pred")
-			w.Header().Set(exercise.RequestIDHeader, "req-9")
+			events = append(events, "tag:pred")
+			w.Header().Set(testTagHeader, "req-9")
 			next.ServeHTTP(w, r)
-			events = append(events, "id:po")
+			events = append(events, "tag:po")
 		})
 	}
 	observeStatus := func(next http.Handler) http.Handler {
@@ -361,7 +262,7 @@ func TestChainMultipleMiddlewareTogether(t *testing.T) {
 		http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			panic("boom")
 		}),
-		setID,
+		setTag,
 		observeStatus,
 		recoverPanic,
 	)
@@ -373,14 +274,14 @@ func TestChainMultipleMiddlewareTogether(t *testing.T) {
 	if rec.Code != http.StatusInternalServerError {
 		t.Fatalf("status = %d, chci %d", rec.Code, http.StatusInternalServerError)
 	}
-	if got := rec.Header().Get(exercise.RequestIDHeader); got != "req-9" {
-		t.Errorf("hlavička %s = %q, chci %q", exercise.RequestIDHeader, got, "req-9")
+	if got := rec.Header().Get(testTagHeader); got != "req-9" {
+		t.Errorf("hlavička %s = %q, chci %q", testTagHeader, got, "req-9")
 	}
 	if loggedStatus != http.StatusInternalServerError {
 		t.Errorf("status viděný prostředním middlewarem = %d, chci %d (recovery je vnitřnější)",
 			loggedStatus, http.StatusInternalServerError)
 	}
-	want := []string{"id:pred", "log:pred", "rec:pred", "log:po", "id:po"}
+	want := []string{"tag:pred", "log:pred", "rec:pred", "log:po", "tag:po"}
 	if strings.Join(events, ",") != strings.Join(want, ",") {
 		t.Errorf("pořadí = %v, chci %v", events, want)
 	}

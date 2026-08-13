@@ -4,7 +4,6 @@ import (
 	"errors"
 	"fmt"
 	"reflect"
-	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -65,80 +64,6 @@ func TestNormalizeURLIsIdempotent(t *testing.T) {
 	}
 }
 
-func TestNormalizeTags(t *testing.T) {
-	got, err := exercise.NormalizeTags([]string{" Go ", "go", "HTTP", "", "web-dev", "GO"})
-	if err != nil {
-		t.Fatalf("NormalizeTags() = chyba %v", err)
-	}
-	want := []string{"go", "http", "web-dev"}
-	if !reflect.DeepEqual(got, want) {
-		t.Errorf("NormalizeTags() = %v, chci %v", got, want)
-	}
-
-	if got, err := exercise.NormalizeTags(nil); err != nil || len(got) != 0 {
-		t.Errorf("NormalizeTags(nil) = (%v, %v), chci prázdný výsledek bez chyby", got, err)
-	}
-	if _, err := exercise.NormalizeTags([]string{"web dev"}); !errors.Is(err, exercise.ErrInvalidTag) {
-		t.Errorf("NormalizeTags(tag s mezerou) = %v, chci ErrInvalidTag", err)
-	}
-	if _, err := exercise.NormalizeTags([]string{"čeština"}); !errors.Is(err, exercise.ErrInvalidTag) {
-		t.Errorf("NormalizeTags(tag s diakritikou) = %v, chci ErrInvalidTag", err)
-	}
-
-	many := make([]string, 0, exercise.MaxTags+1)
-	for i := 0; i <= exercise.MaxTags; i++ {
-		many = append(many, fmt.Sprintf("tag-%d", i))
-	}
-	if _, err := exercise.NormalizeTags(many); !errors.Is(err, exercise.ErrTooManyTags) {
-		t.Errorf("NormalizeTags(%d tagů) = %v, chci ErrTooManyTags", len(many), err)
-	}
-}
-
-func TestBookmarkValidate(t *testing.T) {
-	valid := exercise.Bookmark{
-		ID:        "b1",
-		URL:       "https://go.dev/doc",
-		Title:     "Dokumentace Go",
-		Tags:      []string{"go", "docs"},
-		CreatedAt: base,
-	}
-	if err := valid.Validate(); err != nil {
-		t.Fatalf("Validate(platná záložka) = %v", err)
-	}
-
-	tests := []struct {
-		name  string
-		mutan func(b *exercise.Bookmark)
-		want  error
-	}{
-		{"empty ID", func(b *exercise.Bookmark) { b.ID = "  " }, exercise.ErrEmptyID},
-		{"invalid URL", func(b *exercise.Bookmark) { b.URL = "go.dev" }, exercise.ErrInvalidURL},
-		{"non-normalized URL", func(b *exercise.Bookmark) { b.URL = "https://go.dev/doc/" }, exercise.ErrInvalidURL},
-		{"empty title", func(b *exercise.Bookmark) { b.Title = "" }, exercise.ErrEmptyTitle},
-		{"long title", func(b *exercise.Bookmark) { b.Title = strings.Repeat("á", exercise.MaxTitleLen+1) }, exercise.ErrTitleTooLong},
-		{"invalid tag", func(b *exercise.Bookmark) { b.Tags = []string{"Go"} }, exercise.ErrInvalidTag},
-		{"duplicate tag", func(b *exercise.Bookmark) { b.Tags = []string{"go", "go"} }, exercise.ErrDuplicateTag},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			b := valid
-			b.Tags = append([]string(nil), valid.Tags...)
-			tt.mutan(&b)
-			if err := b.Validate(); !errors.Is(err, tt.want) {
-				t.Errorf("Validate() = %v, chci %v", err, tt.want)
-			}
-		})
-	}
-
-	t.Run("title at limit passes", func(t *testing.T) {
-		b := valid
-		b.Title = strings.Repeat("á", exercise.MaxTitleLen)
-		if err := b.Validate(); err != nil {
-			t.Errorf("Validate(titulek přesně %d run) = %v, chci nil", exercise.MaxTitleLen, err)
-		}
-	})
-}
-
 func TestNew(t *testing.T) {
 	got, err := exercise.New(" b1 ", "HTTPS://Go.dev/doc/?utm_source=x", "  Dokumentace  ", []string{"Docs", "go", "go"}, base)
 	if err != nil {
@@ -172,154 +97,12 @@ func mustNew(t *testing.T, id, rawURL, title string, tags []string, offset time.
 	return b
 }
 
-func TestStoreAddGetDelete(t *testing.T) {
-	s := exercise.NewStore()
-	b := mustNew(t, "b1", "https://go.dev/doc", "Dokumentace Go", []string{"go", "docs"}, 0)
-
-	if err := s.Add(b); err != nil {
-		t.Fatalf("Add() = %v", err)
-	}
-	if err := s.Add(b); !errors.Is(err, exercise.ErrDuplicateID) {
-		t.Errorf("druhý Add(stejné ID) = %v, chci ErrDuplicateID", err)
-	}
-	if got := s.Len(); got != 1 {
-		t.Errorf("Len() = %d, chci 1", got)
-	}
-
-	got, err := s.Get("b1")
-	if err != nil {
-		t.Fatalf("Get() = %v", err)
-	}
-	if !reflect.DeepEqual(got, b) {
-		t.Errorf("Get() = %+v, chci %+v", got, b)
-	}
-	if _, err := s.Get("nope"); !errors.Is(err, exercise.ErrNotFound) {
-		t.Errorf("Get(neexistující) = %v, chci ErrNotFound", err)
-	}
-
-	if err := s.Delete("b1"); err != nil {
-		t.Fatalf("Delete() = %v", err)
-	}
-	if err := s.Delete("b1"); !errors.Is(err, exercise.ErrNotFound) {
-		t.Errorf("druhý Delete() = %v, chci ErrNotFound", err)
-	}
-	if got := s.Len(); got != 0 {
-		t.Errorf("Len() po smazání = %d, chci 0", got)
-	}
-	if got := s.ByTag("go"); len(got) != 0 {
-		t.Errorf("ByTag(\"go\") po smazání = %+v, chci prázdný výsledek", got)
-	}
-}
-
-func TestStoreAddValidates(t *testing.T) {
-	s := exercise.NewStore()
-	if err := s.Add(exercise.Bookmark{ID: "x", URL: "nope", Title: "T"}); !errors.Is(err, exercise.ErrInvalidURL) {
-		t.Errorf("Add(neplatná záložka) = %v, chci ErrInvalidURL", err)
-	}
-	if _, err := s.Get("x"); !errors.Is(err, exercise.ErrNotFound) {
-		t.Errorf("Get(\"x\") = %v, chci ErrNotFound — neplatná záložka se nemá uložit", err)
-	}
-}
-
-func TestStoreDoesNotAliasTags(t *testing.T) {
-	s := exercise.NewStore()
-	b := mustNew(t, "b1", "https://go.dev", "Go", []string{"go"}, 0)
-	if err := s.Add(b); err != nil {
-		t.Fatalf("Add() = %v", err)
-	}
-
-	b.Tags[0] = "podvrh"
-	got, err := s.Get("b1")
-	if err != nil {
-		t.Fatalf("Get() = %v", err)
-	}
-	if got.Tags[0] != "go" {
-		t.Errorf("store sdílí slice tagů s volajícím: %v", got.Tags)
-	}
-
-	got.Tags[0] = "jiný podvrh"
-	again, err := s.Get("b1")
-	if err != nil {
-		t.Fatalf("Get() = %v", err)
-	}
-	if again.Tags[0] != "go" {
-		t.Errorf("Get() vrací slice sdílený se store: %v", again.Tags)
-	}
-}
-
-func TestStoreByTagOrder(t *testing.T) {
-	s := exercise.NewStore()
-	items := []exercise.Bookmark{
-		mustNew(t, "b1", "https://a.example/1", "První", []string{"go"}, 0),
-		mustNew(t, "b2", "https://a.example/2", "Druhá", []string{"go", "http"}, time.Hour),
-		mustNew(t, "b3", "https://a.example/3", "Třetí", []string{"http"}, 2*time.Hour),
-	}
-	for _, b := range items {
-		if err := s.Add(b); err != nil {
-			t.Fatalf("Add(%s) = %v", b.ID, err)
-		}
-	}
-
-	gotIDs := ids(s.ByTag("go"))
-	if want := []string{"b2", "b1"}; !reflect.DeepEqual(gotIDs, want) {
-		t.Errorf("ByTag(\"go\") = %v, chci %v (od nejnovější)", gotIDs, want)
-	}
-	if got := ids(s.ByTag(" HTTP ")); !reflect.DeepEqual(got, []string{"b3", "b2"}) {
-		t.Errorf("ByTag(\" HTTP \") = %v, chci [b3 b2] — tag se normalizuje", got)
-	}
-	if got := s.ByTag("neznámý"); len(got) != 0 {
-		t.Errorf("ByTag(neznámý) = %+v, chci prázdný výsledek", got)
-	}
-}
-
 func ids(items []exercise.Bookmark) []string {
 	out := make([]string, 0, len(items))
 	for _, b := range items {
 		out = append(out, b.ID)
 	}
 	return out
-}
-
-func TestStoreConcurrent(t *testing.T) {
-	s := exercise.NewStore()
-	const n = 64
-
-	var wg sync.WaitGroup
-	for i := 0; i < n; i++ {
-		wg.Add(1)
-		go func(i int) {
-			defer wg.Done()
-			b := exercise.Bookmark{
-				ID:        fmt.Sprintf("b%03d", i),
-				URL:       fmt.Sprintf("https://example.com/%d", i),
-				Title:     fmt.Sprintf("Záložka %d", i),
-				Tags:      []string{"go"},
-				CreatedAt: base.Add(time.Duration(i) * time.Minute),
-			}
-			if err := s.Add(b); err != nil {
-				t.Errorf("Add(%s) = %v", b.ID, err)
-			}
-		}(i)
-	}
-	for i := 0; i < n; i++ {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
-			_ = s.Len()
-			_ = s.ByTag("go")
-			if _, err := s.Search(exercise.Query{Tags: []string{"go"}, Limit: 5}); err != nil {
-				t.Errorf("Search() = %v", err)
-			}
-		}()
-	}
-	wg.Wait()
-
-	if got := s.Len(); got != n {
-		t.Errorf("Len() = %d, chci %d", got, n)
-	}
-	if got := len(s.ByTag("go")); got != n {
-		t.Errorf("ByTag(\"go\") vrátil %d záložek, chci %d", got, n)
-	}
 }
 
 func searchStore(t *testing.T) *exercise.Store {
@@ -482,5 +265,42 @@ func TestSearchEmptyStore(t *testing.T) {
 	}
 	if len(page.Items) != 0 || page.Total != 0 || page.NextCursor != "" {
 		t.Errorf("Search(prázdný store) = %+v, chci prázdnou stránku", page)
+	}
+}
+
+func TestStoreConcurrent(t *testing.T) {
+	s := exercise.NewStore()
+	const n = 64
+
+	var wg sync.WaitGroup
+	for i := 0; i < n; i++ {
+		wg.Add(1)
+		go func(i int) {
+			defer wg.Done()
+			b := exercise.Bookmark{
+				ID:        fmt.Sprintf("b%03d", i),
+				URL:       fmt.Sprintf("https://example.com/%d", i),
+				Title:     fmt.Sprintf("Záložka %d", i),
+				Tags:      []string{"go"},
+				CreatedAt: base.Add(time.Duration(i) * time.Minute),
+			}
+			if err := s.Add(b); err != nil {
+				t.Errorf("Add(%s) = %v", b.ID, err)
+			}
+		}(i)
+	}
+	for i := 0; i < n; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			if _, err := s.Search(exercise.Query{Tags: []string{"go"}, Limit: 5}); err != nil {
+				t.Errorf("Search() = %v", err)
+			}
+		}()
+	}
+	wg.Wait()
+
+	if got := s.Len(); got != n {
+		t.Errorf("Len() = %d, chci %d", got, n)
 	}
 }

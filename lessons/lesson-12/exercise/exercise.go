@@ -1,6 +1,8 @@
 // Package exercise obsahuje cvičení lekce 12.
 package exercise
 
+import "math"
+
 // Shape je cokoli, co umí spočítat svůj obsah.
 type Shape interface {
 	Area() float64
@@ -32,29 +34,23 @@ type Recorder struct {
 // Slouží k ukázce pasti "nil pointer v non-nil interfacu".
 type MyErr struct{}
 
-// --- Stupeň: obtížný ---
-// Area vrací obsah obdélníku W * H.
-func (r Rect) Area() float64 {
-	// TODO
-	return 0
-}
-
-// Area vrací obsah kruhu π·R².
-// Použij math.Pi (ne vlastní přibližnou konstantu).
-func (c Circle) Area() float64 {
-	// TODO
-	return 0
-}
-
 // --- Stupeň: jednoduchý ---
+
 // TotalArea sečte obsahy všech tvarů. Prvky rovné nil přeskočí (bez paniky).
 // Nil i prázdný slice dají 0.
+//
+// POZOR: kód níže je ZÁMĚRNĚ VADNÝ — nezkontroluje nil prvky v slice.
+// Volání Area na nil interface panikuje. Najdi chybu a oprav.
 func TotalArea(shapes []Shape) float64 {
-	// TODO
-	return 0
+	var total float64
+	for _, s := range shapes {
+		total += s.Area()
+	}
+	return total
 }
 
 // --- Stupeň: střední ---
+
 // Describe vrací popis dynamického typu přes type switch:
 // nil → "nil", int → "int:42", string → "string:%q", bool → "bool:true/false",
 // []int → "[]int:len=3", ostatní → "other:<typ>".
@@ -77,16 +73,10 @@ func (r *Recorder) Messages() []string {
 	return nil
 }
 
-// NotifyAll pošle msg všem notifierům. Nil prvky přeskočí.
-// Při první chybě skončí a vrátí ji. Bez chyb vrací nil.
-func NotifyAll(ns []Notifier, msg string) error {
-	// TODO
-	return nil
-}
+// --- Stupeň: obtížný ---
 
 // Area vrací 0. Pointer receiver nesahá na pole — metoda funguje i na nil *MyErr.
 func (e *MyErr) Area() float64 {
-	// TODO
 	return 0
 }
 
@@ -102,4 +92,14 @@ func ReturnsNilPointer() Shape {
 func IsNilInterface(s Shape) bool {
 	// TODO
 	return false
+}
+
+// Area vrací obsah obdélníku W * H. Hotová — ilustruje implicitní implementaci Shape.
+func (r Rect) Area() float64 {
+	return r.W * r.H
+}
+
+// Area vrací obsah kruhu π·R². Hotová — používá math.Pi.
+func (c Circle) Area() float64 {
+	return math.Pi * c.R * c.R
 }

@@ -1,6 +1,6 @@
 # Lekce 20 — Konstruktory, inicializace a design API
 
-> **Čas:** ~90 min · **Fáze:** 2 — Idiomatický Go · **AI režim:** `JEN VYSVĚTLENÍ`
+> **Čas:** ~70 min · **Fáze:** 2 — Idiomatický Go · **AI režim:** `JEN VYSVĚTLENÍ`
 
 ## Co budeš umět
 
@@ -245,13 +245,12 @@ Po přečtení teorie spusť v Cursoru **`/go-deep-quiz 20`**. AI tě ~5 minut p
 
 ## Úkol
 
-Pracuj v `exercise/`. Po doplnění spouštěj testy:
-
-Stupně jdou od jednodušších ke složitějším — po každém stupni spusť review, než jdeš dál.
+Pracuj v `exercise/`. Kontrakt je v komentáři nad funkcí. Stupně jdou od jednodušších
+ke složitějším — po každém stupni spusť review, než jdeš dál.
 
 ### Jednoduchý
 
-Funkce: `NewServer`, `MustNewServer`, `Addr`, `Logger`, `WithTimeout`, `WithRetries`
+Oprav: `NewClient` (kód je záměrně vadný — validace před options)
 
 ```bash
 make lesson L=20 PART=1
@@ -261,7 +260,7 @@ Pak **`/go-deep-review 20 easy`**.
 
 ### Střední
 
-Funkce: `WithUserAgent`, `NewClient`, `BaseURL`, `Timeout`, `Retries`, `UserAgent`, `NewService`
+Implementuj: `NewServer`, `MustNewServer`, `Addr`, `Logger`
 
 ```bash
 make lesson L=20 PART=2
@@ -271,7 +270,7 @@ Pak **`/go-deep-review 20 medium`**.
 
 ### Obtížný
 
-Funkce: `Add`, `Count`, `Values`, `Set`, `Lookup`, `Len`, `Keys`
+Doplň: `Set`, `Lookup`, `Len` na `Registry` (zero value bez konstruktoru)
 
 ```bash
 make lesson L=20 PART=3
@@ -285,7 +284,6 @@ Až budou stupně hotové, porovnej se `solutions/` (spoiler).
 
 Spusť **`/go-deep-review 20 final`**. AI projde body níže, doptá se a ověří pochopení. Celé cvičení ověří `make lesson L=20` (+ `make race L=20`, pokud to lekce vyžaduje).
 
-- [ ] Žádná tvoje funkce nevrací interface
 - [ ] `Registry` nemá konstruktor a testy na zero value prochází
 - [ ] Umíš vysvětlit, proč se validace dělá až po aplikaci options
 - [ ] Umíš vysvětlit, proč je `func New() Servicer` s neexportovaným typem anti-vzor

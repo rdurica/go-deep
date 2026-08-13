@@ -2,14 +2,6 @@
 package solutions
 
 // --- Stupeň: jednoduchý ---
-// Sum sečte libovolný počet čísel. Bez argumentů vrací 0.
-func Sum(nums ...int) int {
-	total := 0
-	for _, n := range nums {
-		total += n
-	}
-	return total
-}
 
 // MinMax vrátí nejmenší a největší prvek slice.
 // Pro prázdný nebo nil vstup vrací (0, 0, false).
@@ -30,6 +22,16 @@ func MinMax(nums []int) (min, max int, ok bool) {
 }
 
 // --- Stupeň: střední ---
+
+// Sum sečte libovolný počet čísel. Bez argumentů vrací 0.
+func Sum(nums ...int) int {
+	total := 0
+	for _, n := range nums {
+		total += n
+	}
+	return total
+}
+
 // Counter vrací funkci, která při každém zavolání vrátí o jedna víc.
 // První volání vrátí 1.
 func Counter() func() int {
@@ -51,6 +53,7 @@ func Apply(nums []int, f func(int) int) []int {
 }
 
 // --- Stupeň: obtížný ---
+
 // Compose složí funkce zleva doprava: Compose(f, g)(x) == g(f(x)).
 // Bez argumentů vrací identitu.
 func Compose(fs ...func(int) int) func(int) int {

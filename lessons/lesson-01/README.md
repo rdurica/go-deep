@@ -1,6 +1,6 @@
 # Lekce 01 — Toolchain, moduly a workspace
 
-> **Čas:** ~75 min · **Fáze:** 0 — Setup a mentální reset · **AI režim:** `ZAKÁZÁNO`
+> **Čas:** ~65 min · **Fáze:** 0 — Setup a mentální reset · **AI režim:** `ZAKÁZÁNO`
 
 ## Co budeš umět
 
@@ -73,8 +73,8 @@ Dva balíčky, které v téhle lekci skoro jistě otevřeš:
 `fmt` je zkratka z *format*. Umí tisknout (`Println`, `Printf`) i **vracet** hotový
 string (`Sprintf`) — něco jako `sprintf` v C nebo skládání přes placeholdery místo
 konkatenace `"a" + $x + "b"`. Placeholdery poznáš podle `%`: `%s` string, `%d` celé
-číslo, `%v` „nějak rozumně vypiš hodnotu". Detailněji až později; pro úkol A a B ti
-stačí `Sprintf` a tyhle tři.
+číslo, `%v` „nějak rozumně vypiš hodnotu". Detailněji až později; pro `Greet` a `Describe`
+ti stačí `Sprintf` a tyhle tři.
 
 Když nevíš, co funkce dělá: `go doc strings.TrimSpace` nebo `go doc fmt.Sprintf`.
 
@@ -144,7 +144,7 @@ Bez ní není co spustit — `go run` i `go build` hledají právě tenhle vstup
 V PHP spustíš soubor přímo; tady je entry point kompilovaný a pojmenovaný pevně.
 
 Ve větších projektech je zvyk dávat binárky pod `cmd/<jméno>/` (např. `cmd/api/main.go`)
-a knihovní kód držet mimo `cmd/`. Pro hello-world v úkolu C stačí `main.go` v kořeni
+a knihovní kód držet mimo `cmd/`. Pro hello-world ve vlastním modulu stačí `main.go` v kořeni
 modulu — `cmd/` je konvence pro přehlednost, ne povinnost u jednoho souboru.
 
 ## Rozdíly proti PHP
@@ -193,13 +193,12 @@ Po přečtení teorie spusť v Cursoru **`/go-deep-quiz 01`**. AI tě ~5 minut p
 
 ## Úkol
 
-Pracuj v `exercise/`. Po doplnění spouštěj testy:
-
-Stupně jdou od jednodušších ke složitějším — po každém stupni spusť review, než jdeš dál.
+Pracuj v `exercise/`. Kontrakt je v komentáři nad funkcí. Stupně jdou od jednodušších
+ke složitějším — po každém stupni spusť review, než jdeš dál.
 
 ### Jednoduchý
 
-Funkce: `Greet`
+Oprav: `Greet` (kód je záměrně vadný — kontrola prázdnosti před `TrimSpace`)
 
 ```bash
 make lesson L=01 PART=1
@@ -209,7 +208,7 @@ Pak **`/go-deep-review 01 easy`**.
 
 ### Střední
 
-Funkce: `SumAll`
+Implementuj: `SumAll`
 
 ```bash
 make lesson L=01 PART=2
@@ -219,7 +218,7 @@ Pak **`/go-deep-review 01 medium`**.
 
 ### Obtížný
 
-Funkce: `Describe`
+Doplň: `Describe` (nil vs. prázdný slice, `max` přes celý vstup)
 
 ```bash
 make lesson L=01 PART=3
@@ -244,8 +243,8 @@ Spusť **`/go-deep-review 01 final`**. AI projde body níže, doptá se a ověř
 
 `ZAKÁZÁNO` — viz [docs/ai-playbook.md](../../docs/ai-playbook.md).
 
-Ve fázi 0 a 1 si cvičení píšeš sám. AI smí odpovídat na koncepční otázky
-(„proč je nepoužitý import chyba?"), ale nesmí produkovat kód cvičení.
+Stuby jsou krátké; úsudek je tvůj. AI smí odpovídat na koncepční otázky
+(„proč je nepoužitý import chyba?"), ale nesmí generovat kód cvičení.
 
 Mentor, kvíz i review (dialog) jsou vždy OK; v tomto režimu AI nesmí psát kód cvičení.
 ## Další čtení

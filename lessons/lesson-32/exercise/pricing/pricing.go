@@ -21,13 +21,30 @@ var (
 	ErrOverflow = errors.New("pricing: total overflow")
 )
 
+// --- Stupeň: jednoduchý ---
 // Total spočítá cenu košíku v centech.
-// Prázdný nebo nil košík → 0, nil. Každý produkt projde catalog.Validate;
-// nekladné množství → ErrInvalidQty. Řádková cena Cents*Qty, součet nesmí
-// přetéct int64 — vrať ErrOverflow, nikdy tiše přetečenou hodnotu.
+//
+// Každý produkt musí projít catalog.Validate, množství musí být kladné
+// a součet se nesmí přetéct. Prázdný nebo nil vstup dává 0 bez chyby.
 func Total(items []catalog.Item) (money int64, err error) {
-	// TODO
-	return
+	for _, it := range items {
+		if err := catalog.Validate(it.Product); err != nil {
+			return 0, err
+		}
+		if it.Qty <= 0 {
+			return 0, wrap(it.Product.SKU, ErrInvalidQty)
+		}
+		qty := int64(it.Qty)
+		if mulOverflows(it.Product.Cents, qty) {
+			return 0, wrap(it.Product.SKU, ErrOverflow)
+		}
+		line := it.Product.Cents * qty
+		if money > math.MaxInt64-line {
+			return 0, wrap(it.Product.SKU, ErrOverflow)
+		}
+		money += line
+	}
+	return money, nil
 }
 
 // mulOverflows hlásí, jestli a*b přeteče int64. Oba operandy jsou nezáporné.

@@ -2,105 +2,8 @@
 package exercise
 
 import (
-	"errors"
-	"time"
+	"strings"
 )
-
-// Chyby vracené parserem ADR.
-var (
-	ErrInvalidHeader  = errors.New("adr: neplatná hlavička")
-	ErrInvalidStatus  = errors.New("adr: neznámý status")
-	ErrInvalidDate    = errors.New("adr: neplatné datum")
-	ErrMissingSection = errors.New("adr: chybí sekce")
-)
-
-// Status je stav rozhodnutí v ADR.
-type Status int
-
-// Stavy ADR. StatusUnknown je zero value, tedy "nenastaveno".
-const (
-	StatusUnknown Status = iota
-	StatusProposed
-	StatusAccepted
-	StatusRejected
-	StatusSuperseded
-)
-
-// --- Stupeň: obtížný ---
-// String vrací "Unknown", "Proposed", "Accepted", "Rejected" nebo "Superseded".
-// Hodnota mimo rozsah vrací "Unknown".
-func (s Status) String() string {
-	// TODO
-	return ""
-}
-
-// --- Stupeň: jednoduchý ---
-// ParseStatus převede jméno stavu (case-insensitive, s oříznutím mezer) na Status.
-// Neznámý vstup vrací chybu obalující ErrInvalidStatus.
-func ParseStatus(s string) (Status, error) {
-	// TODO
-	return *new(Status), nil
-}
-
-// Fold převede text na malá písmena bez diakritiky.
-// Znaky bez mapování nechává beze změny ("Akceptační Kritéria" → "akceptacni kriteria").
-func Fold(s string) string {
-	// TODO
-	return ""
-}
-
-// Slug převede titulek na URL-bezpečný tvar: Fold, pak jen [a-z0-9],
-// ostatní skupiny znaků nahraď jedinou pomlčkou, bez pomlčky na začátku/konci.
-// "---" → "".
-func Slug(title string) string {
-	// TODO
-	return ""
-}
-
-// ADR je záznam architektonického rozhodnutí.
-type ADR struct {
-	Number       int
-	Title        string
-	Status       Status
-	Date         time.Time
-	Context      string
-	Decision     string
-	Consequences string
-}
-
-// --- Stupeň: střední ---
-// Filename vrací jméno souboru ADR: "<číslo4>-<slug>.md".
-// Číslo je na čtyři místa doplněné nulami, delší se nezkracuje.
-// Prázdný slug nahraď "adr".
-func (a ADR) Filename() string {
-	// TODO
-	return ""
-}
-
-// Render vykreslí ADR jako markdown: hlavička "# N. Title", Status, Date (2006-01-02),
-// sekce Context / Decision / Consequences. Texty sekcí ořízni o okolní bílé znaky.
-// Výstup končí \n a bez odsazení.
-func (a ADR) Render() string {
-	// TODO
-	return ""
-}
-
-// ParseADR rozebere markdown z Render zpět na ADR (včetně víceřádkových sekcí a \r\n).
-// Chyby vždy obaluj kvůli errors.Is:
-// neplatná hlavička → ErrInvalidHeader, neznámý status → ErrInvalidStatus,
-// špatné datum → ErrInvalidDate, chybějící/prázdná sekce nebo Status/Date → ErrMissingSection.
-func ParseADR(s string) (ADR, error) {
-	// TODO
-	return *new(ADR), nil
-}
-
-// Index vygeneruje markdown tabulku Číslo|Titulek|Status|Datum, seřazenou podle čísla
-// (při shodě podle titulku). Prázdný vstup → "_Žádné ADR._\n".
-// Při duplicitním čísle za tabulkou prázdný řádek a "> pozor: duplicitní číslo N (K×)" vzestupně.
-func Index(adrs []ADR) string {
-	// TODO
-	return ""
-}
 
 // Severity je závažnost nálezu v kontrole specifikace.
 type Severity int
@@ -112,10 +15,16 @@ const (
 	SeverityError
 )
 
-// String vrací "INFO", "WARN" nebo "ERROR".
+// String implementuje fmt.Stringer.
 func (s Severity) String() string {
-	// TODO
-	return ""
+	switch s {
+	case SeverityWarn:
+		return "WARN"
+	case SeverityError:
+		return "ERROR"
+	default:
+		return "INFO"
+	}
 }
 
 // Rule je jedno pravidlo kontroly specifikace.
@@ -138,26 +47,80 @@ type SpecCheck struct {
 	Rules []Rule
 }
 
-// DefaultSpecCheck vrací výchozí sadu pravidel v tomto pořadí:
-// acceptance (ERROR: akceptační kritéria / acceptance criteria / kritéria přijetí),
-// edge-cases (ERROR: hraniční případ / edge case),
-// errors (ERROR: chybový stav(y) / error handling),
-// go-version (WARN: "go 1."),
-// deps (WARN: bez/žádné závislosti / pouze stdlib / stdlib only).
+// foldMap mapuje písmena s diakritikou na ASCII protějšek.
+var foldMap = map[rune]rune{
+	'á': 'a', 'ä': 'a', 'à': 'a', 'â': 'a', 'ą': 'a',
+	'č': 'c', 'ć': 'c', 'ç': 'c',
+	'ď': 'd',
+	'é': 'e', 'ě': 'e', 'è': 'e', 'ê': 'e', 'ë': 'e', 'ę': 'e',
+	'í': 'i', 'ì': 'i', 'î': 'i', 'ï': 'i',
+	'ľ': 'l', 'ĺ': 'l', 'ł': 'l',
+	'ň': 'n', 'ń': 'n',
+	'ó': 'o', 'ö': 'o', 'ô': 'o', 'ò': 'o',
+	'ř': 'r', 'ŕ': 'r',
+	'š': 's', 'ś': 's',
+	'ť': 't',
+	'ú': 'u', 'ů': 'u', 'ü': 'u', 'ù': 'u', 'û': 'u',
+	'ý': 'y', 'ÿ': 'y',
+	'ž': 'z', 'ź': 'z', 'ż': 'z',
+}
+
+// --- Stupeň: jednoduchý ---
+
+// Check projde specifikaci a vrátí nálezy v pořadí pravidel.
+// Pravidlo splní, když spec obsahuje aspoň jedno klíčové slovo (po Fold).
+// Prázdný keyword přeskoč. Bez pravidel vrať prázdný slice.
+//
+// POZOR: kód níže je ZÁMĚRNĚ VADNÝ — review-lab typického AI spec checkeru.
+// Hledá klíčová slova case-sensitive a bez Fold, takže „Vlastník" mine „vlastník".
+// Oprav podle kontraktu — testy před opravou padají.
+func (c SpecCheck) Check(spec string) []Finding {
+	var findings []Finding
+	for _, r := range c.Rules {
+		if ruleMatches(r, spec) {
+			continue
+		}
+		findings = append(findings, Finding{RuleID: r.ID, Severity: r.Severity, Message: r.Message})
+	}
+	return findings
+}
+
+func ruleMatches(r Rule, spec string) bool {
+	for _, kw := range r.Keywords {
+		kw = strings.TrimSpace(kw)
+		if kw == "" {
+			continue
+		}
+		if strings.Contains(spec, kw) {
+			return true
+		}
+	}
+	return false
+}
+
+// CheckSpec zkontroluje specifikaci výchozí sadou pravidel.
+func CheckSpec(spec string) []Finding {
+	return DefaultSpecCheck().Check(spec)
+}
+
+// --- Stupeň: střední ---
+
+// Fold převede text na malá písmena bez diakritiky.
+func Fold(s string) string {
+	// TODO
+	return ""
+}
+
+// Slug převede titulek na URL-bezpečný tvar bez diakritiky.
+func Slug(title string) string {
+	// TODO
+	return ""
+}
+
+// --- Stupeň: obtížný ---
+
+// DefaultSpecCheck vrací výchozí sadu pravidel pro spec-first zadání.
 func DefaultSpecCheck() SpecCheck {
 	// TODO
-	return *new(SpecCheck)
-}
-
-// Check pro každé pravidlo, jehož žádné klíčové slovo se ve spec nevyskytuje, vrátí nález.
-// Porovnávej přes Fold. Pořadí nálezů = pořadí pravidel. Bez pravidel → žádné nálezy.
-func (c SpecCheck) Check(spec string) []Finding {
-	// TODO
-	return nil
-}
-
-// CheckSpec zkontroluje specifikaci výchozí sadou pravidel (DefaultSpecCheck).
-func CheckSpec(spec string) []Finding {
-	// TODO
-	return nil
+	return SpecCheck{}
 }

@@ -75,6 +75,40 @@ func (tr *tracker) leave() { tr.cur.Add(-1) }
 
 func (tr *tracker) peak() int { return int(tr.max.Load()) }
 
+func TestWithContextReturnsNonNil(t *testing.T) {
+	g, ctx := exercise.WithContext(context.Background())
+	if g == nil {
+		t.Fatal("WithContext vrátil nil skupinu")
+	}
+	if ctx == nil {
+		t.Fatal("WithContext vrátil nil kontext")
+	}
+}
+
+func TestWithContextIsDerivedContext(t *testing.T) {
+	parent, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	_, ctx := exercise.WithContext(parent)
+	if parent == ctx {
+		t.Error("WithContext musí vrátit odvozený kontext, ne stejný jako rodič")
+	}
+}
+
+func TestWithContextPropagatesParentCancel(t *testing.T) {
+	parent, cancelParent := context.WithCancel(context.Background())
+	defer cancelParent()
+
+	_, ctx := exercise.WithContext(parent)
+	cancelParent()
+
+	select {
+	case <-ctx.Done():
+	case <-time.After(2 * time.Second):
+		t.Fatal("odvozený kontext nereaguje na zrušení rodiče")
+	}
+}
+
 func TestGroupRunsEverythingAndReturnsNil(t *testing.T) {
 	before := runtime.NumGoroutine()
 
@@ -299,8 +333,9 @@ func TestRunAllNilRun(t *testing.T) {
 	err := exercise.RunAll(context.Background(), []exercise.Task{{Name: "prazdna"}})
 	if !errors.Is(err, exercise.ErrNilTask) {
 		t.Errorf("RunAll s nil Run = %v, chci ErrNilTask", err)
+		return
 	}
-	if !strings.Contains(err.Error(), "prazdna") {
+	if err != nil && !strings.Contains(err.Error(), "prazdna") {
 		t.Errorf("chyba %q neobsahuje jméno úlohy", err.Error())
 	}
 }

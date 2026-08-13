@@ -9,63 +9,6 @@ import (
 	exercise "github.com/rdurica/go-deep/lessons/lesson-57/exercise"
 )
 
-const srcFuncs = `package demo
-
-import "context"
-
-func Add(a, b int) int {
-	return a + b
-}
-
-func noop() {}
-
-func (s *Store) Get(ctx context.Context, id string) (Bookmark, error) {
-	return Bookmark{}, nil
-}
-
-func Split(s string) (head string, tail string, err error) {
-	return "", "", nil
-}
-`
-
-func TestParseFuncs(t *testing.T) {
-	got, err := exercise.ParseFuncs(srcFuncs)
-	if err != nil {
-		t.Fatalf("ParseFuncs() = chyba %v", err)
-	}
-
-	want := []exercise.FuncInfo{
-		{Name: "Add", Params: 2, Results: 1, Lines: 3, Exported: true},
-		{Name: "noop", Params: 0, Results: 0, Lines: 1, Exported: false},
-		{Name: "Get", Params: 2, Results: 2, Lines: 3, Exported: true},
-		{Name: "Split", Params: 1, Results: 3, Lines: 3, Exported: true},
-	}
-	if len(got) != len(want) {
-		t.Fatalf("ParseFuncs() vrátil %d funkcí (%+v), chci %d", len(got), got, len(want))
-	}
-	for i := range want {
-		if got[i] != want[i] {
-			t.Errorf("funkce %d = %+v, chci %+v", i, got[i], want[i])
-		}
-	}
-}
-
-func TestParseFuncsInvalidSource(t *testing.T) {
-	if _, err := exercise.ParseFuncs("tohle není Go"); err == nil {
-		t.Error("ParseFuncs(nevalidní zdroják) = nil chyba, chci chybu")
-	}
-}
-
-func TestParseFuncsEmptyFile(t *testing.T) {
-	got, err := exercise.ParseFuncs("package demo\n")
-	if err != nil {
-		t.Fatalf("ParseFuncs() = chyba %v", err)
-	}
-	if len(got) != 0 {
-		t.Errorf("ParseFuncs(soubor bez funkcí) = %+v, chci prázdný výsledek", got)
-	}
-}
-
 const srcIgnored = `package demo
 
 import "os"
@@ -123,6 +66,70 @@ func run() error {
 	}
 }
 
+func TestCheckIgnoredErrorsParseError(t *testing.T) {
+	got := exercise.CheckIgnoredErrors("func (")
+	if len(got) != 1 || got[0].Rule != "parse-error" || got[0].Severity != exercise.SeverityError {
+		t.Errorf("CheckIgnoredErrors(rozbitý zdroják) = %+v, chci jediný nález parse-error/ERROR", got)
+	}
+}
+
+const srcFuncs = `package demo
+
+import "context"
+
+func Add(a, b int) int {
+	return a + b
+}
+
+func noop() {}
+
+func (s *Store) Get(ctx context.Context, id string) (Bookmark, error) {
+	return Bookmark{}, nil
+}
+
+func Split(s string) (head string, tail string, err error) {
+	return "", "", nil
+}
+`
+
+func TestParseFuncs(t *testing.T) {
+	got, err := exercise.ParseFuncs(srcFuncs)
+	if err != nil {
+		t.Fatalf("ParseFuncs() = chyba %v", err)
+	}
+
+	want := []exercise.FuncInfo{
+		{Name: "Add", Params: 2, Results: 1, Lines: 3, Exported: true},
+		{Name: "noop", Params: 0, Results: 0, Lines: 1, Exported: false},
+		{Name: "Get", Params: 2, Results: 2, Lines: 3, Exported: true},
+		{Name: "Split", Params: 1, Results: 3, Lines: 3, Exported: true},
+	}
+	if len(got) != len(want) {
+		t.Fatalf("ParseFuncs() vrátil %d funkcí (%+v), chci %d", len(got), got, len(want))
+	}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Errorf("funkce %d = %+v, chci %+v", i, got[i], want[i])
+		}
+	}
+}
+
+func TestParseFuncsInvalidSource(t *testing.T) {
+	if _, err := exercise.ParseFuncs("tohle není Go"); err == nil {
+		t.Error("ParseFuncs(nevalidní zdroják) = nil chyba, chci chybu")
+	}
+}
+
+func TestParseFuncsEmptyFile(t *testing.T) {
+	got, err := exercise.ParseFuncs("package demo\n")
+	if err != nil {
+		t.Fatalf("ParseFuncs() = chyba %v", err)
+	}
+	if len(got) != 0 {
+		t.Errorf("ParseFuncs(soubor bez funkcí) = %+v, chci prázdný výsledek", got)
+	}
+}
+
 const srcContextStruct = `package demo
 
 import "context"
@@ -164,51 +171,10 @@ func TestCheckContextInStruct(t *testing.T) {
 	}
 }
 
-const srcContextParam = `package demo
-
-import "context"
-
-func Good(ctx context.Context, id string) error { return nil }
-
-func Bad(id string, ctx context.Context) error { return nil }
-
-func (s *Store) AlsoBad(id string, limit int, ctx context.Context) error { return nil }
-
-func None(id string) error { return nil }
-`
-
-func TestCheckContextNotFirst(t *testing.T) {
-	got := exercise.CheckContextNotFirst(srcContextParam)
-	wantLines := []int{7, 9}
-
-	if len(got) != len(wantLines) {
-		t.Fatalf("CheckContextNotFirst() = %+v, chci nálezy na řádcích %v", got, wantLines)
-	}
-	for i, line := range wantLines {
-		if got[i].Line != line {
-			t.Errorf("nález %d je na řádku %d, chci %d", i, got[i].Line, line)
-		}
-		if got[i].Rule != "context-not-first" {
-			t.Errorf("nález %d má Rule %q, chci %q", i, got[i].Rule, "context-not-first")
-		}
-		if got[i].Severity != exercise.SeverityWarn {
-			t.Errorf("nález %d má závažnost %v, chci WARN", i, got[i].Severity)
-		}
-	}
-}
-
-func TestChecksReportParseError(t *testing.T) {
-	broken := "func ("
-	checks := map[string]func(string) []exercise.Finding{
-		"CheckIgnoredErrors":   exercise.CheckIgnoredErrors,
-		"CheckContextInStruct": exercise.CheckContextInStruct,
-		"CheckContextNotFirst": exercise.CheckContextNotFirst,
-	}
-	for name, check := range checks {
-		got := check(broken)
-		if len(got) != 1 || got[0].Rule != "parse-error" || got[0].Severity != exercise.SeverityError {
-			t.Errorf("%s(rozbitý zdroják) = %+v, chci jediný nález parse-error/ERROR", name, got)
-		}
+func TestCheckContextInStructParseError(t *testing.T) {
+	got := exercise.CheckContextInStruct("func (")
+	if len(got) != 1 || got[0].Rule != "parse-error" {
+		t.Errorf("CheckContextInStruct(rozbitý zdroják) = %+v, chci parse-error", got)
 	}
 }
 

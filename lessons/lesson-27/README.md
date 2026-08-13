@@ -1,6 +1,6 @@
 # Lekce 27 — context v request scope
 
-> **Čas:** ~90 min · **Fáze:** 3 — net/http a tooling · **AI režim:** `BOILERPLATE OK`
+> **Čas:** ~70 min · **Fáze:** 3 — net/http a tooling · **AI režim:** `BOILERPLATE OK`
 
 ## Co budeš umět
 
@@ -234,13 +234,12 @@ Po přečtení teorie spusť v Cursoru **`/go-deep-quiz 27`**. AI tě ~5 minut p
 
 ## Úkol
 
-Pracuj v `exercise/`. Po doplnění spouštěj testy:
-
-Stupně jdou od jednodušších ke složitějším — po každém stupni spusť review, než jdeš dál.
+Pracuj v `exercise/`. `WriteJSON` je hotové — soustřeď se na body níže. Stupně jdou od
+jednodušších ke složitějším; po každém stupni spusť review, než jdeš dál.
 
 ### Jednoduchý
 
-Funkce: `WriteJSON`, `WithUser`
+Oprav: `WithUser` (kód je záměrně vadný — klíč typu `string` místo `userKey{}`)
 
 ```bash
 make lesson L=27 PART=1
@@ -250,7 +249,7 @@ Pak **`/go-deep-review 27 easy`**.
 
 ### Střední
 
-Funkce: `UserFrom`, `Authenticate`, `WhoAmI`
+Implementuj: `Authenticate`, `WhoAmI`
 
 ```bash
 make lesson L=27 PART=2
@@ -260,7 +259,7 @@ Pak **`/go-deep-review 27 medium`**.
 
 ### Obtížný
 
-Funkce: `FetchWithTimeout`, `SlowHandler`, `SlowHandlerWithHook`
+Doplň: `SlowHandler` (práce po krocích, reakce na `ctx.Done()`)
 
 ```bash
 make lesson L=27 PART=3

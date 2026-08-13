@@ -1,6 +1,6 @@
 # Lekce 57 — Strukturované review AI kódu a diff lab
 
-> **Čas:** ~90 min · **Fáze:** 7 — Inženýrství v době AI · **AI režim:** `TECH LEAD`
+> **Čas:** ~70 min · **Fáze:** 7 — Inženýrství v době AI · **AI režim:** `TECH LEAD`
 
 ## Co budeš umět
 
@@ -48,7 +48,7 @@ Pořadí, které funguje:
 Kroky 1 a 3 jde zautomatizovat: unified diff je textový formát a hunk hlavička obsahuje
 kus kontextu (`@@ -24,9 +25,12 @@ func (s *Server) createBookmark(...)`). Filtr, který
 z 900 řádků nechá 120 řádků měnících funkce, uděláš za třicet řádků kódu — a přesně to je
-úkol C.
+`CriticalPath` v obtížném stupni.
 
 ### Šest nálezů, které dělá model pořád dokola
 
@@ -177,13 +177,12 @@ Po přečtení teorie spusť v Cursoru **`/go-deep-quiz 57`**. AI tě ~5 minut p
 
 ## Úkol
 
-Pracuj v `exercise/`. Po doplnění spouštěj testy:
-
-Stupně jdou od jednodušších ke složitějším — po každém stupni spusť review, než jdeš dál.
+Pracuj v `exercise/`. Kontrakt je v komentáři nad funkcí. Stupně jdou od jednodušších
+ke složitějším — po každém stupni spusť review, než jdeš dál.
 
 ### Jednoduchý
 
-Funkce: `String`, `ParseFuncs`
+Oprav: `CheckIgnoredErrors` (review-lab — chybí nález u `v, _ := f()`)
 
 ```bash
 make lesson L=57 PART=1
@@ -193,7 +192,7 @@ Pak **`/go-deep-review 57 easy`**.
 
 ### Střední
 
-Funkce: `CheckIgnoredErrors`, `CheckContextInStruct`
+Implementuj: `ParseFuncs`, `CheckContextInStruct`
 
 ```bash
 make lesson L=57 PART=2
@@ -203,7 +202,7 @@ Pak **`/go-deep-review 57 medium`**.
 
 ### Obtížný
 
-Funkce: `CheckContextNotFirst`, `CriticalPath`, `ReviewReport`
+Doplň: `CriticalPath`, `ReviewReport` (diff lab — čtení diffu od jádra)
 
 ```bash
 make lesson L=57 PART=3

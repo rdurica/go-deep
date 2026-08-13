@@ -1,6 +1,4 @@
-// Package solutions je fasáda nad referenčním řešením lekce 38.
-//
-// Skutečný kód je v podbalíčcích order/, app/, memstore/ a httpapi/.
+// Package solutions je fasáda nad balíčky lekce 38.
 package solutions
 
 import (
@@ -12,8 +10,6 @@ import (
 	"github.com/rdurica/go-deep/lessons/lesson-38/solutions/order"
 )
 
-// Aliasy doménových a aplikačních typů. Alias (znaménko =) není nový typ,
-// jen druhé jméno pro ten samý.
 type (
 	Order      = order.Order
 	Line       = order.Line
@@ -23,7 +19,6 @@ type (
 	Service    = app.Service
 )
 
-// Stavy objednávky.
 const (
 	StatusUnknown   = order.StatusUnknown
 	StatusNew       = order.StatusNew
@@ -32,7 +27,6 @@ const (
 	StatusCancelled = order.StatusCancelled
 )
 
-// Doménové chyby.
 var (
 	ErrMissingID         = order.ErrMissingID
 	ErrEmptyOrder        = order.ErrEmptyOrder
@@ -41,20 +35,10 @@ var (
 	ErrNotFound          = order.ErrNotFound
 )
 
-// ProblemContentType je Content-Type chybové odpovědi podle RFC 7807.
 const ProblemContentType = httpapi.ProblemContentType
 
-// --- Stupeň: jednoduchý ---
-// NewOrder je fasáda nad order.New. Hotová, neimplementuj ji.
-func NewOrder(id string, lines []Line) (Order, error) { return order.New(id, lines) }
-
-// --- Stupeň: střední ---
-// NewMemoryRepository je fasáda nad memstore.New. Hotová, neimplementuj ji.
-func NewMemoryRepository() Repository { return memstore.New() }
-
-// --- Stupeň: obtížný ---
-// NewService je fasáda nad app.NewService. Hotová, neimplementuj ji.
-func NewService(repo Repository, ids IDGen) *Service { return app.NewService(repo, ids) }
-
-// NewHandler je fasáda nad httpapi.NewHandler. Hotová, neimplementuj ji.
-func NewHandler(svc *Service) http.Handler { return httpapi.NewHandler(svc) }
+func NewOrder(id string, lines []Line) (Order, error)    { return order.New(id, lines) }
+func NewMemoryRepository() Repository                    { return memstore.New() }
+func NewService(repo Repository, ids IDGen) *Service     { return app.NewService(repo, ids) }
+func NewHandler(svc *Service) http.Handler               { return httpapi.NewHandler(svc) }
+func WriteJSON(w http.ResponseWriter, status int, v any) { httpapi.WriteJSONForTest(w, status, v) }

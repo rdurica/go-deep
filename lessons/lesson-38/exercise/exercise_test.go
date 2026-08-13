@@ -18,6 +18,17 @@ import (
 	exercise "github.com/rdurica/go-deep/lessons/lesson-38/exercise"
 )
 
+func TestWriteJSONHeaders(t *testing.T) {
+	rec := httptest.NewRecorder()
+	exercise.WriteJSON(rec, http.StatusCreated, map[string]string{"status": "ok"})
+	if rec.Code != http.StatusCreated {
+		t.Errorf("status = %d, chci %d — WriteHeader musí být před zápisem těla", rec.Code, http.StatusCreated)
+	}
+	if ct := rec.Header().Get("Content-Type"); ct != "application/json" {
+		t.Errorf("Content-Type = %q, chci application/json", ct)
+	}
+}
+
 // ---------- pomocníci ----------
 
 func lines() []exercise.Line {

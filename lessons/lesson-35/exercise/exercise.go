@@ -1,8 +1,4 @@
 // Package exercise obsahuje cvičení lekce 35 — persistence.
-//
-// Doménový typ User tady nemá jediný `db:` tag a neví o SQL. Port UserRepo
-// je definovaný u konzumenta, první adaptér je in-memory. SQL se v lekci
-// probírá teoreticky, aby cvičení nepotřebovalo databázi ani driver.
 package exercise
 
 import (
@@ -11,31 +7,22 @@ import (
 	"fmt"
 	"sort"
 	"strconv"
+	"strings"
 	"sync"
 )
 
-// Chyby repozitáře, stavitele dotazů a migrací.
 var (
-	// ErrNotFound je doménový překlad "nic nenalezeno" (v SQL sql.ErrNoRows).
-	ErrNotFound = errors.New("store: user not found")
-	// ErrInvalidUser hlásí uživatele bez ID nebo bez e-mailu.
-	ErrInvalidUser = errors.New("store: invalid user")
-	// ErrUnknownTable hlásí tabulku mimo whitelist.
-	ErrUnknownTable = errors.New("query: unknown table")
-	// ErrUnknownColumn hlásí sloupec mimo whitelist.
-	ErrUnknownColumn = errors.New("query: unknown column")
-	// ErrNoColumns hlásí SELECT bez sloupců.
-	ErrNoColumns = errors.New("query: no columns selected")
-	// ErrDuplicateVersion hlásí dvě migrace se stejnou verzí.
+	ErrNotFound         = errors.New("store: user not found")
+	ErrInvalidUser      = errors.New("store: invalid user")
+	ErrUnknownTable     = errors.New("query: unknown table")
+	ErrUnknownColumn    = errors.New("query: unknown column")
+	ErrNoColumns        = errors.New("query: no columns selected")
 	ErrDuplicateVersion = errors.New("migrate: duplicate version")
-	// ErrDrift hlásí aplikovanou verzi, která v seznamu migrací chybí.
-	ErrDrift = errors.New("migrate: applied migration missing")
-	// ErrInvalidMigration hlásí migraci s nekladnou verzí nebo bez jména.
+	ErrDrift            = errors.New("migrate: applied migration missing")
 	ErrInvalidMigration = errors.New("migrate: invalid migration")
 )
 
-// User je doménový typ. Žádné `db:` tagy, žádné odkazy na tabulku — persistence
-// je detail adaptéru, ne domény.
+// User je doménový typ bez db tagů.
 type User struct {
 	ID     string
 	Email  string
@@ -43,9 +30,7 @@ type User struct {
 	Active bool
 }
 
-// UserRepo je port pro uložení uživatelů. Definuje si ho konzument, takže
-// obsahuje jen to, co doména opravdu potřebuje. Context je první parametr
-// každé metody, protože každý dotaz musí jít zrušit.
+// UserRepo je port u konzumenta.
 type UserRepo interface {
 	Get(ctx context.Context, id string) (User, error)
 	Save(ctx context.Context, u User) error
@@ -53,84 +38,118 @@ type UserRepo interface {
 	List(ctx context.Context) ([]User, error)
 }
 
-// MemoryRepo je in-memory adaptér portu UserRepo. Bezpečný pro souběžné použití
-// (RWMutex); chová se jako SQL adaptér včetně ErrNotFound.
+// MemoryRepo je in-memory adaptér.
 type MemoryRepo struct {
 	mu    sync.RWMutex
 	users map[string]User
 }
 
-// --- Stupeň: jednoduchý ---
-// NewMemoryRepo vytvoří prázdný in-memory repozitář s inicializovanou mapou.
+// NewMemoryRepo vytvoří prázdný repozitář.
 func NewMemoryRepo() *MemoryRepo {
-	// TODO
-	return nil
+	return &MemoryRepo{users: make(map[string]User)}
 }
+
+// --- Stupeň: jednoduchý ---
 
 // Get vrátí uživatele podle ID. Neznámé ID → chyba obalující ErrNotFound.
-// Nejdřív zkontroluj ctx.Err(); zrušený kontext → context.Canceled.
+// Nejdřív zkontroluj ctx.Err().
+//
+// POZOR: kód níže je ZÁMĚRNĚ VADNÝ. U chybějícího ID vrací nulového uživatele bez chyby.
 func (r *MemoryRepo) Get(ctx context.Context, id string) (User, error) {
-	// TODO
-	return *new(User), nil
+	if err := ctx.Err(); err != nil {
+		return User{}, err
+	}
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	u, ok := r.users[id]
+	if !ok {
+		return User{}, nil
+	}
+	return u, nil
 }
 
-// Save uloží uživatele (upsert). Prázdné ID nebo prázdný e-mail (po trim)
-// → ErrInvalidUser. Respektuj ctx.Err().
+// --- Stupeň: střední ---
+
+// Save uloží uživatele (upsert). Prázdné ID nebo prázdný e-mail po trim → ErrInvalidUser.
+// Respektuj ctx.Err().
 func (r *MemoryRepo) Save(ctx context.Context, u User) error {
 	// TODO
 	return nil
 }
 
-// --- Stupeň: střední ---
 // Delete smaže uživatele. Neznámé ID → chyba obalující ErrNotFound.
-// Nejdřív zkontroluj ctx.Err(); zrušený kontext → context.Canceled.
 func (r *MemoryRepo) Delete(ctx context.Context, id string) error {
 	// TODO
 	return nil
 }
 
-// --- Stupeň: obtížný ---
-// List vrátí všechny uživatele seřazené vzestupně podle ID.
-// Respektuj ctx.Err() jako u Get. Prázdný repo → prázdný slice a nil chyba.
+// List vrátí všechny uživatele seřazené podle ID vzestupně.
 func (r *MemoryRepo) List(ctx context.Context) ([]User, error) {
-	// TODO
-	return nil, nil
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	out := make([]User, 0, len(r.users))
+	for _, u := range r.users {
+		out = append(out, u)
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i].ID < out[j].ID })
+	return out, nil
 }
 
-// schema je whitelist tabulek a jejich sloupců. Jméno tabulky ani sloupce
-// nejde předat placeholderem, takže jediná bezpečná obrana je seznam povolených
-// hodnot na straně serveru.
+// --- Stupeň: obtížný ---
+
 var schema = map[string][]string{
 	"users":  {"id", "email", "name", "active"},
 	"orders": {"id", "user_id", "total_cents", "status"},
 }
 
-// BuildSelect sestaví bezpečný SELECT.
-// Tabulka a sloupce jen z whitelistu; hodnoty filtru výhradně do args.
-// Filtry seřazené abecedně podle sloupce (deterministický dotaz).
-// Při chybě prázdný dotaz a nil args.
+// BuildSelect sestaví bezpečný SELECT z whitelistu tabulek a sloupců.
+// Hodnoty filtru jen do args; klíče filtru abecedně.
 func BuildSelect(table string, cols []string, filters map[string]any) (query string, args []any, err error) {
 	// TODO
 	return
 }
 
-// Migration je jedna dopředná migrace schématu. Verze je pořadí, Up je SQL.
+// Migration je jedna dopředná migrace.
 type Migration struct {
 	Version int
 	Name    string
 	Up      string
 }
 
-// Plan spočítá migrace k doběhnutí, seřazené vzestupně podle verze.
-// Nejdřív ověř all: kladná verze, neprázdné jméno, žádné duplicity.
-// Applied verze chybějící v all → ErrDrift; duplicita v applied se ignoruje.
-// Nic k doběhnutí → prázdný plán, ne chyba. Při chybě nil plán.
+// Plan spočítá migrace k doběhnutí. Kompletní implementace — neměň.
 func Plan(applied []int, all []Migration) ([]Migration, error) {
-	// TODO
-	return nil, nil
+	seen := make(map[int]struct{}, len(all))
+	for _, m := range all {
+		if m.Version <= 0 || strings.TrimSpace(m.Name) == "" {
+			return nil, ErrInvalidMigration
+		}
+		if _, dup := seen[m.Version]; dup {
+			return nil, ErrDuplicateVersion
+		}
+		seen[m.Version] = struct{}{}
+	}
+	appliedSet := make(map[int]struct{})
+	for _, v := range applied {
+		appliedSet[v] = struct{}{}
+	}
+	for v := range appliedSet {
+		if _, ok := seen[v]; !ok {
+			return nil, ErrDrift
+		}
+	}
+	var pending []Migration
+	for _, m := range all {
+		if _, done := appliedSet[m.Version]; !done {
+			pending = append(pending, m)
+		}
+	}
+	sort.Slice(pending, func(i, j int) bool { return pending[i].Version < pending[j].Version })
+	return pending, nil
 }
 
-// allowedColumn hlásí, jestli je sloupec ve whitelistu dané tabulky.
 func allowedColumn(table, col string) bool {
 	for _, c := range schema[table] {
 		if c == col {
@@ -140,7 +159,6 @@ func allowedColumn(table, col string) bool {
 	return false
 }
 
-// sortedFilterKeys vrací klíče filtru v abecedním pořadí.
 func sortedFilterKeys(filters map[string]any) []string {
 	keys := make([]string, 0, len(filters))
 	for k := range filters {
@@ -150,10 +168,8 @@ func sortedFilterKeys(filters map[string]any) []string {
 	return keys
 }
 
-// placeholder vrací zástupný symbol pro n-tý argument, číslováno od jedničky.
 func placeholder(n int) string { return "$" + strconv.Itoa(n) }
 
-// notFound obalí ErrNotFound identifikátorem, aby chyba nesla kontext.
 func notFound(id string) error {
 	return fmt.Errorf("store: %q: %w", id, ErrNotFound)
 }

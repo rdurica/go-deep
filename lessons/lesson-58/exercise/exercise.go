@@ -3,6 +3,7 @@ package exercise
 
 import (
 	"errors"
+	"strings"
 	"time"
 )
 
@@ -16,12 +17,16 @@ const (
 	SeverityError
 )
 
-// --- Stupeň: jednoduchý ---
 // String vrací INFO, WARN nebo ERROR.
-// Hodnota mimo rozsah konstant vrací prázdný řetězec.
 func (s Severity) String() string {
-	// TODO
-	return ""
+	switch s {
+	case SeverityWarn:
+		return "WARN"
+	case SeverityError:
+		return "ERROR"
+	default:
+		return "INFO"
+	}
 }
 
 // CheckItem je jedna položka review checklistu.
@@ -31,12 +36,21 @@ type CheckItem struct {
 	Severity Severity
 }
 
+// --- Stupeň: jednoduchý ---
 // MergeChecklists spojí základní a osobní checklist; zachová pořadí base.
 // Stejné ID v personal přepíše položku na původním místě v base; nové ID z personal na konec.
 // Duplicita uvnitř base: platí první výskyt; prázdné ID zahodí; prázdný vstup prázdný výsledek.
+//
+// POZOR: kód níže je ZÁMĚRNĚ VADNÝ — osobní položka nepřepíše základní se stejným ID.
+// Najdi chybu a oprav — testy před opravou padají.
 func MergeChecklists(base, personal []CheckItem) []CheckItem {
-	// TODO
-	return nil
+	merged := append([]CheckItem{}, base...)
+	for _, item := range personal {
+		if item.ID != "" {
+			merged = append(merged, item)
+		}
+	}
+	return merged
 }
 
 // Role je role v pairing session s agentem.
@@ -53,10 +67,21 @@ const (
 )
 
 // String vrací none, spec, tests, impl, review nebo done; mimo rozsah "none".
-// RoleNone je zero value, tedy session ještě nezačala.
 func (r Role) String() string {
-	// TODO
-	return ""
+	switch r {
+	case RoleSpec:
+		return "spec"
+	case RoleTests:
+		return "tests"
+	case RoleImpl:
+		return "impl"
+	case RoleReview:
+		return "review"
+	case RoleDone:
+		return "done"
+	default:
+		return "none"
+	}
 }
 
 // Chyby pairing session.
@@ -85,19 +110,17 @@ type Session struct {
 	timeline []Event
 }
 
+// Current vrací aktuální roli pairing session. Po Finish vrací RoleDone.
+func (s *Session) Current() Role {
+	return s.current
+}
+
 // --- Stupeň: střední ---
 // NewSession vytvoří session; nil now znamená time.Now.
 // Časy událostí v timeline ber vždy z těchto hodin.
 func NewSession(now func() time.Time) *Session {
 	// TODO
-	return nil
-}
-
-// Current vrací aktuální roli pairing session.
-// Po Finish vrací RoleDone.
-func (s *Session) Current() Role {
-	// TODO
-	return RoleNone
+	return &Session{now: now}
 }
 
 // Start zahájí session v roli spec, tests, impl nebo review a zapíše událost RoleNone→r s důvodem "start".
@@ -111,21 +134,6 @@ func (s *Session) Start(r Role) error {
 // Prázdný důvod → ErrMissingReason; před Start → ErrNotStarted; po Finish → ErrFinished.
 // Jiný přechod (včetně RoleDone/RoleNone/sebe sama) → ErrInvalidTransition bez změny stavu.
 func (s *Session) Handoff(to Role, reason string) error {
-	// TODO
-	return nil
-}
-
-// --- Stupeň: obtížný ---
-// Finish uzavře session jen z role review; jinak ErrInvalidTransition; podruhé ErrFinished.
-// Zapíše událost RoleReview → RoleDone s důvodem "hotovo".
-func (s *Session) Finish() error {
-	// TODO
-	return nil
-}
-
-// Timeline vrací kopii historie přechodů.
-// Volající nesmí přepsat interní slice.
-func (s *Session) Timeline() []Event {
 	// TODO
 	return nil
 }
@@ -149,8 +157,36 @@ type Score struct {
 // RecommendLesson vrací doporučení ke zopakování podle kategorie (case-insensitive).
 // Pokryté kategorie: errors, context, concurrency, http, design, testing; neznámá výchozí text.
 func RecommendLesson(category string) string {
+	switch strings.ToLower(strings.TrimSpace(category)) {
+	case "errors":
+		return "lekce 14 a 21 — chyby jako hodnoty"
+	case "context":
+		return "lekce 27 — context v request scope"
+	case "concurrency":
+		return "lekce 40–47 — souběžnost"
+	case "http":
+		return "lekce 24–26 — net/http a middleware"
+	case "design":
+		return "lekce 32–35 — hranice balíčků"
+	case "testing":
+		return "lekce 17 a 52 — testování"
+	default:
+		return "lekce 57 — strukturované review"
+	}
+}
+
+// --- Stupeň: obtížný ---
+// Finish uzavře session jen z role review; jinak ErrInvalidTransition; podruhé ErrFinished.
+// Zapíše událost RoleReview → RoleDone s důvodem "hotovo".
+func (s *Session) Finish() error {
 	// TODO
-	return ""
+	return nil
+}
+
+// Timeline vrací kopii historie přechodů. Volající nesmí přepsat interní slice.
+func (s *Session) Timeline() []Event {
+	// TODO
+	return []Event{}
 }
 
 // ScoreReview spočítá precision, recall a doporučení pro review dril; párování podle ID.

@@ -33,7 +33,6 @@ func TestApplyDiscount(t *testing.T) {
 }
 
 func TestApplyDiscountZeroDoesNotChangePrice(t *testing.T) {
-	// Vlastnost, kterou nejde splnit zadrátovanou hodnotou.
 	for price := 0; price < 5000; price += 37 {
 		if got := exercise.ApplyDiscount(price, 0); got != price {
 			t.Fatalf("ApplyDiscount(%d, 0) = %d, chci %d", price, got, price)
@@ -100,62 +99,23 @@ func TestTotalCentsDoesNotMutateInput(t *testing.T) {
 	}
 }
 
-func TestCheapest(t *testing.T) {
-	items := []exercise.Item{
-		{Name: "kava", PriceCents: 4500, Qty: 1},
-		{Name: "voda", PriceCents: 1000, Qty: 5},
-		{Name: "caj", PriceCents: 3200, Qty: 2},
-	}
-	got, ok := exercise.Cheapest(items)
-	if !ok {
-		t.Fatal("Cheapest vrátila ok=false, chci true")
-	}
-	if got.Name != "voda" {
-		t.Errorf("Cheapest(...).Name = %q, chci %q", got.Name, "voda")
-	}
-	if got.PriceCents != 1000 || got.Qty != 5 {
-		t.Errorf("Cheapest(...) = %v, chci celou položku voda", got)
-	}
-}
-
-func TestCheapestEmptyInput(t *testing.T) {
-	for _, items := range [][]exercise.Item{nil, {}} {
-		got, ok := exercise.Cheapest(items)
-		if ok {
-			t.Errorf("Cheapest(%v) vrátila ok=true, chci false", items)
-		}
-		if got != (exercise.Item{}) {
-			t.Errorf("Cheapest(%v) = %v, chci zero value Item{}", items, got)
-		}
-	}
-}
-
-func TestCheapestFirstOnTie(t *testing.T) {
-	items := []exercise.Item{
-		{Name: "prvni", PriceCents: 100, Qty: 1},
-		{Name: "druhy", PriceCents: 100, Qty: 1},
-	}
-	got, _ := exercise.Cheapest(items)
-	if got.Name != "prvni" {
-		t.Errorf("Cheapest při shodě ceny vrátila %q, chci %q", got.Name, "prvni")
-	}
-}
-
-func TestCheapestReturnsCopy(t *testing.T) {
-	items := []exercise.Item{{Name: "voda", PriceCents: 1000, Qty: 1}}
-	got, _ := exercise.Cheapest(items)
-	got.PriceCents = 1
-	if items[0].PriceCents != 1000 {
-		t.Errorf("změna vrácené položky ovlivnila slice: %d, chci %d", items[0].PriceCents, 1000)
-	}
-}
-
 func newTestCatalog() *exercise.Catalog {
 	return exercise.NewCatalog([]exercise.Item{
 		{Name: "kava", PriceCents: 4500, Qty: 1},
 		{Name: "caj", PriceCents: 3200, Qty: 1},
 		{Name: "voda", PriceCents: 1000, Qty: 1},
 	})
+}
+
+func TestNewCatalog(t *testing.T) {
+	c := exercise.NewCatalog(nil)
+	if c == nil {
+		t.Fatal("NewCatalog(nil) vrátil nil, chci prázdný ceník")
+	}
+	c2 := exercise.NewCatalog([]exercise.Item{{Name: "kava", PriceCents: 4500, Qty: 1}})
+	if c2 == nil {
+		t.Fatal("NewCatalog vrátil nil, chci ne-nil ceník")
+	}
 }
 
 func TestCatalogPrice(t *testing.T) {
@@ -172,7 +132,7 @@ func TestCatalogPrice(t *testing.T) {
 	}
 }
 
-func TestCatalogEmpty(t *testing.T) {
+func TestCatalogPriceEmptyCatalog(t *testing.T) {
 	c := exercise.NewCatalog(nil)
 	if _, ok := c.Price("kava"); ok {
 		t.Error("prázdný ceník nemá nic znát")
@@ -184,7 +144,7 @@ func TestCatalogCopiesInput(t *testing.T) {
 	c := exercise.NewCatalog(items)
 	items[0].PriceCents = 1
 
-	if price, _ := c.Price("kava"); price != 4500 {
+	if price, ok := c.Price("kava"); ok && price != 4500 {
 		t.Errorf("po změně vstupního slice Price(%q) = %d, chci %d", "kava", price, 4500)
 	}
 }

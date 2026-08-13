@@ -1,3 +1,3 @@
 1:TestNormalize|TestNormalizeIdempotence|TestNormalizeAllocs
-2:TestEncode|TestDecode|TestDecodeErrors|TestEncodeDecodeRoundTrip
+2:TestEncode|TestDecode|TestDecodeErrors|TestEncodeDecodeRoundTrip|FuzzRoundTrip|FuzzDecodeCanonical
 3:TestRenderTableGolden|TestRenderTableEmpty|TestRenderTableFastMatch|TestRenderTableAlignment

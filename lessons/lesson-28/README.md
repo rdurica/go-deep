@@ -1,6 +1,6 @@
 # Lekce 28 — Konfigurace z prostředí
 
-> **Čas:** ~90 min · **Fáze:** 3 — net/http a tooling · **AI režim:** `BOILERPLATE OK`
+> **Čas:** ~70 min · **Fáze:** 3 — net/http a tooling · **AI režim:** `BOILERPLATE OK`
 
 ## Co budeš umět
 
@@ -243,13 +243,12 @@ Po přečtení teorie spusť v Cursoru **`/go-deep-quiz 28`**. AI tě ~5 minut p
 
 ## Úkol
 
-Pracuj v `exercise/`. Po doplnění spouštěj testy:
-
-Stupně jdou od jednodušších ke složitějším — po každém stupni spusť review, než jdeš dál.
+Pracuj v `exercise/`. Kontrakt je v komentáři nad funkcí. Stupně jdou od jednodušších
+ke složitějším — po každém stupni spusť review, než jdeš dál.
 
 ### Jednoduchý
 
-Funkce: `LookupString`
+Oprav: `LookupString` (kód je záměrně vadný — prázdná hodnota nepadá na default)
 
 ```bash
 make lesson L=28 PART=1
@@ -259,7 +258,7 @@ Pak **`/go-deep-review 28 easy`**.
 
 ### Střední
 
-Funkce: `LookupInt`, `Load`
+Implementuj: `LookupInt`, `Load`
 
 ```bash
 make lesson L=28 PART=2
@@ -269,7 +268,7 @@ Pak **`/go-deep-review 28 medium`**.
 
 ### Obtížný
 
-Funkce: `String`, `LoadFromEnviron`
+Doplň: `String` (maskování APIKey a hesla v DatabaseURL)
 
 ```bash
 make lesson L=28 PART=3

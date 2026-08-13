@@ -1,7 +1,10 @@
 // Package exercise obsahuje cvičení lekce 17.
 package exercise
 
-import "io"
+import (
+	"io"
+	"slices"
+)
 
 // Record je jeden řádek CSV s útratou.
 type Record struct {
@@ -11,15 +14,27 @@ type Record struct {
 }
 
 // --- Stupeň: jednoduchý ---
+
 // Median vrací medián hodnot a false pro prázdný vstup.
 // Lichý počet: prostřední prvek seřazené posloupnosti; sudý: průměr dvou prostředních.
 // Vstupní slice nemění — pracuj nad kopií (slices.Clone).
+//
+// POZOR: kód níže je ZÁMĚRNĚ VADNÝ. Řadí vstupní slice na místě.
+// Najdi chybu a oprav — testy před opravou padají.
 func Median(nums []float64) (float64, bool) {
-	// TODO
-	return 0, false
+	if len(nums) == 0 {
+		return 0, false
+	}
+	slices.Sort(nums)
+	mid := len(nums) / 2
+	if len(nums)%2 == 1 {
+		return nums[mid], true
+	}
+	return (nums[mid-1] + nums[mid]) / 2, true
 }
 
 // --- Stupeň: střední ---
+
 // ParseRecords načte CSV s hlavičkou "name,amount,category" a vrátí datové řádky.
 // Hlavička case-insensitive, bílé znaky ořízni; špatná hlavička nebo úplně prázdný vstup jsou chyba.
 // Datové řádky mají přesně 3 sloupce; jméno a kategorie nesmí být prázdné po oříznutí, částka musí být číslo.
@@ -37,12 +52,6 @@ func SumByCategory(recs []Record) map[string]float64 {
 }
 
 // --- Stupeň: obtížný ---
-// TopN vrací n záznamů s nejvyšší částkou, při shodě v původním pořadí.
-// n <= 0 → prázdný výsledek; n > len(recs) → všechny záznamy. Vstupní slice nemění.
-func TopN(recs []Record, n int) []Record {
-	// TODO
-	return nil
-}
 
 // LoadFile načte záznamy ze souboru na dané cestě.
 // Soubor zavři přes defer, deleguj na ParseRecords; chyby obal %w a doplň cestu.

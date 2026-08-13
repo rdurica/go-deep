@@ -204,42 +204,6 @@ func CheckContextInStruct(src string) []Finding {
 }
 
 // --- Stupeň: obtížný ---
-// CheckContextNotFirst najde funkce, které berou context.Context, ale ne jako první parametr.
-func CheckContextNotFirst(src string) []Finding {
-	fset, file, err := parseSrc(src)
-	if err != nil {
-		return parseFailure()
-	}
-
-	var findings []Finding
-	for _, decl := range file.Decls {
-		fn, ok := decl.(*ast.FuncDecl)
-		if !ok || fn.Type.Params == nil {
-			continue
-		}
-
-		pos := 0
-		for _, f := range fn.Type.Params.List {
-			count := len(f.Names)
-			if count == 0 {
-				count = 1
-			}
-			if isContextType(f.Type) && pos > 0 {
-				findings = append(findings, Finding{
-					Rule:     "context-not-first",
-					Severity: SeverityWarn,
-					Line:     fset.Position(f.Pos()).Line,
-					Message: fmt.Sprintf("%s: context.Context je %d. parametr, má být první",
-						fn.Name.Name, pos+1),
-				})
-				break
-			}
-			pos += count
-		}
-	}
-	return findings
-}
-
 // Hunk je jeden blok změn z unified diffu.
 type Hunk struct {
 	File     string

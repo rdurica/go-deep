@@ -24,34 +24,73 @@ type bucket struct {
 	seen   time.Time
 }
 
-// --- Stupeň: jednoduchý ---
 // NewRateLimiter vytvoří omezovač s token bucketem pro každý klíč.
 // Kapacita < 1 → 1; refill <= 0 → 1s; nil now → time.Now.
 func NewRateLimiter(capacity int, refill time.Duration, now func() time.Time) *RateLimiter {
-	// TODO
-	return nil
+	if capacity < 1 {
+		capacity = 1
+	}
+	if refill <= 0 {
+		refill = time.Second
+	}
+	if now == nil {
+		now = time.Now
+	}
+	return &RateLimiter{
+		capacity: capacity,
+		refill:   refill,
+		now:      now,
+		buckets:  make(map[string]*bucket),
+	}
 }
 
+// --- Stupeň: jednoduchý ---
 // Allow odebere token pro klíč po doplnění podle elapsed/refill; prázdný kbelík vrací false.
 // Nový klíč začíná plný. Posuň last refill o vyčerpaný násobek refill, ne na aktuální čas.
+//
+// POZOR: kód níže je ZÁMĚRNĚ VADNÝ — refill tokenů chybí, kbelík se po čase nedoplní.
+// Najdi chybu a oprav — testy před opravou padají.
 func (rl *RateLimiter) Allow(key string) bool {
-	// TODO
-	return false
+	rl.mu.Lock()
+	defer rl.mu.Unlock()
+
+	t := rl.now()
+	b, ok := rl.buckets[key]
+	if !ok {
+		b = &bucket{tokens: rl.capacity, last: t}
+		rl.buckets[key] = b
+	}
+
+	b.seen = t
+
+	if b.tokens <= 0 {
+		return false
+	}
+	b.tokens--
+	return true
 }
 
-// --- Stupeň: střední ---
 // Cleanup zahodí kbelíky nepoužité aspoň idle a vrátí jejich počet.
-// Měří se od času posledního Allow pro daný klíč (ne od vytvoření kbelíku).
 func (rl *RateLimiter) Cleanup(idle time.Duration) int {
-	// TODO
-	return 0
+	rl.mu.Lock()
+	defer rl.mu.Unlock()
+
+	t := rl.now()
+	removed := 0
+	for key, b := range rl.buckets {
+		if t.Sub(b.seen) >= idle {
+			delete(rl.buckets, key)
+			removed++
+		}
+	}
+	return removed
 }
 
 // Len vrací počet sledovaných klíčů v rate limiteru.
-// Po Cleanup může být menší než předtím (odstraněné neaktivní kbelíky).
 func (rl *RateLimiter) Len() int {
-	// TODO
-	return 0
+	rl.mu.Lock()
+	defer rl.mu.Unlock()
+	return len(rl.buckets)
 }
 
 // HardenOptions konfiguruje middleware chain funkce Harden.
@@ -70,7 +109,7 @@ var SecurityHeaders = map[string]string{
 	"Content-Security-Policy": "default-src 'none'",
 }
 
-// --- Stupeň: obtížný ---
+// --- Stupeň: střední ---
 // Harden složí chain od vnějšku: recovery (500, "internal server error\n"), hlavičky,
 // rate limit (429, "too many requests\n"; klíč z KeyFunc nebo RemoteAddr bez portu),
 // max body (413, "request body too large\n" nebo MaxBytesReader),
@@ -79,7 +118,9 @@ var SecurityHeaders = map[string]string{
 // Panika nesmí uniknout; bezpečnostní hlavičky i u chybových odpovědí.
 func Harden(h http.Handler, opts HardenOptions) http.Handler {
 	// TODO
-	return nil
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Error(w, "TODO", http.StatusNotImplemented)
+	})
 }
 
 // Chyby produkčního auditu.
@@ -107,6 +148,7 @@ type Report struct {
 	Missing        []string
 }
 
+// --- Stupeň: obtížný ---
 // AuditReport vyhodnotí checklist; Total/Passed/CriticalFailed/Score = Passed/Total.
 // Missing = ID nesplněných kontrol, seřazená. Ready jen bez kritického nedodělku a Score >= 0.8.
 // Prázdný vstup → ErrNoChecks; kontrola bez ID → ErrInvalidCheck; duplicitní ID → ErrDuplicateCheck.

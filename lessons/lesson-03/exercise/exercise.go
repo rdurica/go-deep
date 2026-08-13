@@ -14,6 +14,18 @@ const (
 )
 
 // --- Stupeň: jednoduchý ---
+
+// CentsToPrice převede celé centy na desetinnou cenu (1999 → 19.99).
+// Pozor na pořadí konverze a dělení.
+//
+// POZOR: kód níže je ZÁMĚRNĚ VADNÝ. Obsahuje typickou chybu s celočíselným dělením
+// před konverzí na float64. Najdi ji a oprav — testy před opravou padají.
+func CentsToPrice(cents int) float64 {
+	return float64(cents / 100)
+}
+
+// --- Stupeň: střední ---
+
 // Classify vrací "negative", "zero" nebo "positive" podle znaménka n.
 // Použij switch bez výrazu (switch { case n < 0: ... }), ne řetězec if/else.
 func Classify(n int) string {
@@ -29,14 +41,6 @@ func ZeroValueOf(kind string) string {
 	return ""
 }
 
-// --- Stupeň: střední ---
-// CentsToPrice převede celé centy na desetinnou cenu (1999 → 19.99).
-// Pozor na pořadí konverze a dělení.
-func CentsToPrice(cents int) float64 {
-	// TODO
-	return 0
-}
-
 // ToInt8 vrátí n jako int8 a true, pokud se do rozsahu int8 vejde; jinak 0, false.
 func ToInt8(n int) (int8, bool) {
 	// TODO
@@ -44,6 +48,7 @@ func ToInt8(n int) (int8, bool) {
 }
 
 // --- Stupeň: obtížný ---
+
 // String implementuje fmt.Stringer: UNKNOWN, DEBUG, INFO, WARN, ERROR.
 // Hodnota mimo rozsah také vrací "UNKNOWN".
 func (l Level) String() string {

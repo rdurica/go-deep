@@ -3,77 +3,71 @@ package exercise
 
 import (
 	"context"
+	"crypto/sha256"
+	"crypto/subtle"
+	"encoding/hex"
 	"errors"
 	"net/http"
+	"sort"
+	"strconv"
+	"strings"
+	"sync"
+	"time"
 )
 
-// Middleware je obálka nad http.Handlerem.
 type Middleware func(http.Handler) http.Handler
 
-// Chyby parsování hlavičky Authorization.
 var (
-	// ErrMissingAuthorization znamená, že hlavička chybí nebo je prázdná.
-	ErrMissingAuthorization = errors.New("chybí hlavička Authorization")
-	// ErrUnsupportedScheme znamená, že schéma není Bearer.
-	ErrUnsupportedScheme = errors.New("nepodporované autentizační schéma")
-	// ErrMissingToken znamená, že za schématem Bearer není token.
-	ErrMissingToken = errors.New("chybí token")
-	// ErrMalformedAuthorization znamená, že hlavička má víc částí, než má mít.
+	ErrMissingAuthorization   = errors.New("chybí hlavička Authorization")
+	ErrUnsupportedScheme      = errors.New("nepodporované autentizační schéma")
+	ErrMissingToken           = errors.New("chybí token")
 	ErrMalformedAuthorization = errors.New("neplatný tvar hlavičky Authorization")
 )
 
-// WWWAuthenticate je hodnota hlavičky WWW-Authenticate, kterou vrací 401.
 const WWWAuthenticate = `Bearer realm="api"`
-
-// RouteUnknown je náhradní hodnota labelu route, když vzor cesty není známý.
 const RouteUnknown = "unknown"
 
 // --- Stupeň: jednoduchý ---
-// ParseBearer vytáhne token z Authorization. Prázdná/chybějící → ErrMissingAuthorization;
-// jiné schéma → ErrUnsupportedScheme; Bearer bez tokenu → ErrMissingToken;
-// dvě+ částí → ErrMalformedAuthorization. Schéma case-insensitive, trim okrajů.
-// Při chybě prázdný token.
+
+// ParseBearer vytáhne token z Authorization. Schéma case-insensitive.
 func ParseBearer(header string) (string, error) {
 	// TODO
 	return "", nil
 }
 
 // HashPassword spočítá hex SHA-256 nad solí a heslem.
-//
-// POZOR: SHA-256 je na hesla ŠPATNĚ. Je záměrně rychlá, takže se dá hrubou
-// silou zkoušet miliardkrát za sekundu. Tady je jen proto, aby cvičení
-// zůstalo ve standardní knihovně. V produkci patří bcrypt nebo argon2
-// (golang.org/x/crypto/bcrypt, golang.org/x/crypto/argon2).
 func HashPassword(password, salt string) string {
-	// TODO
-	return ""
+	sum := sha256.Sum256([]byte(salt + ":" + password))
+	return hex.EncodeToString(sum[:])
 }
 
-// VerifyPassword porovná otisk hesla s HashPassword(password, salt).
-// Použij crypto/subtle.ConstantTimeCompare — vrací false při jakékoli
-// nesouladnosti délky nebo obsahu.
+// VerifyPassword porovná otisk hesla.
+//
+// POZOR: kód níže je ZÁMĚRNĚ VADNÝ. Používá == místo ConstantTimeCompare.
 func VerifyPassword(hash, password, salt string) bool {
-	// TODO
-	return false
+	got := HashPassword(password, salt)
+	_ = subtle.ConstantTimeCompare // nápověda: použij místo ==
+	return got == hash
 }
 
-// Authenticate vrací middleware: parsuje Bearer, porovná token v konstantním
-// čase proti všem záznamům, uživatele vloží do kontextu. Selhání → 401
-// s WWW-Authenticate Bearer; handler se nespustí.
+type contextKey int
+
+const userKey contextKey = iota
+
+// Authenticate vrací middleware: Bearer token, konstantní čas, uživatel v kontextu.
+// Selhání → 401 s WWW-Authenticate.
 func Authenticate(tokens map[string]string) Middleware {
 	// TODO
 	return *new(Middleware)
 }
 
-// UserFrom vrací jméno uživatele z kontextu nastaveného middleware Authenticate.
-// Klíč v kontextu musí být neexportovaný typ (ne string). Pokud uživatel chybí, false.
 func UserFrom(ctx context.Context) (string, bool) {
-	// TODO
-	return "", false
+	u, ok := ctx.Value(userKey).(string)
+	return u, ok
 }
 
 // --- Stupeň: střední ---
-// Stat je souhrn jedné metrické řady.
+
 type Stat struct {
 	Count int
 	Sum   float64
@@ -81,71 +75,107 @@ type Stat struct {
 	Max   float64
 }
 
-// Metrics je registr metrik bezpečný pro souběžné použití (mutex).
 type Metrics struct {
-	// TODO
+	mu     sync.Mutex
+	series map[string]Stat
 }
 
-// NewMetrics vytvoří prázdný registr metrik bezpečný pro souběžné použití.
-// Testy běží s -race.
 func NewMetrics() *Metrics {
-	// TODO
-	return nil
+	return &Metrics{series: make(map[string]Stat)}
 }
 
-// SeriesKey složí jméno řady s labely, např.
-// http_requests_total{method="GET",route="/items/{id}"}.
-// Bez labelů jen name. Labely seřaď abecedně podle klíče; hodnoty přes strconv.Quote.
 func SeriesKey(name string, labels map[string]string) string {
-	// TODO
-	return ""
+	if len(labels) == 0 {
+		return name
+	}
+	keys := make([]string, 0, len(labels))
+	for k := range labels {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	var b strings.Builder
+	b.WriteString(name)
+	b.WriteByte('{')
+	for i, k := range keys {
+		if i > 0 {
+			b.WriteByte(',')
+		}
+		b.WriteString(k)
+		b.WriteByte('=')
+		b.WriteString(strconv.Quote(labels[k]))
+	}
+	b.WriteByte('}')
+	return b.String()
 }
 
-// Inc zvýší čítač dané řady o jedna.
-// Řada se vytvoří při prvním volání; labely jsou součástí klíče.
 func (m *Metrics) Inc(name string, labels map[string]string) {
-	// TODO
+	key := SeriesKey(name, labels)
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	s := m.series[key]
+	s.Count++
+	m.series[key] = s
 }
 
-// Observe zaznamená pozorování do řady: zvýší Count, přičte k Sum, aktualizuje Min/Max.
-// První hodnota nastaví min i max na sebe, ne na nulu.
 func (m *Metrics) Observe(name string, v float64) {
-	// TODO
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	s := m.series[name]
+	s.Count++
+	s.Sum += v
+	if s.Count == 1 || v < s.Min {
+		s.Min = v
+	}
+	if s.Count == 1 || v > s.Max {
+		s.Max = v
+	}
+	m.series[name] = s
 }
 
-// Snapshot vrací kopii mapy řad (ne sdílenou referenci na interní stav).
-// Bezpečné volání z jiné goroutiny za zámkem.
 func (m *Metrics) Snapshot() map[string]Stat {
-	// TODO
-	return nil
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	out := make(map[string]Stat, len(m.series))
+	for k, v := range m.series {
+		out[k] = v
+	}
+	return out
+}
+
+func WithRoute(route string, next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		next.ServeHTTP(w, r.WithContext(context.WithValue(r.Context(), routeKey, route)))
+	})
+}
+
+type routeKeyType int
+
+const routeKey routeKeyType = 0
+
+func RouteFrom(ctx context.Context) string {
+	if v, ok := ctx.Value(routeKey).(string); ok && v != "" {
+		return v
+	}
+	return RouteUnknown
 }
 
 // --- Stupeň: obtížný ---
-// Text serializuje registr do textu — řady seřazené abecedně, deterministický výpis.
-// Každá řada: "<SeriesKey> count=%d sum=%g min=%g max=%g\n".
-func (m *Metrics) Text() string {
-	// TODO
-	return ""
-}
 
-// WithRoute uloží vzor cesty (např. "/items/{id}") do kontextu požadavku.
-// Do kontextu nepatří r.URL.Path — label route v metrikách musí být vzor.
-func WithRoute(route string, next http.Handler) http.Handler {
-	// TODO
-	return *new(http.Handler)
-}
-
-// RouteFrom vrací vzor cesty z kontextu nastavený WithRoute.
-// Pokud vzor chybí, vrátí RouteUnknown ("unknown").
-func RouteFrom(ctx context.Context) string {
-	// TODO
-	return ""
-}
-
-// Instrument měří http_requests_total (method, route, status) a
-// http_request_duration_seconds. route je vzor cesty; implicitní status 200.
-// Middleware nesmí měnit odpověď handleru.
+// Instrument měří http_requests_total a http_request_duration_seconds.
+// route je vzor cesty z kontextu; implicitní status 200.
 func Instrument(m *Metrics) Middleware {
 	// TODO
 	return *new(Middleware)
 }
+
+type statusRecorder struct {
+	http.ResponseWriter
+	status int
+}
+
+func (s *statusRecorder) WriteHeader(code int) {
+	s.status = code
+	s.ResponseWriter.WriteHeader(code)
+}
+
+func since(start time.Time) float64 { return time.Since(start).Seconds() }

@@ -1,6 +1,6 @@
 # Lekce 60 — Checkpoint závěrečný: hardening, retrospektiva a export kurzu
 
-> **Čas:** ~90 min · **Fáze:** 8 — Capstone · **AI režim:** `TECH LEAD`
+> **Čas:** ~75 min · **Fáze:** 8 — Capstone · **AI režim:** `TECH LEAD`
 
 ## Co budeš umět
 
@@ -149,13 +149,12 @@ Po přečtení teorie spusť v Cursoru **`/go-deep-quiz 60`**. AI tě ~5 minut p
 
 ## Úkol
 
-Pracuj v `exercise/`. Po doplnění spouštěj testy:
-
-Stupně jdou od jednodušších ke složitějším — po každém stupni spusť review, než jdeš dál.
+Pracuj v `exercise/`. Kontrakt je v komentáři nad funkcí. Stupně jdou od jednodušších
+ke složitějším — po každém stupni spusť review, než jdeš dál.
 
 ### Jednoduchý
 
-Funkce: `NewRateLimiter`, `Allow`
+Oprav: `Allow` na `RateLimiter` (kód je záměrně vadný — chybí refill tokenů)
 
 ```bash
 make lesson L=60 PART=1
@@ -165,7 +164,7 @@ Pak **`/go-deep-review 60 easy`**.
 
 ### Střední
 
-Funkce: `Cleanup`, `Len`
+Implementuj: `Harden` (produkční middleware chain)
 
 ```bash
 make lesson L=60 PART=2
@@ -175,7 +174,7 @@ Pak **`/go-deep-review 60 medium`**.
 
 ### Obtížný
 
-Funkce: `Harden`, `AuditReport`, `Coverage`
+Doplň: `AuditReport`, `Coverage` (produkční checklist a retrospektiva kurzu)
 
 ```bash
 make lesson L=60 PART=3

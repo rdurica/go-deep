@@ -1,3 +1,0 @@
-1:TestMedian|TestMedianDoesNotMutateInput|TestMedianRandomData
-2:TestParseRecords|TestParseRecordsHeaderOnly|TestParseRecordsErrors|TestSumByCategory|TestSumByCategoryEmpty
-3:TestTopN|TestTopNStability|TestTopNDoesNotMutateInput|TestLoadFileTestdata|TestLoadFileTempDir|TestLoadFileErrors

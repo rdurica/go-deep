@@ -11,8 +11,6 @@ import (
 	exercise "github.com/rdurica/go-deep/lessons/lesson-17/exercise"
 )
 
-// equalFloat je pomocník pro porovnání desetinných čísel s tolerancí.
-// t.Helper() zajistí, že se chyba nahlásí na řádku volajícího.
 func equalFloat(t *testing.T, got, want float64, format string, args ...any) {
 	t.Helper()
 	if math.Abs(got-want) > 1e-9 {
@@ -71,8 +69,6 @@ func TestMedianDoesNotMutateInput(t *testing.T) {
 }
 
 func TestMedianRandomData(t *testing.T) {
-	// Medián permutace 1..n je znám dopředu, takže test nejde splnit
-	// zadrátovanou konstantou.
 	rnd := rand.New(rand.NewSource(42))
 	for _, n := range []int{1, 2, 3, 10, 101} {
 		nums := make([]float64, n)
@@ -162,75 +158,12 @@ func TestSumByCategoryEmpty(t *testing.T) {
 	}
 }
 
-func TestTopN(t *testing.T) {
-	recs := sampleRecords()
-
-	tests := []struct {
-		n     int
-		want  []string
-		popis string
-	}{
-		{0, nil, "n=0 nevrací nic"},
-		{-1, nil, "záporné n nevrací nic"},
-		{1, []string{"Grace"}, "největší útrata"},
-		{3, []string{"Grace", "Ada", "Bob"}, "tři největší"},
-		{99, []string{"Grace", "Ada", "Bob", "Ken", "Linus"}, "n větší než délka"},
-	}
-	for _, tt := range tests {
-		t.Run(tt.popis, func(t *testing.T) {
-			got := exercise.TopN(recs, tt.n)
-			if len(got) != len(tt.want) {
-				t.Fatalf("TopN(recs, %d) vrátilo %d záznamů (%+v), chci %d", tt.n, len(got), got, len(tt.want))
-			}
-			for i := range tt.want {
-				if got[i].Name != tt.want[i] {
-					t.Errorf("TopN(recs, %d)[%d] = %q, chci %q", tt.n, i, got[i].Name, tt.want[i])
-				}
-			}
-		})
-	}
-}
-
-func TestTopNStability(t *testing.T) {
-	recs := []exercise.Record{
-		{Name: "prvni", Amount: 10, Category: "a"},
-		{Name: "druhy", Amount: 10, Category: "b"},
-		{Name: "treti", Amount: 10, Category: "c"},
-	}
-	got := exercise.TopN(recs, 3)
-	want := []string{"prvni", "druhy", "treti"}
-	for i := range want {
-		if got[i].Name != want[i] {
-			t.Fatalf("TopN při shodných částkách = %+v, chci pořadí %v", got, want)
-		}
-	}
-}
-
-func TestTopNDoesNotMutateInput(t *testing.T) {
-	recs := sampleRecords()
-	before := append([]exercise.Record(nil), recs...)
-
-	exercise.TopN(recs, 2)
-
-	for i := range before {
-		if recs[i] != before[i] {
-			t.Fatalf("TopN přeuspořádal vstup: %+v, chci %+v", recs, before)
-		}
-	}
-}
-
 func TestLoadFileTestdata(t *testing.T) {
 	got, err := exercise.LoadFile(filepath.Join("testdata", "sample.csv"))
 	if err != nil {
 		t.Fatalf("LoadFile(testdata/sample.csv) = _, %v, chci nil", err)
 	}
-	want := []exercise.Record{
-		{Name: "Ada", Amount: 120.50, Category: "food"},
-		{Name: "Bob", Amount: 80, Category: "transport"},
-		{Name: "Grace", Amount: 200.25, Category: "food"},
-		{Name: "Linus", Amount: 15.75, Category: "transport"},
-		{Name: "Ken", Amount: 60, Category: "fun"},
-	}
+	want := sampleRecords()
 	if len(got) != len(want) {
 		t.Fatalf("LoadFile(...) vrátilo %d záznamů, chci %d: %+v", len(got), len(want), got)
 	}
@@ -244,18 +177,12 @@ func TestLoadFileTestdata(t *testing.T) {
 }
 
 func TestLoadFileTempDir(t *testing.T) {
-	dir := t.TempDir() // uklidí se automaticky po testu
+	dir := t.TempDir()
 	path := filepath.Join(dir, "spend.csv")
 	content := "name,amount,category\nZoe,42.5,fun\n"
 	if err := os.WriteFile(path, []byte(content), 0o600); err != nil {
 		t.Fatalf("příprava souboru selhala: %v", err)
 	}
-	t.Cleanup(func() {
-		// Jen ukázka: t.TempDir smaže adresář sám, tohle je hlídač navíc.
-		if _, err := os.Stat(dir); err != nil {
-			t.Logf("dočasný adresář už zmizel: %v", err)
-		}
-	})
 
 	got, err := exercise.LoadFile(path)
 	if err != nil {

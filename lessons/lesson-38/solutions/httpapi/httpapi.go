@@ -1,4 +1,4 @@
-// Package httpapi je vstupní adaptér: překládá HTTP na volání use-casů.
+// Package httpapi je vstupní adaptér lekce 38.
 package httpapi
 
 import (
@@ -12,14 +12,9 @@ import (
 	"github.com/rdurica/go-deep/lessons/lesson-38/solutions/order"
 )
 
-// ProblemContentType je Content-Type chybové odpovědi podle RFC 7807.
 const ProblemContentType = "application/problem+json"
-
-// maxBody je strop pro tělo požadavku.
 const maxBody = 1 << 20
 
-// lineDTO je položka na hranici. Doménový order.Line schválně nemá JSON
-// tagy — formát drátu je věc adaptéru, ne domény.
 type lineDTO struct {
 	SKU            string `json:"sku"`
 	Quantity       int    `json:"quantity"`
@@ -48,11 +43,12 @@ type handler struct {
 	svc *app.Service
 }
 
-// --- Stupeň: jednoduchý ---
-// NewHandler složí router služby nad aplikační vrstvou.
+func WriteJSONForTest(w http.ResponseWriter, status int, v any) {
+	writeJSON(w, status, v)
+}
+
 func NewHandler(svc *app.Service) http.Handler {
 	h := &handler{svc: svc}
-
 	mux := http.NewServeMux()
 	mux.HandleFunc("GET /healthz", h.health)
 	mux.HandleFunc("POST /orders", h.place)
@@ -75,16 +71,10 @@ func (h *handler) place(w http.ResponseWriter, r *http.Request) {
 		writeProblem(w, http.StatusBadRequest, "Neplatný požadavek", "tělo požadavku není platný JSON")
 		return
 	}
-
 	lines := make([]order.Line, 0, len(req.Lines))
 	for _, l := range req.Lines {
-		lines = append(lines, order.Line{
-			SKU:            l.SKU,
-			Quantity:       l.Quantity,
-			UnitPriceCents: l.UnitPriceCents,
-		})
+		lines = append(lines, order.Line{SKU: l.SKU, Quantity: l.Quantity, UnitPriceCents: l.UnitPriceCents})
 	}
-
 	o, err := h.svc.Place(r.Context(), lines)
 	if err != nil {
 		writeError(w, err)
@@ -102,7 +92,6 @@ func (h *handler) get(w http.ResponseWriter, r *http.Request) {
 	writeJSON(w, http.StatusOK, toResponse(o))
 }
 
-// transition vyrobí handler pro use-case, který mění stav podle ID v cestě.
 func (h *handler) transition(useCase func(context.Context, string) (order.Order, error)) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		o, err := useCase(r.Context(), r.PathValue("id"))
@@ -117,31 +106,18 @@ func (h *handler) transition(useCase func(context.Context, string) (order.Order,
 func toResponse(o order.Order) orderResponse {
 	lines := make([]lineDTO, 0, len(o.Lines))
 	for _, l := range o.Lines {
-		lines = append(lines, lineDTO{
-			SKU:            l.SKU,
-			Quantity:       l.Quantity,
-			UnitPriceCents: l.UnitPriceCents,
-		})
+		lines = append(lines, lineDTO{SKU: l.SKU, Quantity: l.Quantity, UnitPriceCents: l.UnitPriceCents})
 	}
-	return orderResponse{
-		ID:         o.ID,
-		Status:     o.Status.String(),
-		TotalCents: o.TotalCents(),
-		Lines:      lines,
-	}
+	return orderResponse{ID: o.ID, Status: o.Status.String(), TotalCents: o.TotalCents(), Lines: lines}
 }
 
-// writeError je JEDINÉ místo, kde se doménová chyba překládá na HTTP status.
-// Doména o statusech neví a vědět nemá.
 func writeError(w http.ResponseWriter, err error) {
 	switch {
 	case errors.Is(err, order.ErrNotFound):
 		writeProblem(w, http.StatusNotFound, "Nenalezeno", "objednávka neexistuje")
 	case errors.Is(err, order.ErrInvalidTransition):
 		writeProblem(w, http.StatusConflict, "Konflikt", "operace není v současném stavu objednávky povolená")
-	case errors.Is(err, order.ErrEmptyOrder),
-		errors.Is(err, order.ErrInvalidLine),
-		errors.Is(err, order.ErrMissingID):
+	case errors.Is(err, order.ErrEmptyOrder), errors.Is(err, order.ErrInvalidLine), errors.Is(err, order.ErrMissingID):
 		writeProblem(w, http.StatusUnprocessableEntity, "Neplatná data", "objednávka porušuje pravidla domény")
 	default:
 		writeProblem(w, http.StatusInternalServerError, "Vnitřní chyba serveru", "požadavek se nepodařilo zpracovat")
@@ -150,15 +126,8 @@ func writeError(w http.ResponseWriter, err error) {
 
 func writeProblem(w http.ResponseWriter, status int, title, detail string) {
 	w.Header().Set("Content-Type", ProblemContentType)
-	w.Header().Set("X-Content-Type-Options", "nosniff")
 	w.WriteHeader(status)
-	// Status i hlavičky už jsou odeslané, s chybou zápisu se nedá nic dělat.
-	_ = json.NewEncoder(w).Encode(problemDetails{
-		Type:   "about:blank",
-		Title:  title,
-		Status: status,
-		Detail: detail,
-	})
+	_ = json.NewEncoder(w).Encode(problemDetails{Type: "about:blank", Title: title, Status: status, Detail: detail})
 }
 
 func writeJSON(w http.ResponseWriter, status int, v any) {

@@ -76,33 +76,6 @@ func TestMuxPatternSelection(t *testing.T) {
 	}
 }
 
-func TestMuxNoPatternAndEmptyPath(t *testing.T) {
-	var mux exercise.Mux
-	mux.Register("/api/", echo("api"))
-
-	if got, want := mux.Handle(""), "404 not found: "; got != want {
-		t.Errorf("Handle(\"\") = %q, chci %q", got, want)
-	}
-	if got, want := mux.Handle("/jinam"), "404 not found: /jinam"; got != want {
-		t.Errorf("Handle(%q) = %q, chci %q", "/jinam", got, want)
-	}
-}
-
-func TestMuxSetNotFound(t *testing.T) {
-	var mux exercise.Mux
-	mux.Register("/ok", echo("ok"))
-	mux.SetNotFound(exercise.HandlerFunc(func(path string) string {
-		return "nemám " + path
-	}))
-
-	if got, want := mux.Handle("/nikde"), "nemám /nikde"; got != want {
-		t.Errorf("Handle(%q) = %q, chci %q", "/nikde", got, want)
-	}
-	if got, want := mux.Handle("/ok"), "ok:/ok"; got != want {
-		t.Errorf("Handle(%q) = %q, chci %q", "/ok", got, want)
-	}
-}
-
 func TestMuxPanics(t *testing.T) {
 	tests := map[string]func(){
 		"prázdný vzor": func() {
@@ -118,10 +91,6 @@ func TestMuxPanics(t *testing.T) {
 			mux.Register("/x", echo("a"))
 			mux.Register("/x", echo("b"))
 		},
-		"nil notFound": func() {
-			var mux exercise.Mux
-			mux.SetNotFound(nil)
-		},
 	}
 
 	for name, fn := range tests {
@@ -133,29 +102,6 @@ func TestMuxPanics(t *testing.T) {
 			}()
 			fn()
 		})
-	}
-}
-
-func TestMuxIsHandler(t *testing.T) {
-	// *Mux má metodu Handle(string) string, takže sám splňuje Handler
-	// a jde vnořit do jiného Muxu — přesně jako http.ServeMux.
-	inner := &exercise.Mux{}
-	inner.Register("/admin/stats", echo("stats"))
-
-	var outer exercise.Mux
-	outer.Register("/admin/", inner)
-	outer.Register("/", echo("root"))
-
-	var _ exercise.Handler = inner
-
-	if got, want := outer.Handle("/admin/stats"), "stats:/admin/stats"; got != want {
-		t.Errorf("Handle(%q) = %q, chci %q", "/admin/stats", got, want)
-	}
-	if got, want := outer.Handle("/admin/nic"), "404 not found: /admin/nic"; got != want {
-		t.Errorf("Handle(%q) = %q, chci %q", "/admin/nic", got, want)
-	}
-	if got, want := outer.Handle("/"), "root:/"; got != want {
-		t.Errorf("Handle(%q) = %q, chci %q", "/", got, want)
 	}
 }
 

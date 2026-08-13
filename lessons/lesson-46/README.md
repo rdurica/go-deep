@@ -1,6 +1,6 @@
 # Lekce 46 — Worker pool
 
-> **Čas:** ~90 min · **Fáze:** 5 — Concurrency do hloubky · **AI režim:** `JUNIOR POD REVIEW`
+> **Čas:** ~70 min · **Fáze:** 5 — Concurrency do hloubky · **AI režim:** `JUNIOR POD REVIEW`
 
 ## Co budeš umět
 
@@ -147,7 +147,7 @@ type Result struct {
 
 Volající pak sám rozhodne, jestli se má při první chybě zastavit, nebo dojet dávku a
 chyby posbírat. Kdyby pool na první chybě spadl, tuhle volbu bys mu vzal. Opačný vzor —
-„první chyba ruší zbytek" — má taky své místo, a je to přesně úkol C.
+„první chyba ruší zbytek" — má taky své místo, a je to přesně `Submit` / `Close` v obtížném stupni.
 
 ### Semafor jako lehčí alternativa
 
@@ -249,13 +249,12 @@ Po přečtení teorie spusť v Cursoru **`/go-deep-quiz 46`**. AI tě ~5 minut p
 
 ## Úkol
 
-Pracuj v `exercise/`. Po doplnění spouštěj testy:
-
-Stupně jdou od jednodušších ke složitějším — po každém stupni spusť review, než jdeš dál.
+Pracuj v `exercise/`. Kontrakt je v komentáři nad funkcí. Stupně jdou od jednodušších
+ke složitějším — po každém stupni spusť review, než jdeš dál.
 
 ### Jednoduchý
 
-Funkce: `NewSemaphore`, `Acquire`, `TryAcquire`
+Oprav: `Acquire` na semaforu (chybí kontrola zrušeného kontextu)
 
 ```bash
 make lesson L=46 PART=1
@@ -265,7 +264,7 @@ Pak **`/go-deep-review 46 easy`**.
 
 ### Střední
 
-Funkce: `Release`, `LimitedMap`, `New`
+Implementuj: `TryAcquire`, `Release` (`New` je hotový)
 
 ```bash
 make lesson L=46 PART=2
@@ -275,7 +274,7 @@ Pak **`/go-deep-review 46 medium`**.
 
 ### Obtížný
 
-Funkce: `Submit`, `Results`, `Close`
+Doplň: `Submit`, `Close` na `Pool` (`Results` je hotové)
 
 ```bash
 make lesson L=46 PART=3

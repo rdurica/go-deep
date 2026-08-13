@@ -1,6 +1,6 @@
 # Lekce 40 — Goroutiny, WaitGroup a leaky
 
-> **Čas:** ~90 min · **Fáze:** 5 — Concurrency do hloubky · **AI režim:** `JUNIOR POD REVIEW`
+> **Čas:** ~70 min · **Fáze:** 5 — Concurrency do hloubky · **AI režim:** `JUNIOR POD REVIEW`
 
 ## Co budeš umět
 
@@ -272,13 +272,12 @@ Po přečtení teorie spusť v Cursoru **`/go-deep-quiz 40`**. AI tě ~5 minut p
 
 ## Úkol
 
-Pracuj v `exercise/`. Po doplnění spouštěj testy:
-
-Stupně jdou od jednodušších ke složitějším — po každém stupni spusť review, než jdeš dál.
+Pracuj v `exercise/`. Kontrakt je v komentáři nad funkcí. Stupně jdou od jednodušších
+ke složitějším — po každém stupni spusť review, než jdeš dál.
 
 ### Jednoduchý
 
-Funkce: `ParallelSquares`
+Oprav: `ParallelSquares`
 
 ```bash
 make lesson L=40 PART=1
@@ -288,7 +287,7 @@ Pak **`/go-deep-review 40 easy`**.
 
 ### Střední
 
-Funkce: `FanOutSum`, `GoroutineDelta`
+Implementuj: `FanOutSum`
 
 ```bash
 make lesson L=40 PART=2
@@ -298,7 +297,7 @@ Pak **`/go-deep-review 40 medium`**.
 
 ### Obtížný
 
-Funkce: `LeakyGenerator`, `SafeGenerator`
+Doplň: `SafeGenerator`
 
 ```bash
 make lesson L=40 PART=3

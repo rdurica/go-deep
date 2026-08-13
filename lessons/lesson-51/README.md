@@ -1,6 +1,6 @@
 # Lekce 51 — Moduly, verzování a zranitelnosti
 
-> **Čas:** ~90 min · **Fáze:** 6 — Production Go · **AI režim:** `JUNIOR POD REVIEW`
+> **Čas:** ~70 min · **Fáze:** 6 — Production Go · **AI režim:** `JUNIOR POD REVIEW`
 
 ## Co budeš umět
 
@@ -200,13 +200,12 @@ Po přečtení teorie spusť v Cursoru **`/go-deep-quiz 51`**. AI tě ~5 minut p
 
 ## Úkol
 
-Pracuj v `exercise/`. Po doplnění spouštěj testy:
-
-Stupně jdou od jednodušších ke složitějším — po každém stupni spusť review, než jdeš dál.
+Pracuj v `exercise/`. Kontrakt je v komentáři nad funkcí. Stupně jdou od jednodušších
+ke složitějším — po každém stupni spusť review, než jdeš dál.
 
 ### Jednoduchý
 
-Funkce: `String`, `ParseSemver`
+Oprav: `Compare` (kód je záměrně vadný — prerelease jako řetězec místo identifikátorů)
 
 ```bash
 make lesson L=51 PART=1
@@ -216,7 +215,7 @@ Pak **`/go-deep-review 51 easy`**.
 
 ### Střední
 
-Funkce: `Compare`, `ParsePseudoVersion`, `IsPseudo`
+Implementuj: `ParseSemver`, `ParsePseudoVersion`
 
 ```bash
 make lesson L=51 PART=2
@@ -226,7 +225,7 @@ Pak **`/go-deep-review 51 medium`**.
 
 ### Obtížný
 
-Funkce: `MajorSuffix`, `SelectVersions`, `CheckCompat`
+Doplň: `MajorSuffix`, `SelectVersions`, `CheckCompat`
 
 ```bash
 make lesson L=51 PART=3

@@ -2,13 +2,12 @@
 
 package solutions
 
-// --- Stupeň: jednoduchý ---
-// FeatureName vrací jméno feature buildu.
+// --- Stupeň: obtížný ---
+// FeatureName vrací jméno feature buildu bez tagu fancy.
 func FeatureName() string {
 	return "basic"
 }
 
-// --- Stupeň: střední ---
 // Discount vrací slevu z částky. Ve výchozím buildu vždy 0.
 func Discount(amount int) int {
 	return 0

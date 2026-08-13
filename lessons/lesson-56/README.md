@@ -1,6 +1,6 @@
 # Lekce 56 — Spec-first, ADR a prompting pro Go
 
-> **Čas:** ~90 min · **Fáze:** 7 — Inženýrství v době AI · **AI režim:** `TECH LEAD`
+> **Čas:** ~70 min · **Fáze:** 7 — Inženýrství v době AI · **AI režim:** `TECH LEAD`
 
 ## Co budeš umět
 
@@ -185,13 +185,12 @@ Po přečtení teorie spusť v Cursoru **`/go-deep-quiz 56`**. AI tě ~5 minut p
 
 ## Úkol
 
-Pracuj v `exercise/`. Po doplnění spouštěj testy:
-
-Stupně jdou od jednodušších ke složitějším — po každém stupni spusť review, než jdeš dál.
+Pracuj v `exercise/`. Kontrakt je v komentáři nad funkcí. Stupně jdou od jednodušších
+ke složitějším — po každém stupni spusť review, než jdeš dál.
 
 ### Jednoduchý
 
-Funkce: `String`, `ParseStatus`, `Fold`, `Slug`
+Oprav: `Check` na `SpecCheck` (review-lab — AI spec checker bez Fold, case-sensitive)
 
 ```bash
 make lesson L=56 PART=1
@@ -201,7 +200,7 @@ Pak **`/go-deep-review 56 easy`**.
 
 ### Střední
 
-Funkce: `Filename`, `Render`, `ParseADR`, `Index`
+Implementuj: `Fold`, `Slug`
 
 ```bash
 make lesson L=56 PART=2
@@ -211,7 +210,7 @@ Pak **`/go-deep-review 56 medium`**.
 
 ### Obtížný
 
-Funkce: `String`, `DefaultSpecCheck`, `Check`, `CheckSpec`
+Doplň: `DefaultSpecCheck` (výchozí sada pravidel pro spec-first zadání)
 
 ```bash
 make lesson L=56 PART=3

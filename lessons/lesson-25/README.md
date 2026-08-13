@@ -1,6 +1,6 @@
 # Lekce 25 — Routing: metody, wildcardy, PathValue
 
-> **Čas:** ~90 min · **Fáze:** 3 — net/http a tooling · **AI režim:** `BOILERPLATE OK`
+> **Čas:** ~70 min · **Fáze:** 3 — net/http a tooling · **AI režim:** `BOILERPLATE OK`
 
 ## Co budeš umět
 
@@ -212,13 +212,13 @@ Po přečtení teorie spusť v Cursoru **`/go-deep-quiz 25`**. AI tě ~5 minut p
 
 ## Úkol
 
-Pracuj v `exercise/`. Po doplnění spouštěj testy:
-
-Stupně jdou od jednodušších ke složitějším — po každém stupni spusť review, než jdeš dál.
+Pracuj v `exercise/`. `Store`, `WriteJSON`, `FilesHandler` a `FilesRouter` jsou hotové —
+soustřeď se na body níže. Stupně jdou od jednodušších ke složitějším; po každém stupni
+spusť review, než jdeš dál.
 
 ### Jednoduchý
 
-Funkce: `NewStore`, `Add`, `Get`
+Doplň: `ParseListQuery`
 
 ```bash
 make lesson L=25 PART=1
@@ -228,7 +228,7 @@ Pak **`/go-deep-review 25 easy`**.
 
 ### Střední
 
-Funkce: `Delete`, `List`, `WriteJSON`, `ItemsRouter`
+Implementuj: `ItemsRouter`
 
 ```bash
 make lesson L=25 PART=2
@@ -238,7 +238,7 @@ Pak **`/go-deep-review 25 medium`**.
 
 ### Obtížný
 
-Funkce: `ParseListQuery`, `SafeJoin`, `FilesHandler`, `FilesRouter`
+Oprav: `SafeJoin` (kód je záměrně vadný — filepath.Join bez validace segmentů)
 
 ```bash
 make lesson L=25 PART=3

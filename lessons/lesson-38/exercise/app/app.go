@@ -5,12 +5,13 @@ package app
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/rdurica/go-deep/lessons/lesson-38/exercise/order"
 )
 
 // Repository je port pro uložení a načtení objednávky.
-// Při neexistující objednávce chyba obalující order.ErrNotFound.
+// Při neexistující objednávce vrací chybu obalující order.ErrNotFound.
 type Repository interface {
 	Save(ctx context.Context, o order.Order) error
 	Find(ctx context.Context, id string) (order.Order, error)
@@ -28,44 +29,63 @@ type Service struct {
 	ids  IDGen
 }
 
-// NewService složí službu z portů repo a ids.
-// Oba porty musí být nenilové; služba sama nevaliduje doménu.
+// --- Stupeň: jednoduchý ---
+// NewService složí službu z portů.
 func NewService(repo Repository, ids IDGen) *Service {
-	// TODO
-	return nil
+	return &Service{repo: repo, ids: ids}
 }
 
-// Place založí objednávku: ID z portu IDGen, doména ověří invarianty, uloží přes Repository.
-// Neplatná objednávka se nesmí uložit. Chyby portů obal %w.
+// Place založí novou objednávku a uloží ji.
 func (s *Service) Place(ctx context.Context, lines []order.Line) (order.Order, error) {
-	// TODO
-	return *new(order.Order), nil
+	o, err := order.New(s.ids.NewID(), lines)
+	if err != nil {
+		return order.Order{}, err
+	}
+	if err := s.repo.Save(ctx, o); err != nil {
+		return order.Order{}, fmt.Errorf("uložení objednávky: %w", err)
+	}
+	return o, nil
 }
 
-// Get vrátí objednávku podle ID z Repository.
-// Neznámé ID propaguje chybu z portu obalující order.ErrNotFound.
+// --- Stupeň: střední ---
+// Get vrátí objednávku podle ID.
 func (s *Service) Get(ctx context.Context, id string) (order.Order, error) {
-	// TODO
-	return *new(order.Order), nil
+	o, err := s.repo.Find(ctx, id)
+	if err != nil {
+		return order.Order{}, fmt.Errorf("načtení objednávky %q: %w", id, err)
+	}
+	return o, nil
 }
 
-// Pay načte objednávku, zavolá doménový Pay, výsledek uloží.
-// Zamítnutý přechod stavu → Save se nezavolá vůbec.
+// Pay zaplatí objednávku.
 func (s *Service) Pay(ctx context.Context, id string) (order.Order, error) {
-	// TODO
-	return *new(order.Order), nil
+	return s.apply(ctx, id, order.Order.Pay)
 }
 
-// Ship načte objednávku, zavolá doménový Ship, výsledek uloží.
-// Zamítnutý přechod stavu → Save se nezavolá vůbec.
+// --- Stupeň: obtížný ---
+// Ship odešle objednávku.
 func (s *Service) Ship(ctx context.Context, id string) (order.Order, error) {
-	// TODO
-	return *new(order.Order), nil
+	return s.apply(ctx, id, order.Order.Ship)
 }
 
-// Cancel načte objednávku, zavolá doménový Cancel, výsledek uloží.
-// Zamítnutý přechod stavu → Save se nezavolá vůbec.
+// Cancel zruší objednávku.
 func (s *Service) Cancel(ctx context.Context, id string) (order.Order, error) {
-	// TODO
-	return *new(order.Order), nil
+	return s.apply(ctx, id, order.Order.Cancel)
+}
+
+// apply je společné tělo use-casů měnících stav: načti, nech rozhodnout
+// doménu, ulož. Rozhodnutí samotné aplikační vrstvě nepatří.
+func (s *Service) apply(ctx context.Context, id string, change func(order.Order) (order.Order, error)) (order.Order, error) {
+	current, err := s.repo.Find(ctx, id)
+	if err != nil {
+		return order.Order{}, fmt.Errorf("načtení objednávky %q: %w", id, err)
+	}
+	next, err := change(current)
+	if err != nil {
+		return order.Order{}, err
+	}
+	if err := s.repo.Save(ctx, next); err != nil {
+		return order.Order{}, fmt.Errorf("uložení objednávky %q: %w", id, err)
+	}
+	return next, nil
 }

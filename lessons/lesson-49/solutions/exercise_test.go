@@ -171,24 +171,6 @@ func TestCompareBlockingScales(t *testing.T) {
 	waitNoLeak(t, before)
 }
 
-func TestStackGrowth(t *testing.T) {
-	tests := []struct {
-		in   int
-		want int
-	}{
-		{0, 0},
-		{-1, 0},
-		{1, 1},
-		{10, 10},
-		{1000, 1000}, // ~1 MB rámců: zásobník goroutiny musí vyrůst
-	}
-	for _, tt := range tests {
-		if got := exercise.StackGrowth(tt.in); got != tt.want {
-			t.Errorf("StackGrowth(%d) = %d, chci %d", tt.in, got, tt.want)
-		}
-	}
-}
-
 func TestGoroutineCost(t *testing.T) {
 	before := runtime.NumGoroutine()
 
@@ -200,22 +182,6 @@ func TestGoroutineCost(t *testing.T) {
 	b, a := exercise.GoroutineCost(n)
 	if a-b < n {
 		t.Errorf("GoroutineCost(%d) = (%d, %d), chci rozdíl aspoň %d", n, b, a, n)
-	}
-	waitNoLeak(t, before)
-}
-
-func TestBytesPerGoroutine(t *testing.T) {
-	before := runtime.NumGoroutine()
-
-	if got := exercise.BytesPerGoroutine(0); got != 0 {
-		t.Errorf("BytesPerGoroutine(0) = %d, chci 0", got)
-	}
-
-	// Měření je nutně hrubé, takže test jen hlídá, že výsledek dává řádově
-	// smysl: goroutina stojí kilobajty, ne megabajty.
-	got := exercise.BytesPerGoroutine(2000)
-	if got > 128*1024 {
-		t.Errorf("BytesPerGoroutine(2000) = %d B, to je na jednu goroutinu příliš", got)
 	}
 	waitNoLeak(t, before)
 }

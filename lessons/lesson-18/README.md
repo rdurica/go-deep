@@ -1,6 +1,6 @@
 # Lekce 18 — Checkpoint fáze 1
 
-> **Čas:** ~90 min · **Fáze:** 1 — Jazyk a paměťový model · **AI režim:** `ZAKÁZÁNO`
+> **Čas:** ~75 min · **Fáze:** 1 — Jazyk a paměťový model · **AI režim:** `ZAKÁZÁNO`
 
 Checkpoint nepřináší novou látku. Projdeš si celou fázi 1 (lekce 03–17), postavíš jeden
 malý balíček, který kombinuje šest jejích témat, a bodovou rubrikou zjistíš, kam se máš
@@ -136,13 +136,13 @@ Po přečtení teorie spusť v Cursoru **`/go-deep-quiz 18`**. AI tě ~5 minut p
 
 ## Úkol
 
-Pracuj v `exercise/`. Po doplnění spouštěj testy:
-
-Stupně jdou od jednodušších ke složitějším — po každém stupni spusť review, než jdeš dál.
+Pracuj v `exercise/`. Kontrakt je v komentáři nad funkcí. `Money.String`, `Report.String`,
+`validate` a `decodeTransactions` jsou hotové — soustřeď se na body níže. Stupně jdou od
+jednodušších ke složitějším; po každém stupni spusť review, než jdeš dál.
 
 ### Jednoduchý
 
-Funkce: `String`, `Error`
+Oprav: `ValidationError.Error` (kód je záměrně vadný — chybí index a pole)
 
 ```bash
 make lesson L=18 PART=1
@@ -152,7 +152,7 @@ Pak **`/go-deep-review 18 easy`**.
 
 ### Střední
 
-Funkce: `ParseTransactions`, `TotalsByCategory`
+Implementuj: `ParseTransactions`, `TotalsByCategory`
 
 ```bash
 make lesson L=18 PART=2
@@ -162,7 +162,7 @@ Pak **`/go-deep-review 18 medium`**.
 
 ### Obtížný
 
-Funkce: `String`, `BuildReport`
+Doplň: `BuildReport` (orchestrace + `errors.Is` / `errors.As`)
 
 ```bash
 make lesson L=18 PART=3
@@ -212,7 +212,7 @@ Spusť **`/go-deep-review 18 final`**. AI projde body níže, doptá se a ověř
 - [ ] Umíš vysvětlit, proč `Money` drží centy a ne `float64`
 - [ ] Umíš vysvětlit, proč `ParseTransactions` bere `io.Reader` a ne `string`
 - [ ] Umíš vysvětlit rozdíl mezi `errors.Is` a `errors.As` na vlastním kódu
-- [ ] Umíš vysvětlit, proč je `GroupBy` generická, ale `TotalsByCategory` ne
+- [ ] Umíš vysvětlit, proč `BuildReport` deleguje na `ParseTransactions` místo duplicitní logiky
 
 ## AI režim
 

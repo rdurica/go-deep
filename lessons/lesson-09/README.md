@@ -278,13 +278,12 @@ Po přečtení teorie spusť v Cursoru **`/go-deep-quiz 09`**. AI tě ~5 minut p
 
 ## Úkol
 
-Pracuj v `exercise/`. Po doplnění spouštěj testy:
-
-Stupně jdou od jednodušších ke složitějším — po každém stupni spusť review, než jdeš dál.
+Pracuj v `exercise/`. Kontrakt je v komentáři nad funkcí. Stupně jdou od jednodušších
+ke složitějším — po každém stupni spusť review, než jdeš dál.
 
 ### Jednoduchý
 
-Funkce: `ByteLen`, `RuneLen`
+Oprav: `RuneLen` (kód je záměrně vadný — počítá bajty místo run)
 
 ```bash
 make lesson L=09 PART=1
@@ -294,7 +293,7 @@ Pak **`/go-deep-review 09 easy`**.
 
 ### Střední
 
-Funkce: `ReverseRunes`, `Truncate`
+Implementuj: `ByteLen`, `ReverseRunes`
 
 ```bash
 make lesson L=09 PART=2
@@ -304,7 +303,7 @@ Pak **`/go-deep-review 09 medium`**.
 
 ### Obtížný
 
-Funkce: `Initials`, `Join`, `CountRunes`
+Doplň: `Truncate` (limit v runách, výpustka …)
 
 ```bash
 make lesson L=09 PART=3

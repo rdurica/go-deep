@@ -2,7 +2,6 @@ package solutions_test
 
 import (
 	"errors"
-	"io"
 	"strings"
 	"testing"
 
@@ -255,63 +254,6 @@ func TestPipelineNilStep(t *testing.T) {
 	}
 }
 
-// fakeCloser počítá zavření a umí selhat.
-type fakeCloser struct {
-	closed int
-	err    error
-}
-
-func (c *fakeCloser) Close() error {
-	c.closed++
-	return c.err
-}
-
-func TestCloseAllSuccess(t *testing.T) {
-	a, b := &fakeCloser{}, &fakeCloser{}
-
-	if err := exercise.CloseAll([]io.Closer{a, b}); err != nil {
-		t.Fatalf("CloseAll vrátil chybu %v, chci nil", err)
-	}
-	if a.closed != 1 || b.closed != 1 {
-		t.Errorf("zavření = (%d, %d), chci (1, 1)", a.closed, b.closed)
-	}
-}
-
-func TestCloseAllEmptyAndNil(t *testing.T) {
-	if err := exercise.CloseAll(nil); err != nil {
-		t.Errorf("CloseAll(nil) = %v, chci nil", err)
-	}
-	if err := exercise.CloseAll([]io.Closer{}); err != nil {
-		t.Errorf("CloseAll([]) = %v, chci nil", err)
-	}
-	if err := exercise.CloseAll([]io.Closer{nil, nil}); err != nil {
-		t.Errorf("CloseAll([nil, nil]) = %v, chci nil", err)
-	}
-}
-
-func TestCloseAllJoinsErrors(t *testing.T) {
-	errFirst := errors.New("first failed")
-	errThird := errors.New("third failed")
-
-	a := &fakeCloser{err: errFirst}
-	b := &fakeCloser{}
-	c := &fakeCloser{err: errThird}
-
-	err := exercise.CloseAll([]io.Closer{a, nil, b, c})
-	if err == nil {
-		t.Fatal("CloseAll vrátil nil, chci spojenou chybu")
-	}
-	if !errors.Is(err, errFirst) {
-		t.Errorf("chyba %v neobsahuje %v", err, errFirst)
-	}
-	if !errors.Is(err, errThird) {
-		t.Errorf("chyba %v neobsahuje %v", err, errThird)
-	}
-	if a.closed != 1 || b.closed != 1 || c.closed != 1 {
-		t.Errorf("zavření = (%d, %d, %d), chci (1, 1, 1) — zavírá se všechno", a.closed, b.closed, c.closed)
-	}
-}
-
 func TestWithCleanup(t *testing.T) {
 	errWork := errors.New("work failed")
 	errClean := errors.New("cleanup failed")
@@ -365,6 +307,9 @@ func TestWithCleanup(t *testing.T) {
 			func() error { return errWork },
 			func() error { return errClean },
 		)
+		if err == nil {
+			t.Fatal("chyba = nil, chci spojené chyby z f i cleanupu")
+		}
 		if !errors.Is(err, errWork) {
 			t.Errorf("chyba %v neobsahuje %v", err, errWork)
 		}

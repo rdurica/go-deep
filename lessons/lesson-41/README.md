@@ -1,6 +1,6 @@
 # Lekce 41 — Kanály a ownership
 
-> **Čas:** ~90 min · **Fáze:** 5 — Concurrency do hloubky · **AI režim:** `JUNIOR POD REVIEW`
+> **Čas:** ~70 min · **Fáze:** 5 — Concurrency do hloubky · **AI režim:** `JUNIOR POD REVIEW`
 
 ## Co budeš umět
 
@@ -200,13 +200,12 @@ Po přečtení teorie spusť v Cursoru **`/go-deep-quiz 41`**. AI tě ~5 minut p
 
 ## Úkol
 
-Pracuj v `exercise/`. Po doplnění spouštěj testy:
-
-Stupně jdou od jednodušších ke složitějším — po každém stupni spusť review, než jdeš dál.
+Pracuj v `exercise/`. Kontrakt je v komentáři nad funkcí. Stupně jdou od jednodušších
+ke složitějším — po každém stupni spusť review, než jdeš dál.
 
 ### Jednoduchý
 
-Funkce: `Generate`, `Collect`, `Merge`
+Oprav: `ForgetClose` (kanál se po odeslání nezavírá)
 
 ```bash
 make lesson L=41 PART=1
@@ -216,7 +215,7 @@ Pak **`/go-deep-review 41 easy`**.
 
 ### Střední
 
-Funkce: `Split`, `NewBroker`, `Subscribe`
+Implementuj: `Generate`, `Collect`
 
 ```bash
 make lesson L=41 PART=2
@@ -226,7 +225,7 @@ Pak **`/go-deep-review 41 medium`**.
 
 ### Obtížný
 
-Funkce: `Publish`, `Dropped`, `Close`
+Doplň: `Merge` (fan-in, zavření výstupu po všech vstupech)
 
 ```bash
 make lesson L=41 PART=3

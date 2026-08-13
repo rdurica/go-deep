@@ -16,20 +16,35 @@ type Node struct {
 }
 
 // --- Stupeň: jednoduchý ---
+
+// ApplyDefaults doplní výchozí hodnoty: prázdný Host → "localhost", Port 0 → 8080,
+// Debug nil → pointer na false. Už nastavené hodnoty (včetně &false) se nepřepisují.
+// Nil Config je no-op bez paniky.
+//
+// POZOR: kód níže je ZÁMĚRNĚ VADNÝ. Debug přepisuje i explicitně nastavenou hodnotu.
+// Najdi chybu a oprav — testy před opravou padají.
+func ApplyDefaults(c *Config) {
+	if c == nil {
+		return
+	}
+	if c.Host == "" {
+		c.Host = "localhost"
+	}
+	if c.Port == 0 {
+		c.Port = 8080
+	}
+	debug := false
+	c.Debug = &debug
+}
+
 // Swap prohodí hodnoty, na které ukazují a a b.
 // Nil pointer nepanikuje (no-op). Swap(&x, &x) nechá x beze změny.
 func Swap(a, b *int) {
 	// TODO
 }
 
-// ApplyDefaults doplní výchozí hodnoty: prázdný Host → "localhost", Port 0 → 8080,
-// Debug nil → pointer na false. Už nastavené hodnoty (včetně &false) se nepřepisují.
-// Nil Config je no-op bez paniky.
-func ApplyDefaults(c *Config) {
-	// TODO
-}
-
 // --- Stupeň: střední ---
+
 // IncrementAll zvýší každý prvek o jedna na místě. Nil i prázdný slice projdou bez paniky.
 func IncrementAll(nums []int) {
 	// TODO
@@ -43,6 +58,7 @@ func AppendSafe(nums []int, v int) []int {
 }
 
 // --- Stupeň: obtížný ---
+
 // Push vloží v na začátek seznamu a vrátí nový první nod. Push(nil, 42) vytvoří jednoprvkový seznam.
 func Push(head *Node, v int) *Node {
 	// TODO
@@ -53,11 +69,4 @@ func Push(head *Node, v int) *Node {
 func Len(head *Node) int {
 	// TODO
 	return 0
-}
-
-// Reverse otočí pořadí prvků jedním průchodem (prev/next) a vrátí nový první nod.
-// Reverse(nil) vrací nil.
-func Reverse(head *Node) *Node {
-	// TODO
-	return nil
 }

@@ -1,6 +1,6 @@
 # Lekce 59 — Capstone P05: spec a implementace
 
-> **Čas:** ~90 min · **Fáze:** 8 — Capstone · **AI režim:** `TECH LEAD`
+> **Čas:** ~75 min · **Fáze:** 8 — Capstone · **AI režim:** `TECH LEAD`
 
 ## Co budeš umět
 
@@ -167,13 +167,12 @@ Po přečtení teorie spusť v Cursoru **`/go-deep-quiz 59`**. AI tě ~5 minut p
 
 ## Úkol
 
-Pracuj v `exercise/`. Po doplnění spouštěj testy:
-
-Stupně jdou od jednodušších ke složitějším — po každém stupni spusť review, než jdeš dál.
+Pracuj v `exercise/`. Kontrakt je v komentáři nad funkcí. Stupně jdou od jednodušších
+ke složitějším — po každém stupni spusť review, než jdeš dál.
 
 ### Jednoduchý
 
-Funkce: `NormalizeURL`, `NormalizeTags`, `Validate`
+Oprav: `NormalizeURL` (kód je záměrně vadný — chybí odstranění utm_* parametrů)
 
 ```bash
 make lesson L=59 PART=1
@@ -183,7 +182,7 @@ Pak **`/go-deep-review 59 easy`**.
 
 ### Střední
 
-Funkce: `New`, `NewStore`, `Add`, `Get`
+Implementuj: `New` (konstruktor normalizuje, Validate jen ověřuje)
 
 ```bash
 make lesson L=59 PART=2
@@ -193,7 +192,7 @@ Pak **`/go-deep-review 59 medium`**.
 
 ### Obtížný
 
-Funkce: `Delete`, `Len`, `ByTag`, `Search`
+Doplň: `Search` (filtr, řazení, cursor — úsudek u stránkování)
 
 ```bash
 make lesson L=59 PART=3

@@ -1,6 +1,6 @@
 # Lekce 02 — Mentální reset: PHP → Go
 
-> **Čas:** ~75 min · **Fáze:** 0 — Setup a mentální reset · **AI režim:** `ZAKÁZÁNO`
+> **Čas:** ~65 min · **Fáze:** 0 — Setup a mentální reset · **AI režim:** `ZAKÁZÁNO`
 
 ## Co budeš umět
 
@@ -228,13 +228,12 @@ Po přečtení teorie spusť v Cursoru **`/go-deep-quiz 02`**. AI tě ~5 minut p
 
 ## Úkol
 
-Pracuj v `exercise/`. Po doplnění spouštěj testy:
-
-Stupně jdou od jednodušších ke složitějším — po každém stupni spusť review, než jdeš dál.
+Pracuj v `exercise/`. Kontrakt je v komentáři nad funkcí. Stupně jdou od jednodušších
+ke složitějším — po každém stupni spusť review, než jdeš dál.
 
 ### Jednoduchý
 
-Funkce: `ApplyDiscount`, `TotalCents`
+Oprav: `ApplyDiscount` (kód je záměrně vadný — celočíselné dělení bez zaokrouhlení)
 
 ```bash
 make lesson L=02 PART=1
@@ -244,7 +243,7 @@ Pak **`/go-deep-review 02 easy`**.
 
 ### Střední
 
-Funkce: `Cheapest`, `NewCatalog`
+Implementuj: `TotalCents`, `NewCatalog`
 
 ```bash
 make lesson L=02 PART=2
@@ -254,7 +253,7 @@ Pak **`/go-deep-review 02 medium`**.
 
 ### Obtížný
 
-Funkce: `Price`, `Checkout`
+Doplň: `Price`, `Checkout` (chybějící položka → `false`, sleva přes `ApplyDiscount`)
 
 ```bash
 make lesson L=02 PART=3

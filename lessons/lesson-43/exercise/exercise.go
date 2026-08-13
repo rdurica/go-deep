@@ -1,7 +1,11 @@
 // Package exercise obsahuje cvičení lekce 43.
 package exercise
 
-import "errors"
+import (
+	"errors"
+	"sort"
+	"sync"
+)
 
 // Chyby, které vrací Bank.Transfer.
 var (
@@ -15,101 +19,126 @@ var (
 
 // Counter je čítač bezpečný pro souběžné použití. Zero value je použitelná.
 type Counter struct {
-	// TODO
+	n int64
 }
 
 // --- Stupeň: jednoduchý ---
-// Inc zvýší čítač o jedna atomicky.
+
+// Inc zvýší čítač o jedna.
 // Zero value Counter je použitelná bez konstruktoru; test běží s -race.
+//
+// POZOR: kód níže je ZÁMĚRNĚ VADNÝ. Inc, Add a Value nejsou chráněné proti datovému závodu.
+// Najdi chybu a oprav — testy s -race před opravou padají.
 func (c *Counter) Inc() {
-	// TODO
+	c.n++
 }
 
-// Add přičte n k čítači atomicky (n může být záporné).
-// Souběžné volání z více goroutin musí být bezpečné pod -race.
+// Add přičte n k čítači (n může být záporné).
 func (c *Counter) Add(n int64) {
-	// TODO
+	c.n += n
 }
 
-// Value vrací aktuální hodnotu čítače atomicky.
-// Čtení je bezpečné i během souběžných zápisů z jiných goroutin.
+// Value vrací aktuální hodnotu čítače.
 func (c *Counter) Value() int64 {
-	// TODO
-	return 0
+	return c.n
 }
 
 // Cache je mapa chráněná zámkem, bezpečná pro souběžné použití.
 type Cache struct {
-	// TODO
+	mu    sync.RWMutex
+	items map[string]string
 }
 
 // NewCache vytvoří prázdnou cache s mapou chráněnou zámkem.
-// Bezpečná pro souběžný přístup z více goroutin.
 func NewCache() *Cache {
 	// TODO
 	return nil
 }
 
 // --- Stupeň: střední ---
+
 // Get vrací hodnotu a true, pokud klíč existuje.
-// Neexistující klíč vrací prázdný řetězec a false.
 func (c *Cache) Get(key string) (string, bool) {
 	// TODO
 	return "", false
 }
 
-// Set uloží hodnotu pod klíč.
-// Přepis existujícího klíče je povolený.
-// Pod mutexem cache (jako Len); bezpečné pod -race.
+// Set uloží hodnotu pod klíč. Přepis existujícího klíče je povolený.
 func (c *Cache) Set(key, value string) {
 	// TODO
 }
 
 // Delete smaže klíč. Neexistující klíč je no-op.
-// Pod mutexem cache (jako Len); bezpečné pod -race.
 func (c *Cache) Delete(key string) {
-	// TODO
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	delete(c.items, key)
 }
 
 // Len vrací počet uložených klíčů v cache pod zámkem.
 func (c *Cache) Len() int {
-	// TODO
-	return 0
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	return len(c.items)
 }
 
 // --- Stupeň: obtížný ---
-// GetOrCompute vrátí uloženou hodnotu nebo spočítá přes f a uloží.
-// Pro daný klíč se f zavolá právě jednou (i při sto goroutinách).
-// Během f nesmíš držet zámek cache.
-func (c *Cache) GetOrCompute(key string, f func() string) string {
-	// TODO
-	return ""
+
+// account je jeden účet s vlastním zámkem.
+type account struct {
+	mu      sync.Mutex
+	balance int64
 }
 
 // Bank drží zůstatky a umí bezpečné převody bez deadlocku.
 type Bank struct {
-	// TODO
+	accounts map[string]*account
 }
 
 // NewBank vytvoří banku s počátečními zůstatky.
 // Vstupní mapa se okopíruje; volající ji po vytvoření nesmí měnit.
 func NewBank(balances map[string]int64) *Bank {
-	// TODO
-	return nil
+	accounts := make(map[string]*account, len(balances))
+	for name, amount := range balances {
+		accounts[name] = &account{balance: amount}
+	}
+	return &Bank{accounts: accounts}
 }
 
 // Balance vrací zůstatek účtu a true, pokud účet existuje.
-// Neznámý účet vrací 0 a false.
-func (b *Bank) Balance(account string) (int64, bool) {
-	// TODO
-	return 0, false
+func (b *Bank) Balance(name string) (int64, bool) {
+	acc, ok := b.accounts[name]
+	if !ok {
+		return 0, false
+	}
+	acc.mu.Lock()
+	defer acc.mu.Unlock()
+	return acc.balance, true
 }
 
-// Total vrací součet všech zůstatků v konzistentním okamžiku.
-// Test ho volá souběžně s převody; jiná hodnota než počáteční suma je chyba.
+func (b *Bank) sortedNames() []string {
+	names := make([]string, 0, len(b.accounts))
+	for name := range b.accounts {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	return names
+}
+
+// Total vrací součet všech zůstatků v konzistentním okamžiku (pomocný test).
 func (b *Bank) Total() int64 {
-	// TODO
-	return 0
+	names := b.sortedNames()
+	for _, name := range names {
+		b.accounts[name].mu.Lock()
+	}
+	total := int64(0)
+	for _, name := range names {
+		total += b.accounts[name].balance
+	}
+	for i := len(names) - 1; i >= 0; i-- {
+		b.accounts[names[i]].mu.Unlock()
+	}
+	return total
 }
 
 // Transfer převede amount z from do to. ErrUnknownAccount, ErrInvalidAmount

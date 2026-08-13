@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/url"
 	"strconv"
-	"strings"
 	"time"
 )
 
@@ -137,17 +136,4 @@ func redactURL(raw string) string {
 		return mask
 	}
 	return u.Redacted()
-}
-
-// LoadFromEnviron sestaví Config ze slice ve formátu os.Environ() ("KEY=VALUE").
-func LoadFromEnviron(environ []string) (Config, error) {
-	env := make(map[string]string, len(environ))
-	for _, entry := range environ {
-		key, value, ok := strings.Cut(entry, "=")
-		if !ok || key == "" {
-			continue
-		}
-		env[key] = value
-	}
-	return Load(func(key string) string { return env[key] })
 }

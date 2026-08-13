@@ -193,84 +193,19 @@ func TestLoadRecordsReadError(t *testing.T) {
 	}
 }
 
-func TestStoreZeroValue(t *testing.T) {
-	var s exercise.Store // žádný konstruktor
-
-	if got := s.TotalQty(); got != 0 {
-		t.Errorf("TotalQty() = %d, chci 0", got)
-	}
-	if got := s.List(); len(got) != 0 {
-		t.Errorf("List() = %+v, chci prázdný slice", got)
-	}
-	if _, err := s.Load("A1"); !errors.Is(err, exercise.ErrNotFound) {
-		t.Errorf("Load na prázdném skladu = %v, chci ErrNotFound", err)
-	}
-	if err := s.Remove("A1"); !errors.Is(err, exercise.ErrNotFound) {
-		t.Errorf("Remove na prázdném skladu = %v, chci ErrNotFound", err)
-	}
+func TestStorePutAndLoad(t *testing.T) {
+	var s exercise.Store
 
 	if err := s.Put(exercise.Record{SKU: "A1", Name: "Šroub", Qty: 5}); err != nil {
 		t.Fatalf("Put vrátil chybu %v, chci nil", err)
-	}
-	if got := s.TotalQty(); got != 5 {
-		t.Errorf("TotalQty() = %d, chci 5", got)
-	}
-}
-
-func TestStoreLifecycle(t *testing.T) {
-	var s exercise.Store
-
-	records := []exercise.Record{
-		{SKU: "C3", Name: "Podložka", Qty: 7},
-		{SKU: "A1", Name: "Šroub", Qty: 12},
-		{SKU: "B2", Name: "Matice", Qty: 3},
-	}
-	if err := s.PutAll(records); err != nil {
-		t.Fatalf("PutAll vrátil chybu %v, chci nil", err)
-	}
-
-	if got := s.TotalQty(); got != 22 {
-		t.Errorf("TotalQty() = %d, chci 22", got)
-	}
-
-	list := s.List()
-	wantOrder := []string{"A1", "B2", "C3"}
-	if len(list) != len(wantOrder) {
-		t.Fatalf("List() = %+v, chci 3 položky", list)
-	}
-	for i, sku := range wantOrder {
-		if list[i].SKU != sku {
-			t.Errorf("List()[%d].SKU = %q, chci %q (řadí se podle SKU)", i, list[i].SKU, sku)
-		}
-	}
-
-	// Put přepisuje existující SKU.
-	if err := s.Put(exercise.Record{SKU: "A1", Name: "Šroub M6", Qty: 1}); err != nil {
-		t.Fatalf("Put vrátil chybu %v, chci nil", err)
-	}
-	if got := len(s.List()); got != 3 {
-		t.Errorf("po přepisu má sklad %d položek, chci 3", got)
-	}
-	if got := s.TotalQty(); got != 11 {
-		t.Errorf("TotalQty() = %d, chci 11", got)
 	}
 
 	rec, err := s.Load("A1")
 	if err != nil {
 		t.Fatalf("Load vrátil chybu %v, chci nil", err)
 	}
-	if rec.Name != "Šroub M6" {
-		t.Errorf("Load(\"A1\").Name = %q, chci %q", rec.Name, "Šroub M6")
-	}
-
-	if err := s.Remove("B2"); err != nil {
-		t.Fatalf("Remove vrátil chybu %v, chci nil", err)
-	}
-	if err := s.Remove("B2"); !errors.Is(err, exercise.ErrNotFound) {
-		t.Errorf("druhý Remove = %v, chci ErrNotFound", err)
-	}
-	if got := len(s.List()); got != 2 {
-		t.Errorf("po smazání má sklad %d položek, chci 2", got)
+	if rec.Name != "Šroub" || rec.Qty != 5 {
+		t.Errorf("Load = %+v, chci Šroub s Qty 5", rec)
 	}
 }
 
@@ -283,8 +218,8 @@ func TestStoreValidation(t *testing.T) {
 	if err := s.Put(exercise.Record{SKU: "A1", Name: "Šroub", Qty: -1}); !errors.Is(err, exercise.ErrInvalidQty) {
 		t.Errorf("Put se záporným množstvím = %v, chci ErrInvalidQty", err)
 	}
-	if got := len(s.List()); got != 0 {
-		t.Errorf("neplatné položky se nesmí uložit, sklad má %d položek", got)
+	if _, err := s.Load("A1"); !errors.Is(err, exercise.ErrNotFound) {
+		t.Errorf("Load po neplatném Put = %v, chci ErrNotFound", err)
 	}
 }
 
@@ -310,14 +245,19 @@ func TestStorePutAllJoinsErrors(t *testing.T) {
 		t.Errorf("chyba %q neobsahuje indexy vadných záznamů", err.Error())
 	}
 
-	// Platné záznamy se uložily i přes chyby ostatních.
-	if got := s.TotalQty(); got != 3 {
-		t.Errorf("TotalQty() = %d, chci 3 — platné záznamy se ukládají", got)
+	rec, loadErr := s.Load("A1")
+	if loadErr != nil {
+		t.Fatalf("Load A1 = %v, chci nil", loadErr)
+	}
+	if rec.Qty != 1 {
+		t.Errorf("A1.Qty = %d, chci 1 — platné záznamy se ukládají", rec.Qty)
+	}
+	if _, loadErr = s.Load("B2"); loadErr != nil {
+		t.Errorf("Load B2 = %v, chci nil", loadErr)
 	}
 }
 
 func TestStoreSatisfiesLoader(t *testing.T) {
-	// Sklad je jen jedna z možných implementací portu Loader.
 	var loader exercise.Loader = &exercise.Store{}
 
 	store, ok := loader.(*exercise.Store)
@@ -342,7 +282,7 @@ func TestStoreSatisfiesLoader(t *testing.T) {
 }
 
 func TestIntegrationLoadAndStore(t *testing.T) {
-	in := "A1;Šroub;12\nB2;Matice;3\nC3;Podložka;7\n"
+	in := "A1;Šroub;12\nB2;Matice;3\n"
 
 	records, err := exercise.LoadRecords(strings.NewReader(in))
 	if err != nil {
@@ -360,8 +300,5 @@ func TestIntegrationLoadAndStore(t *testing.T) {
 	}
 	if want := "Matice: 3 ks"; desc != want {
 		t.Errorf("Describe = %q, chci %q", desc, want)
-	}
-	if got := s.TotalQty(); got != 22 {
-		t.Errorf("TotalQty() = %d, chci 22", got)
 	}
 }

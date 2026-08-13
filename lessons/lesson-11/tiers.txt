@@ -1,3 +1,3 @@
-1:TestNewAndCents
-2:TestSumCentsMatchesPublicAPI|TestSplit|TestSplitInvalidN|TestAmountZeroValue
-3:TestTotalOf|TestMustParse|TestMustParsePanics|TestAmountString|TestAmountIsStringer
+1:TestAmountString|TestAmountIsStringer|TestAmountZeroValue
+2:TestSumCentsMatchesPublicAPI
+3:TestSplit|TestSplitInvalidN
